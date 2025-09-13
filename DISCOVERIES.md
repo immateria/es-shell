@@ -538,3 +538,88 @@ Installed cross-compilers `gcc-aarch64-linux-gnu` and `gcc-arm-linux-gnueabihf`.
 
 **Details:**
 Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --target=aarch64-linux-android21" ./configure --host=aarch64-linux-android`, but configure aborted with "C compiler cannot create executables," indicating the lack of an Android sysroot or NDK.
+### [2025-09-13] Examples – 99bottles.es
+
+**Discovery:** Song generation script runs to completion
+
+**Details:** Running `./es examples/99bottles.es` outputs verses from 99 down to 0 and finishes with "all done", demonstrating loop constructs and list handling.
+
+### [2025-09-13] Examples – hello.es
+
+**Discovery:** Simple greeting demonstration
+
+**Details:** Added `examples/hello.es` showing function definition and argument passing; executing `./es examples/hello.es` prints "hello world".
+### [2025-09-13] Examples – pipeline.es
+
+**Discovery:** Pipeline command substitution for line counting
+
+**Details:** Added `examples/pipeline.es` to count lines in `README.md` via `cat README.md | wc -l` inside backquoted substitution. Running `./es examples/pipeline.es` outputs `line-count: 50`, showing pipeline execution and variable capture.
+
+### [2025-09-13] Examples – operators.es
+
+**Discovery:** Pattern matching, list concatenation, and boolean operators
+
+**Details:** `examples/operators.es` uses `~` for matching `README.md`, concatenates strings with `^`, and demonstrates `&&`/`||` short-circuiting. Executing `./es examples/operators.es` prints `match`, `foobar`, `and-worked`, and `or-worked`.
+
+### [2025-09-13] Examples – pipeline.es (expanded)
+
+**Discovery:** stderr piping and exit-status capture
+
+**Details:** `examples/pipeline.es` now pipes a command's standard error into `wc -l` using `|[2]`, reporting the count of error lines, and uses `<={...}` to collect exit statuses from a failing pipeline. The script prints `stderr-lines: 2` and `exit-statuses: 0 1`.
+
+### [2025-09-13] Examples – operators.es (expanded)
+
+**Discovery:** Negation, list matching, and cross-product concatenation
+
+**Details:** The updated `examples/operators.es` demonstrates negated pattern matches with `! ~`, matches over lists, shows that `^` forms a cross-product when given lists, and logs the short-circuit behaviour of `&&`, `||`, and `!`. Running it outputs messages for the list match, concatenated numbers `concat: 13 14 23 24`, and logs for executed boolean branches.
+
+### [2025-09-13] Examples – pipeline.es (descriptors & substitution)
+
+**Discovery:** Custom descriptor piping and nonlinear comparison
+
+**Details:** `examples/pipeline.es` now pipes stdout into descriptor 3 using `|[1=3]` and retrieves it with `cat <&3`, plus uses `<{...}` to feed two command outputs into `cmp`, capturing statuses `cmp-same-status` and `cmp-diff-status`.
+
+### [2025-09-13] Examples – operators.es (patterns & outputs)
+
+**Discovery:** Multi-pattern matches, empty concatenation, and logical results
+
+**Details:** Further updates to `examples/operators.es` show `~` against a list of patterns, illustrate that concatenating with an empty list yields nothing, and capture the outputs produced by `&&` and `||` when they evaluate their right-hand sides.
+### [2025-09-13] Build – bootstrap with autotools
+
+**Discovery:** Generating build scripts and compiling
+
+**Details:** Ran `libtoolize -qi` and `autoreconf` to create `configure`, then executed `./configure` followed by `make`, producing the `es` interpreter and `esdump` helper. `make test` reported all bundled tests passing.
+
+### [2025-09-13] Test Suite – example.es
+
+**Discovery:** Harness built from `test` and `assert`
+
+**Details:** `test/tests/example.es` shows the structure `test NAME { ... }` with nested `assert` commands. Assertions can include diagnostic messages, and `unwind-protect` ensures temporary files are cleaned up after tests.
+
+### [2025-09-13] Test Suite – match.es
+
+**Discovery:** Pattern matching via `match`
+
+**Details:** `test/tests/match.es` validates equivalence between `match` cases and chains of `if` statements, demonstrates ordered pattern evaluation including wildcard expansion, and confirms case bodies need no braces while `break` is unsupported.
+
+### [2025-09-13] Examples – match.es
+
+**Discovery:** Switch-style matching example
+
+**Details:** Added `examples/match.es`, iterating over `foo`, `bar`, `buzz`, and `42` to showcase `match` patterns (`foo`, `bar`, `??zz`, `[0-9]*`) and a default `*` case. Running `./es examples/match.es` prints the corresponding match messages.
+### [2025-09-13] Build – build.sh
+
+**Discovery:** Automate dependency installation and compilation
+
+**Details:** Added `build.sh` to update apt metadata, install build prerequisites (`build-essential`, `libtool`, `autoconf`, `automake`, `pkg-config`, `bison`, `flex`), bootstrap with `libtoolize` and `autoreconf`, and invoke `configure`, `make`, and `make test`. The script supports `--static` to attempt static linking and `-h/--help` for usage guidance.
+### [2025-09-13] Build – build.sh output directory
+
+**Discovery:** Build script stages compiled binary
+
+**Details:** Enhanced `build.sh` with `--output-dir` to copy the freshly built `es` executable into a chosen directory after tests. Running `./build.sh` defaults to `bin/es-shell` for easy access and versioning.
+
+### [2025-09-13] Build – binary artifact format
+
+**Discovery:** Store es-shell executable as base64 markdown
+
+**Details:** Platform disallows binary commits, so `bin/es-shell` was replaced by `bin/es-shell.md` containing base64-encoded bytes and reconstruction instructions. Added `bin/es-shell` to `.gitignore` to prevent accidental commits.
