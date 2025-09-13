@@ -44,3 +44,6 @@ token.h
 es
 esdump
 testrun
+
+# prebuilt binary
+bin/es-shell
