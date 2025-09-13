@@ -18,7 +18,7 @@
 - OpenBSD build instructions include setting specific `AUTOMAKE_VERSION` and `AUTOCONF_VERSION`, and linking against updated readline.
 
 ## Testing
-- `make test` reports "Nothing to be done" indicating no test targets.
+- Without a generated `Makefile`, running `make test` prints "Nothing to be done"; `Makefile.in` later defines a `test` target that executes `test/test.es` with `./es` and a helper `testrun` program.
 ## Build System
 
 ### [2025-09-13] Build System – Makefile.in
@@ -112,6 +112,114 @@ Functions like `treecons` and `treeappend` construct and extend abstract syntax 
 
 **Details:**
 `haswild` detects unquoted wildcard characters, and `dirmatch` uses `opendir`/`readdir` to match directory entries while hiding dot-files unless requested.【F:glob.c†L16-L58】
+
+### [2025-09-13] Core Module – open.c
+
+**Discovery:** File opening wrappers and tty duplication
+
+**Details:** `eopen` maps custom `OpenKind` values to POSIX flags, and `opentty` duplicates `/dev/tty` to a descriptor >=3, preserving errno on failure.【F:open.c†L21-L48】
+
+### [2025-09-13] Core Module – conv.c
+
+**Discovery:** Format handlers for lists, trees, closures, and terms
+
+**Details:** Provides conversions like `%L` for lists, `%T` for trees, `%C` for closures, and `%E` for terms, installing them via `initconv`.【F:conv.c†L7-L118】【F:conv.c†L479-L488】
+
+### [2025-09-13] Core Module – access.c
+
+**Discovery:** Permission and type checks with path suffixing
+
+**Details:** `ingroupset` caches group IDs for access tests, and `$&access` parses flags like `-rwx` and `-fdl` before evaluating each path.【F:access.c†L25-L45】【F:access.c†L110-L138】
+
+### [2025-09-13] Core Module – history.c
+
+**Discovery:** Readline-backed command history
+
+**Details:** Builds input lines in a `histbuffer` and appends them to a configurable history file via `append_history`, reloading on demand.【F:history.c†L42-L65】【F:history.c†L90-L102】
+
+### [2025-09-13] Core Module – input.c
+
+**Discovery:** Input abstraction with pushback and interactive readline
+
+**Details:** `unget` manages a pushback buffer, while `fdfill` reads from file descriptors or wraps readline when interactive on stdin.【F:input.c†L69-L101】【F:input.c†L168-L198】
+
+### [2025-09-13] Core Module – split.c
+
+**Discovery:** Separator-aware string splitting
+
+**Details:** `startsplit` seeds delimiter tables, `stepsplit` consumes characters into buffered terms, and `endsplit` returns the accumulated list.【F:split.c†L14-L105】
+
+### [2025-09-13] Core Module – str.c
+
+**Discovery:** Formatted string builders and `StrList` helpers
+
+**Details:** Provides `str`, `pstr`, and `mprint` to allocate formatted strings in different regions and defines GC-aware string lists.【F:str.c†L7-L131】
+
+### [2025-09-13] Core Module – dump.c
+
+**Discovery:** Generate C source representing runtime state
+
+**Details:** Serializes strings, lists, and trees into static C declarations, ensuring printable output and deduplicating nodes.【F:dump.c†L1-L80】【F:dump.c†L84-L160】
+
+### [2025-09-13] Core Module – match.c
+
+**Discovery:** Pattern and list matching with quoting support
+
+**Details:** `rangematch` parses character classes respecting quotes, and `match` plus `listmatch` handle glob-like wildcards over strings and lists.【F:match.c†L26-L107】【F:match.c†L110-L159】
+
+### [2025-09-13] Core Module – proc.c
+
+**Discovery:** Process tracking and wait primitives
+
+**Details:** `efork` records child processes, `ewait` reaps them with status reporting, and `apids` lists background jobs.【F:proc.c†L22-L63】【F:proc.c†L119-L190】
+
+### [2025-09-13] Core Module – fd.c
+
+**Discovery:** Deferred file descriptor remapping
+
+**Details:** Maintains a stack of `Defer` records so parents delay `dup2` or `close` operations until `closefds` time, and provides mapping utilities.【F:fd.c†L6-L115】
+
+### [2025-09-13] Core Module – heredoc.c
+
+**Discovery:** Here-document parsing and variable interpolation
+
+**Details:** `snarfheredoc` reads until an EOF marker, expanding `$var` tokens when unquoted, while `queueheredoc` schedules pending documents.【F:heredoc.c†L1-L114】【F:heredoc.c†L116-L145】
+
+### [2025-09-13] Core Module – except.c
+
+**Discovery:** Exception stack with `fail` helper
+
+**Details:** `throw` unwinds handlers and restores variable bindings, and `fail` packages errors as `$&parse` exceptions before throwing.【F:except.c†L7-L67】
+
+### [2025-09-13] Core Module – closure.c
+
+**Discovery:** Extract bindings from `%closure` syntax
+
+**Details:** Builds `Closure` objects, reverses binding lists, and `extractbindings` walks nested closures collecting variable definitions.【F:closure.c†L10-L49】【F:closure.c†L56-L147】
+
+### [2025-09-13] Core Module – util.c
+
+**Discovery:** Miscellaneous helpers and safe allocation
+
+**Details:** Wraps `strerror`, implements path utilities like `isabsolute`, and provides checked `ealloc`/`erealloc` memory routines.【F:util.c†L17-L54】【F:util.c†L61-L83】
+
+### [2025-09-13] Core Module – tree.c
+
+**Discovery:** Parse tree creation and GC scanning
+
+**Details:** `gmk` allocates nodes for each `NodeKind`, with `Tree1Scan` and `Tree2Scan` forwarding child pointers during garbage collection.【F:tree.c†L9-L31】【F:tree.c†L75-L114】
+
+### [2025-09-13] Core Module – term.c
+
+**Discovery:** Term wrapping and closure extraction
+
+**Details:** `mkterm` stores either raw strings or closures, and `getclosure` lazily parses strings starting with `{` or `$&` into closures.【F:term.c†L9-L52】
+
+### [2025-09-13] Core Module – glom.c
+
+**Discovery:** Tree-to-list expansion with quoting metadata
+
+**Details:** `concat` and `qconcat` compute Cartesian products of terms and quote flags, while `subscript` selects list ranges via indices.【F:glom.c†L1-L83】【F:glom.c†L86-L149】
 
 ## Runtime Scripts
 
