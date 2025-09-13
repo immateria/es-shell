@@ -448,3 +448,93 @@ Implements commands to print a NUL-containing string, sleep, or echo its own nam
 **Discovery:** Matching semantics and error cases
 
 **Details:** Compares `match` with `if` logic over various subjects and ensures unmatched cases raise errors without special `break` handling. 【F:test/tests/match.es†L1-L29】【F:test/tests/match.es†L31-L83】【F:test/tests/match.es†L86-L93】
+## Build Troubleshooting
+
+### [2025-09-13] Build – Missing libtoolize
+
+**Discovery:** Autotools tool `libtoolize` was absent, preventing configure generation.
+
+**Details:** Initial attempt to run `libtoolize -qi` failed with "command not found". Installed required packages via `apt-get install -y libtool autoconf`, enabling subsequent build steps.
+
+### [2025-09-13] Build – Build and tests succeed
+
+**Discovery:** Build system runs after dependencies installed
+
+**Details:** Ran `libtoolize -qi`, `autoreconf`, `./configure`, and `make`, producing the `es` binary linked with `readline`. `make test` executed 20 checks without failures, confirming a clean build.
+
+### [2025-09-13] Build – Strict mode
+
+**Discovery:** Build succeeds with strict compiler flags
+
+**Details:** Configured with `--enable-strict`, enabling `-ansi -pedantic` and GC assertion flags. `make` and `make test` completed without errors.
+
+### [2025-09-13] Build – No readline
+
+**Discovery:** Build succeeds without GNU readline
+
+**Details:** Used `--with-readline=no` to disable the dependency; `make` linked without `-lreadline` and `make test` still passed all 20 checks.
+### [2025-09-13] Build – Static with readline
+
+**Discovery:** Static linking with GNU readline succeeds with glibc warnings
+
+**Details:** Configured with `LDFLAGS=-static`; `make` emitted warnings about `getpwent`, `setpwent`, and `getpwuid` requiring glibc shared libraries, but `make test` passed all 20 checks.
+
+### [2025-09-13] Build – Static without readline
+
+**Discovery:** Static build works without GNU readline
+
+**Details:** Ran `./configure LDFLAGS=-static --with-readline=no`; build still warned about `getpwnam` needing glibc shared libraries, yet `make test` reported 20/20 passing.
+### [2025-09-13] Build – Clang compiler
+
+**Discovery:** Build succeeds with Clang
+
+**Details:** Installed `clang` and missing autotools packages, regenerated build scripts with `libtoolize -qi` and `autoreconf -i`, configured with `CC=clang`, then `make` and `make test` completed with 20/20 passing.
+### [2025-09-13] Build – Clang static
+
+**Discovery:** Static linking with Clang works with glibc warnings
+
+**Details:** Configured with `CC=clang` and `LDFLAGS=-static`; the linker warned about `getpwent`, `setpwent`, `endpwent`, `getpwnam`, and `getpwuid` needing glibc shared libraries, but `make test` still reported all checks passing.
+
+### [2025-09-13] Build – TinyCC compiler
+
+**Discovery:** Build and tests succeed with tcc
+
+**Details:** Installed TinyCC and built using `CC=tcc` with default options. Compilation emitted "function might return no value" warnings, yet `make test` completed with the full suite passing.
+
+### [2025-09-13] Build – AddressSanitizer
+
+**Discovery:** GCC build with address sanitizer passes tests
+
+**Details:** Configured with `CC=gcc CFLAGS='-fsanitize=address' LDFLAGS='-fsanitize=address'`; despite "control reaches end of non-void function" warnings, compilation succeeded and `make test` reported all 20 checks passing.
+
+### [2025-09-13] Build – musl static linking
+
+**Discovery:** Static binary using musl-gcc passes tests
+
+**Details:** Installed `musl-tools` and built with `CC=musl-gcc LDFLAGS=-static`, producing a fully static executable that ran the full test suite without failures.
+
+### [2025-09-13] Build – Portable C Compiler
+
+**Discovery:** pcc builds and runs tests with minor warnings
+
+**Details:** Installed `pcc` and compiled using `CC=pcc`. Numerous "unsupported attribute" warnings appeared, but the shell and test suite still executed successfully.
+
+### [2025-09-13] Build – 32-bit GCC attempt
+
+**Discovery:** 32-bit cross-compilation fails during configure
+
+**Details:** Invoked `./configure CC='gcc -m32'`, which stopped with "C compiler cannot create executables," indicating missing 32-bit development libraries.
+
+### [2025-09-13] Build – ARM64 cross-compilation
+
+**Discovery:** Generates ARM64 binary after prebuilding host tools
+
+**Details:**
+Installed cross-compilers `gcc-aarch64-linux-gnu` and `gcc-arm-linux-gnueabihf`. To satisfy the build's `esdump` dependency, a native `esdump` was used to pre-generate `initial.c`, then reused while configuring with `es_cv_local_getenv=no CC=aarch64-linux-gnu-gcc --host=aarch64-linux-gnu`. `make es` produced an ARM64 `es` binary, but `make test` failed with "Exec format error" because the host cannot execute AArch64 binaries. `file es` confirmed the output as an AArch64 ELF executable.
+
+### [2025-09-13] Build – Android/Termux target attempt
+
+**Discovery:** Clang Android cross build fails at configure stage
+
+**Details:**
+Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --target=aarch64-linux-android21" ./configure --host=aarch64-linux-android`, but configure aborted with "C compiler cannot create executables," indicating the lack of an Android sysroot or NDK.
