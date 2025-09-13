@@ -2,6 +2,10 @@
 Agents are responsible for exploring this repository’s codebase and recording their findings.  
 All observations, connections, and insights must be written to `DISCOVERIES.md`.
 
+## Resources
+- build.sh will get you the dependencies needed to build es, configure, and make es.
+- es-shell.bin is a build of es, you should be able to run it without needing to build, unless there were changes to the source.
+
 ## Exploration Guidelines
 - Traverse the repository structure systematically.
 - Identify key files, directories, and build systems (e.g., `Makefile`, `CMakeLists.txt`, `meson.build`).
