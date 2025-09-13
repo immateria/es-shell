@@ -19,3 +19,34 @@
 
 ## Testing
 - `make test` reports "Nothing to be done" indicating no test targets.
+## Build System
+
+### [2025-09-13] Build System – Makefile.in
+
+**Discovery:** Central build rules and generated files
+
+**Details:**
+Defines compilation for numerous C sources into the `es` binary and an `esdump` utility. Targets regenerate parser (`y.tab.c`, `token.h`) and signal message files, and a `test` target runs scripts via `./es`.
+
+### [2025-09-13] Build System – configure.ac
+
+**Discovery:** Autoconf configuration with optional strict mode
+
+**Details:**
+Uses autoconf 2.64 to generate `configure`, supporting `--enable-strict` to add pedantic compilation flags. Detects features such as `/dev/fd`, kernel `#!?` support, and optional GNU readline linkage.
+
+## Core Modules
+
+### [2025-09-13] Core Module – main.c
+
+**Discovery:** Entry point handling initialization and CLI options
+
+**Details:**
+Initializes garbage collection and conversion routines, sets `$path` and `$pid`, processes flags like `-c`, `-s`, and `-i`, and loads user profiles from `~/.esrc` with exception handling.
+
+### [2025-09-13] Core Module – parse.y
+
+**Discovery:** Yacc grammar defining shell syntax
+
+**Details:**
+Specifies tokens for shell constructs (`WORD`, `MATCH`, `FOR`, etc.) and production rules for commands, pipelines, and function definitions, building abstract syntax trees via helper functions such as `mkseq` and `redirappend`.
