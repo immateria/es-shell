@@ -221,6 +221,102 @@ Functions like `treecons` and `treeappend` construct and extend abstract syntax 
 
 **Details:** `concat` and `qconcat` compute Cartesian products of terms and quote flags, while `subscript` selects list ranges via indices.【F:glom.c†L1-L83】【F:glom.c†L86-L149】
 
+### [2025-09-13] Core Module – access.c
+
+**Discovery:** Path-aware permission checks
+
+**Details:** `PRIM(access)` parses options like `-rwx` and tests file types via `testfile`, combining user/group masks for permission evaluation.【F:access.c†L25-L64】【F:access.c†L110-L134】
+
+### [2025-09-13] Core Module – conv.c
+
+**Discovery:** List and tree formatting helpers
+
+**Details:** Implements `%L` to print lists and `%T` to recursively format syntax trees using `treecount` and `binding` utilities.【F:conv.c†L7-L18】【F:conv.c†L48-L92】
+
+### [2025-09-13] Core Module – dict.c
+
+**Discovery:** GC-integrated hash dictionaries
+
+**Details:** Uses Haahr's `strhash2` and `DefineTag` macros to allocate variable-length tables and forward pointers during collection.【F:dict.c†L14-L44】【F:dict.c†L57-L96】
+
+### [2025-09-13] Core Module – dump.c
+
+**Discovery:** Emit C source for runtime state
+
+**Details:** `$&dumpstate` writes constant declarations for strings, lists, and trees, reusing names and disabling GC during traversal.【F:dump.c†L10-L32】【F:dump.c†L45-L76】
+
+### [2025-09-13] Core Module – es.h
+
+**Discovery:** Fundamental structures and node kinds
+
+**Details:** Declares `List`, `Binding`, `Closure`, and enumerates `NodeKind` variants for parsing and evaluation.【F:es.h†L10-L37】【F:es.h†L45-L58】
+
+### [2025-09-13] Core Module – glob.c
+
+**Discovery:** Quoting-aware filename expansion
+
+**Details:** `haswild` detects unquoted metacharacters and `dirmatch` scans directories while hiding dot files by default.【F:glob.c†L11-L35】【F:glob.c†L46-L82】
+
+### [2025-09-13] Core Module – match.c
+
+**Discovery:** Pattern and range matching
+
+**Details:** `rangematch` handles character classes and `match` applies `*`, `?`, and `[]` with quote awareness.【F:match.c†L22-L55】【F:match.c†L58-L107】
+
+### [2025-09-13] Core Module – open.c
+
+**Discovery:** File opening abstraction
+
+**Details:** Maps `OpenKind` enums to `open` flags and duplicates `/dev/tty` descriptors via `opentty`.【F:open.c†L15-L33】【F:open.c†L35-L47】
+
+### [2025-09-13] Core Module – split.c
+
+**Discovery:** IFS-based string splitting
+
+**Details:** `startsplit` caches separators and `stepsplit` accumulates terms, with `fsplit` iterating over list inputs.【F:split.c†L14-L37】【F:split.c†L39-L74】【F:split.c†L107-L120】
+
+### [2025-09-13] Core Module – status.c
+
+**Discovery:** Status list utilities
+
+**Details:** Defines canonical true/false lists and converts shell results to exit codes with `istrue` and `exitstatus`.【F:status.c†L6-L14】【F:status.c†L16-L53】
+
+### [2025-09-13] Core Module – token.c
+
+**Discovery:** Lexical scanner with token tables
+
+**Details:** Arrays `nw` and `dnw` classify characters, and `yylex` builds tokens while tracking prompts and keywords.【F:token.c†L1-L46】【F:token.c†L144-L200】
+
+### [2025-09-13] Core Module – print.c / print.h
+
+**Discovery:** Custom formatted output library
+
+**Details:** `Format` tracks flags like `FMT_zeropad`, and converters such as `sconv` and `intconv` build strings and numbers.【F:print.c†L13-L42】【F:print.c†L49-L64】【F:print.h†L3-L27】
+
+### [2025-09-13] Core Module – syntax.h
+
+**Discovery:** AST construction prototypes
+
+**Details:** Macros `CAR`/`CDR` expose node fields, with declarations for builders like `treecons`, `mkseq`, and `mkpipe`.【F:syntax.h†L3-L37】
+
+### [2025-09-13] Core Module – var.h
+
+**Discovery:** Variable representation flags
+
+**Details:** `Var` holds definition lists and environment strings, with flags `var_hasbindings` and `var_isinternal`.【F:var.h†L1-L13】
+
+### [2025-09-13] Core Module – vec.c
+
+**Discovery:** GC-tracked argument vectors
+
+**Details:** `mkvector` allocates room for argv/envp arrays and `sortvector` orders entries using `qsort`.【F:vec.c†L8-L16】【F:vec.c†L34-L45】【F:vec.c†L56-L59】
+
+### [2025-09-13] Core Module – gc.h
+
+**Discovery:** Garbage collector tagging API
+
+**Details:** `Tag` structures pair copy and scan functions, and buffer helpers like `openbuffer` and `bufputc` manage temporary memory.【F:gc.h†L9-L31】【F:gc.h†L39-L55】
+
 ## Runtime Scripts
 
 ### [2025-09-13] Runtime Script – share/status.es
@@ -237,6 +333,24 @@ Wraps `%interactive-loop` and `%dispatch` to capture return statuses of commands
 **Details:**
 Overrides `%pathsearch` to look in an XDG-compliant autoload directory, source function definitions, and return the loaded shell function.【F:share/autoload.es†L19-L35】
 
+### [2025-09-13] Runtime Script – share/cdpath.es
+
+**Discovery:** rc-style `cdpath` support
+
+**Details:** Overrides `cd` to search `$cdpath` for relative directories via `%cdpathsearch` and provides setters for `CDPATH`.【F:share/cdpath.es†L1-L24】【F:share/cdpath.es†L30-L56】
+
+### [2025-09-13] Runtime Script – share/interactive-init.es
+
+**Discovery:** Hook for initialization before REPL
+
+**Details:** Wraps `%interactive-loop` to invoke `%interactive-init` under a `catch`, preventing uncaught exceptions from terminating the shell.【F:share/interactive-init.es†L1-L23】
+
+### [2025-09-13] Runtime Script – share/path-cache.es
+
+**Discovery:** Function cache for executables
+
+**Details:** Intercepts `%pathsearch` to memoize program paths, offers `recache` and `precache`, and tracks cached names in `$path-cache`.【F:share/path-cache.es†L1-L30】【F:share/path-cache.es†L32-L71】【F:share/path-cache.es†L73-L95】
+
 ## Example Scripts
 
 ### [2025-09-13] Example – examples/99bottles.es
@@ -245,6 +359,38 @@ Overrides `%pathsearch` to look in an XDG-compliant autoload directory, source f
 
 **Details:**
 Defines helper functions `fn-ne` and `fn-bb` inside a `let` block and uses `forever` to sing "99 Bottles of Beer."【F:examples/99bottles.es†L6-L45】
+
+### [2025-09-13] Example – examples/adventure.es
+
+**Discovery:** Text adventure-style shell
+
+**Details:** Implements commands like `ask`, `instructions`, and `help` to explore the filesystem as rooms and items. 【F:examples/adventure.es†L23-L63】【F:examples/adventure.es†L71-L96】
+
+### [2025-09-13] Example – examples/cd_colourprompt.es
+
+**Discovery:** Colored prompt on directory changes
+
+**Details:** Redefines `cd` to update `$prompt` with ANSI escape sequences showing hostname and working directory. 【F:examples/cd_colourprompt.es†L1-L5】
+
+### [2025-09-13] Example – examples/cd_follow-symbolic.es
+
+**Discovery:** `cd` that resolves symbolic links
+
+**Details:** Maintains a `$cwd` variable and reconstructs paths component-by-component, ensuring `cd symlink/..` stays within the link. 【F:examples/cd_follow-symbolic.es†L1-L45】
+
+### [2025-09-13] Example – examples/es-mode.el
+
+**Discovery:** Emacs major mode for es scripts
+
+**Details:** Defines `es-mode` with keyword highlighting and syntax table entries for underscores, hyphens, and periods. 【F:examples/es-mode.el†L1-L29】【F:examples/es-mode.el†L32-L40】
+
+## Utilities
+
+### [2025-09-13] Utility – esdebug
+
+**Discovery:** Interactive debugger for es
+
+**Details:** Launches programs through es, exposes commands like `_debug-trace` and `_debug-break`, and communicates via file descriptor 3. 【F:esdebug†L1-L43】【F:esdebug†L63-L97】【F:esdebug†L111-L150】
 
 ## Documentation
 
@@ -269,6 +415,12 @@ Notes renaming of the `<` operator to `<=`, enriched error exceptions with routi
 **Details:**
 Describes es as an extensible shell combining Unix shell features with functional programming concepts, with syntax derived from rc and customizable semantics.【F:doc/es.1†L182-L207】
 
+### [2025-09-13] Documentation – README.md
+
+**Discovery:** Project overview and provenance
+
+**Details:** Describes es as an extensible shell derived from Plan 9's rc and influenced by functional languages, and points to manuals, examples, and official mirrors. 【F:README.md†L3-L13】【F:README.md†L31-L35】
+
 ## Test Suite
 
 ### [2025-09-13] Test Suite – test/test.es
@@ -284,3 +436,15 @@ Tracks test cases and results, provides an `xml-escape` helper, and emits JUnit-
 
 **Details:**
 Implements commands to print a NUL-containing string, sleep, or echo its own name, enabling tests of shell I/O and process behavior.【F:test/testrun.c†L5-L35】
+
+### [2025-09-13] Test Suite – test/tests/glob.es
+
+**Discovery:** Filesystem globbing scenarios
+
+**Details:** Creates temporary directories to verify `*`, `?`, and range patterns, including edge cases and quoted literals. 【F:test/tests/glob.es†L1-L18】【F:test/tests/glob.es†L21-L44】【F:test/tests/glob.es†L46-L77】
+
+### [2025-09-13] Test Suite – test/tests/match.es
+
+**Discovery:** Matching semantics and error cases
+
+**Details:** Compares `match` with `if` logic over various subjects and ensures unmatched cases raise errors without special `break` handling. 【F:test/tests/match.es†L1-L29】【F:test/tests/match.es†L31-L83】【F:test/tests/match.es†L86-L93】
