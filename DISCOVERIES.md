@@ -623,3 +623,25 @@ Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --
 **Discovery:** Store es-shell executable as base64 markdown
 
 **Details:** Platform disallows binary commits, so `bin/es-shell` was replaced by `bin/es-shell.md` containing base64-encoded bytes and reconstruction instructions. Added `bin/es-shell` to `.gitignore` to prevent accidental commits.
+### [2025-09-14] Initial Environment – functional utilities
+
+**Discovery:** Higher-order list functions available
+
+**Details:** Replaced `initial.es` with `initial-alt.es`, introducing `map`, `filter`, and `reduce` for list processing. After rebuilding, `map echo a b c` echoed each element and `reduce append start middle end` returned `start middle end`.
+### [2025-09-14] Test Suite – functional utilities
+
+**Discovery:** Added regression tests for `map`, `filter`, and `reduce`
+
+**Details:** Created `test/tests/functional.es` with helper functions to confirm `map` aggregates transformed items, `filter` keeps predicate-matching entries, and `reduce` folds lists into a single value.
+
+### [2025-09-14] Test Suite – extended list utilities
+
+**Discovery:** Coverage for enumeration and search helpers
+
+**Details:** Expanded `test/tests/functional.es` with cases exercising `list-contains?`, `for-each?`, `reduce-one`, `enumerate`, `take`, `drop`, `join-list`, and `zip-by-names` to validate membership checks, iteration failure handling, list slicing, delimiter joining, and zipping behavior.
+
+### [2025-09-14] Build – recompiled functional environment
+
+**Discovery:** Rebuilt `es` after updating `initial.es` and executed test suite under timeouts.
+
+**Details:** Ran `autoreconf -i`, `./configure`, `make`, and `make test` with `timeout` to guard against hangs; tests verified `map`, `filter`, `reduce`, and list helpers work correctly.
