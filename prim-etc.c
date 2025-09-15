@@ -54,33 +54,42 @@ PRIM(shr) {
         return mklist(mkstr(str("%ld", n >> shift)), NULL);
 }
 
-PRIM(add) {
-        long result = 0;
-        for (List *lp = list; lp != NULL; lp = lp->next) {
-                char *s;
-                long n = strtol(getstr(lp->term), &s, 0);
-                if (s != NULL && *s != '\0')
-                        fail("$&add", "arguments must be integers");
-                result += n;
-        }
-        return mklist(mkstr(str("%ld", result)), NULL);
+PRIM(add)
+{   long result = 0;
+ 
+    for (List *lp = list; lp != NULL; lp = lp->next)
+	{   char *s;
+        long  n = strtol(getstr(lp->term), &s, 0);
+
+	    if (s != NULL && *s != '\0')
+            fail("$&add", "arguments must be integers");
+	 
+        result += n;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(sub) {
-        char *s;
-        long result;
-        if (list == NULL || list->next == NULL)
-                fail("$&sub", "usage: $&sub number number [...]");
-        result = strtol(getstr(list->term), &s, 0);
+PRIM(sub)
+{   char *s;
+    long  result;
+ 
+    if (list == NULL || list->next == NULL)
+        fail("$&sub", "usage: $&sub number number [...]");
+    
+    result = strtol(getstr(list->term), &s, 0);
+    
+    if (s != NULL && *s != '\0')
+        fail("$&sub", "arguments must be integers");
+ 
+    for (list = list->next; list != NULL; list = list->next)
+	{   long n = strtol(getstr(list->term), &s, 0);
+	 
         if (s != NULL && *s != '\0')
-                fail("$&sub", "arguments must be integers");
-        for (list = list->next; list != NULL; list = list->next) {
-                long n = strtol(getstr(list->term), &s, 0);
-                if (s != NULL && *s != '\0')
-                        fail("$&sub", "arguments must be integers");
-                result -= n;
-        }
-        return mklist(mkstr(str("%ld", result)), NULL);
+            fail("$&sub", "arguments must be integers");
+                
+	    result -= n;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
 }
 
 PRIM(mul) {
