@@ -315,6 +315,13 @@ fn vars {
 
 fn-%count      = $&count
 fn-%flatten    = $&flatten
+fn-%add        = $&add
+fn-%sub        = $&sub
+fn-%mul        = $&mul
+fn-%div        = $&div
+fn-%mod        = $&mod
+fn-%shl        = $&shl
+fn-%shr        = $&shr
 
 #    Note that $&backquote returns the status of the child process
 #    as the first value of its result list.  The default %backquote

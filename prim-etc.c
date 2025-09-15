@@ -23,7 +23,114 @@ PRIM(echo) {
 }
 
 PRIM(count) {
-	return mklist(mkstr(str("%d", length(list))), NULL);
+        return mklist(mkstr(str("%d", length(list))), NULL);
+}
+
+PRIM(shl) {
+        char *s;
+        long n, shift;
+        if (list == NULL || list->next == NULL || list->next->next != NULL)
+                fail("$&shl", "usage: $&shl value shift");
+        n = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&shl", "arguments must be integers");
+        shift = strtol(getstr(list->next->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&shl", "arguments must be integers");
+        return mklist(mkstr(str("%ld", n << shift)), NULL);
+}
+
+PRIM(shr) {
+        char *s;
+        long n, shift;
+        if (list == NULL || list->next == NULL || list->next->next != NULL)
+                fail("$&shr", "usage: $&shr value shift");
+        n = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&shr", "arguments must be integers");
+        shift = strtol(getstr(list->next->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&shr", "arguments must be integers");
+        return mklist(mkstr(str("%ld", n >> shift)), NULL);
+}
+
+PRIM(add) {
+        long result = 0;
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+                char *s;
+                long n = strtol(getstr(lp->term), &s, 0);
+                if (s != NULL && *s != '\0')
+                        fail("$&add", "arguments must be integers");
+                result += n;
+        }
+        return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(sub) {
+        char *s;
+        long result;
+        if (list == NULL || list->next == NULL)
+                fail("$&sub", "usage: $&sub number number [...]");
+        result = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&sub", "arguments must be integers");
+        for (list = list->next; list != NULL; list = list->next) {
+                long n = strtol(getstr(list->term), &s, 0);
+                if (s != NULL && *s != '\0')
+                        fail("$&sub", "arguments must be integers");
+                result -= n;
+        }
+        return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(mul) {
+        char *s;
+        long result = 1;
+        if (list == NULL)
+                fail("$&mul", "usage: $&mul number [...]");
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+                long n = strtol(getstr(lp->term), &s, 0);
+                if (s != NULL && *s != '\0')
+                        fail("$&mul", "arguments must be integers");
+                result *= n;
+        }
+        return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(div) {
+        char *s;
+        long result;
+        if (list == NULL || list->next == NULL)
+                fail("$&div", "usage: $&div dividend divisor [...]");
+        result = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&div", "arguments must be integers");
+        for (list = list->next; list != NULL; list = list->next) {
+                long n = strtol(getstr(list->term), &s, 0);
+                if (s != NULL && *s != '\0')
+                        fail("$&div", "arguments must be integers");
+                if (n == 0)
+                        fail("$&div", "division by zero");
+                result /= n;
+        }
+        return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(mod) {
+        char *s;
+        long dividend, divisor;
+        if (list == NULL || list->next == NULL || list->next->next != NULL)
+                fail("$&mod", "usage: $&mod dividend divisor");
+        dividend = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&mod", "arguments must be integers");
+        list = list->next;
+        divisor = strtol(getstr(list->term), &s, 0);
+        if (s != NULL && *s != '\0')
+                fail("$&mod", "arguments must be integers");
+        if (divisor == 0)
+                fail("$&mod", "division by zero");
+        return mklist(mkstr(str("%ld", dividend % divisor)), NULL);
 }
 
 PRIM(setnoexport) {
@@ -349,10 +456,17 @@ PRIM(resetterminal) {
  */
 
 extern Dict *initprims_etc(Dict *primdict) {
-	X(echo);
-	X(count);
-	X(version);
-	X(exec);
+        X(echo);
+        X(count);
+        X(shl);
+        X(shr);
+        X(add);
+        X(sub);
+        X(mul);
+        X(div);
+        X(mod);
+        X(version);
+        X(exec);
 	X(dot);
 	X(flatten);
 	X(whatis);
