@@ -3,218 +3,253 @@
 #include "es.h"
 #include "gc.h"
 
-#define	INIT_DICT_SIZE	2
-#define	REMAIN(n)	(((n) * 2) / 3)
-#define	GROW(n)		((n) * 2)
+#define INIT_DICT_SIZE  2
+#define REMAIN(n)       (((n) * 2) / 3)
+#define GROW(n)          ((n) * 2)
+
+/* FNV-1a hash constants */
+#define FNV_OFFSET      14695981039346656037ULL
+#define FNV_PRIME       1099511628211ULL
+
+/* Special pointer value for deleted entries */
+#define DELETED_ENTRY   ((char*)1)
 
 /*
- * hashing
+ * FNV-1a hash functions
  */
 
-/* strhash2 -- the (probably too slow) haahr hash function */
-static unsigned long strhash2(const char *str1, const char *str2) {
-
-#define	ADVANCE() { \
-		if ((c = *s++) == '\0') { \
-			if (str2 == NULL) \
-				break; \
-			else { \
-				s = (unsigned char *) str2; \
-				str2 = NULL; \
-				if ((c = *s++) == '\0') \
-					break; \
-			} \
-		} \
-	}
-
-	unsigned int c;
-	unsigned long n = 0;
-	unsigned char *s = (unsigned char *) str1;
-	assert(str1 != NULL);
-	while (1) {
-		ADVANCE();
-		n += (c << 17) ^ (c << 11) ^ (c << 5) ^ (c >> 1);
-		ADVANCE();
-		n ^= (c << 14) + (c << 7) + (c << 4) + c;
-		ADVANCE();
-		n ^= (~c << 11) | ((c << 3) ^ (c >> 1));
-		ADVANCE();
-		n -= (c << 16) | (c << 9) | (c << 2) | (c & 3);
-	}
-	return n;
+static unsigned long strhash2(const char *first_string, const char *second_string)
+{   unsigned long hash_value = FNV_OFFSET;
+    const unsigned char *current_char;
+    
+    /* Hash first string */
+    current_char = (const unsigned char *)first_string;
+    while (*current_char)
+    {   hash_value ^= *current_char++;
+        hash_value *= FNV_PRIME;
+    }
+    
+    /* Hash second string if present */
+    if (second_string)
+    {   current_char = (const unsigned char *)second_string;
+        while (*current_char)
+        {   hash_value ^= *current_char++;
+            hash_value *= FNV_PRIME;
+        }
+    }
+    
+    return hash_value;
 }
 
-/* strhash -- hash a single string */
-static unsigned long strhash(const char *str) {
-	return strhash2(str, NULL);
+static unsigned long strhash(const char *string)
+{   return strhash2(string, NULL);
 }
-
 
 /*
- * data structures and garbage collection
+ * Helper functions for entry state checking
+ */
+
+static inline Boolean is_deleted_entry(const char *entry_name)
+{   return entry_name == DELETED_ENTRY;
+}
+
+static inline Boolean is_empty_entry(const char *entry_name)
+{   return entry_name == NULL;
+}
+
+static inline Boolean is_valid_entry(const char *entry_name)
+{   return entry_name != NULL && entry_name != DELETED_ENTRY;
+}
+
+/*
+ * Data structures and garbage collection
  */
 
 DefineTag(Dict, static);
 
-typedef struct {
-	char *name;
-	void *value;
+typedef struct
+{   char *name;
+    void *value;
 } Assoc;
 
-struct Dict {
-	int size, remain;
-	Assoc table[1];		/* variable length */
+struct Dict
+{   int   size;
+    int   remain;
+    Assoc table[1];  /* variable length */
 };
 
-
-static Dict *mkdict0(int size) {
-	size_t len = offsetof(Dict, table[size]);
-	Dict *dict = gcalloc(len, &DictTag);
-	memzero(dict, len);
-	dict->size = size;
-	dict->remain = REMAIN(size);
-	return dict;
+static Dict *mkdict0(int initial_size)
+{   size_t  allocation_length = offsetof(Dict, table[initial_size]);
+    Dict   *new_dict          = gcalloc(allocation_length, &DictTag);
+    
+    memzero(new_dict, allocation_length);
+    new_dict->size   = initial_size;
+    new_dict->remain = REMAIN(initial_size);
+ 
+    return new_dict;
 }
 
-static void *DictCopy(void *op) {
-	Dict *dict = op;
-	size_t len = offsetof(Dict, table[dict->size]);
-	void *np = gcalloc(len, &DictTag);
-	memcpy(np, op, len);
-	return np;
+static void *DictCopy(void *original_ptr)
+{   Dict   *original_dict     = original_ptr;
+    size_t  allocation_length = offsetof(Dict, table[original_dict->size]);
+    void   *new_ptr           = gcalloc(allocation_length, &DictTag);
+    
+    memcpy(new_ptr, original_ptr, allocation_length);
+    return new_ptr;
 }
 
-static size_t DictScan(void *p) {
-	Dict *dict = p;
-	int i;
-	for (i = 0; i < dict->size; i++) {
-		Assoc *ap = &dict->table[i];
-		ap->name  = forward(ap->name);
-		ap->value = forward(ap->value);
-	}
-	return offsetof(Dict, table[dict->size]);
+static size_t DictScan(void *dict_ptr)
+{   Dict *current_dict = dict_ptr;
+    int table_index;
+    
+    for (table_index = 0; table_index < current_dict->size; table_index++)
+    {   Assoc *current_assoc = &current_dict->table[table_index];
+        current_assoc->name  = forward(current_assoc->name);
+        current_assoc->value = forward(current_assoc->value);
+    }
+    return offsetof(Dict, table[current_dict->size]);
 }
-
 
 /*
- * private operations
+ * Private operations
  */
 
-static char DEAD[] = "DEAD";
-
-static Assoc *get(Dict *dict, const char *name) {
-	Assoc *ap;
-	unsigned long n = strhash(name), mask = dict->size - 1;
-	for (; (ap = &dict->table[n & mask])->name != NULL; n++)
-		if (ap->name != DEAD && streq(name, ap->name))
-			return ap;
-	return NULL;
+static Assoc *get(Dict *dictionary, const char *lookup_name)
+{   unsigned  long hash_value = strhash(lookup_name);
+    unsigned  long table_mask = dictionary->size - 1;
+    Assoc    *current_entry;
+    
+    for (; (current_entry = &dictionary->table[hash_value & table_mask])->name != NULL; hash_value++)
+    {   if (!is_deleted_entry(current_entry->name) && streq(lookup_name, current_entry->name))
+            return current_entry;
+    }
+    return NULL;
 }
 
 static void recurseput(void *, char *, void *);
 
-static Dict *put(Dict *dict, char *name, void *value) {
-	unsigned long n, mask;
-	Assoc *ap;
-	assert(get(dict, name) == NULL);
-	assert(value != NULL);
+static Dict *put(Dict *dictionary, char *entry_name, void *entry_value)
+{   unsigned  long hash_value;
+    unsigned  long table_mask;
+    Assoc    *target_entry;
+    
+    assert(get(dictionary, entry_name) == NULL);
+    assert(entry_value                 != NULL);
 
-	if (dict->remain <= 1) {
-		Dict *new;
-		Ref(Dict *, old, dict);
-		Ref(char *, np, name);
-		Ref(void *, vp, value);
-		new = mkdict0(GROW(old->size));
-		dictforall(old, recurseput, new);
-		dict = new;
-		name = np;
-		value = vp;
-		RefEnd3(vp, np, old);
-	}
+    if (dictionary->remain <= 1)
+    {   Dict *new_dictionary;
+        Ref(Dict *, old_dictionary, dictionary);
+        Ref(char *, name_ptr,       entry_name);
+        Ref(void *, value_ptr,      entry_value);
+        
+        new_dictionary = mkdict0(GROW(old_dictionary->size));
+        dictforall(old_dictionary, recurseput, new_dictionary);
+        dictionary  = new_dictionary;
+        entry_name  = name_ptr;
+        entry_value = value_ptr;
+        RefEnd3(value_ptr, name_ptr, old_dictionary);
+    }
 
-	n = strhash(name);
-	mask = dict->size - 1;
-	for (; (ap = &dict->table[n & mask])->name != DEAD; n++)
-		if (ap->name == NULL) {
-			--dict->remain;
-			break;
-		}
+    hash_value = strhash(entry_name);
+    table_mask = dictionary->size - 1;
+    
+    for (; (target_entry = &dictionary->table[hash_value & table_mask])->name != DELETED_ENTRY; hash_value++)
+    {   if (target_entry->name == NULL)
+        {   --dictionary->remain;
+            break;
+        }
+    }
 
-	ap->name = name;
-	ap->value = value;
-	return dict;
+    target_entry->name  = entry_name;
+    target_entry->value = entry_value;
+			
+    return dictionary;
 }
 
-static void recurseput(void *v1, char *c, void *v2) {
-	put(v1, c, v2);
+static void recurseput(void *dict_ptr, char *name_str, void *value_ptr)
+{   put(dict_ptr, name_str, value_ptr);
 }
 
+static void rm(Dict *dictionary, Assoc *target_entry)
+{   unsigned  long probe_position;
+    unsigned  long table_mask;
+    Assoc    *probe_entry;
+    
+    assert(dictionary->table <= target_entry && target_entry < &dictionary->table[dictionary->size]);
 
-static void rm(Dict *dict, Assoc *ap) {
-	unsigned long n, mask;
-	assert(dict->table <= ap && ap < &dict->table[dict->size]);
-
-	ap->name = DEAD;
-	ap->value = NULL;
-	n = ap - dict->table;
-	mask = dict->size - 1;
-	for (n++; (ap = &dict->table[n & mask])->name == DEAD; n++)
-		;
-	if (ap->name != NULL)
-		return;
-	for (n--; (ap = &dict->table[n & mask])->name == DEAD; n--) {
-		ap->name = NULL;
-		++dict->remain;
-	}
+    target_entry->name  = DELETED_ENTRY;
+    target_entry->value = NULL;
+    probe_position      = target_entry - dictionary->table;
+    table_mask          = dictionary->size - 1;
+    
+    for (probe_position++; (probe_entry = &dictionary->table[probe_position & table_mask])->name == DELETED_ENTRY; probe_position++)
+        ;
+ 
+    if (probe_entry->name != NULL)
+        return;
+        
+    for (probe_position--; (probe_entry = &dictionary->table[probe_position & table_mask])->name == DELETED_ENTRY; probe_position--)
+    {   probe_entry->name = NULL;
+        ++dictionary->remain;
+    }
 }
-
-
 
 /*
- * exported functions
+ * Exported functions
  */
 
-extern Dict *mkdict(void) {
-	return mkdict0(INIT_DICT_SIZE);
+extern Dict *mkdict(void)
+{   return mkdict0(INIT_DICT_SIZE);
 }
 
-extern void *dictget(Dict *dict, const char *name) {
-	Assoc *ap = get(dict, name);
-	if (ap == NULL)
-		return NULL;
-	return ap->value;
+extern void *dictget(Dict *dictionary, const char *lookup_name)
+{   Assoc *found_entry = get(dictionary, lookup_name);
+    
+    if (found_entry == NULL)
+        return NULL;
+ 
+    return found_entry->value;
 }
 
-extern Dict *dictput(Dict *dict, char *name, void *value) {
-	Assoc *ap = get(dict, name);
-	if (value != NULL)
-		if (ap == NULL)
-			dict = put(dict, name, value);
-		else
-			ap->value = value;
-	else if (ap != NULL)
-		rm(dict, ap);
-	return dict;
+extern Dict *dictput(Dict *dictionary, char *entry_name, void *entry_value)
+{   Assoc *existing_entry = get(dictionary, entry_name);
+    
+    if (entry_value != NULL)
+    {   if (existing_entry == NULL)
+            dictionary = put(dictionary, entry_name, entry_value);
+		
+        else
+            existing_entry->value = entry_value;
+    }
+
+    else if (existing_entry != NULL)
+        rm(dictionary, existing_entry);
+        
+    return dictionary;
 }
 
-extern void dictforall(Dict *dp, void (*proc)(void *, char *, void *), void *arg) {
-	int i;
-	Ref(Dict *, dict, dp);
-	Ref(void *, argp, arg);
-	for (i = 0; i < dict->size; i++) {
-		Assoc *ap = &dict->table[i];
-		if (ap->name != NULL && ap->name != DEAD)
-			(*proc)(argp, ap->name, ap->value);
-	}
-	RefEnd2(argp, dict);
+extern void dictforall(Dict *target_dict, void (*processor_func)(void *, char *, void *), void *callback_arg)
+{   int table_index;
+    Ref(Dict *, dictionary_ref, target_dict);
+    Ref(void *, argument_ref,   callback_arg);
+    
+    for (table_index = 0; table_index < dictionary_ref->size; table_index++)
+    {   Assoc *current_entry = &dictionary_ref->table[table_index];
+        
+        if (is_valid_entry(current_entry->name))
+            (*processor_func)(argument_ref, current_entry->name, current_entry->value);
+    }
+    RefEnd2(argument_ref, dictionary_ref);
 }
 
-/* dictget2 -- look up the catenation of two names (such a hack!) */
-extern void *dictget2(Dict *dict, const char *name1, const char *name2) {
-	Assoc *ap;
-	unsigned long n = strhash2(name1, name2), mask = dict->size - 1;
-	for (; (ap = &dict->table[n & mask])->name != NULL; n++)
-		if (ap->name != DEAD && streq2(ap->name, name1, name2))
-			return ap->value;
-	return NULL;
+extern void *dictget2(Dict *dictionary, const char *first_name, const char *second_name)
+{   unsigned  long hash_value = strhash2(first_name, second_name);
+    unsigned  long table_mask = dictionary->size - 1;
+    Assoc    *current_entry;
+    
+    for (; (current_entry = &dictionary->table[hash_value & table_mask])->name != NULL; hash_value++)
+    {   if (!is_deleted_entry(current_entry->name) && streq2(current_entry->name, first_name, second_name))
+            return current_entry->value;
+    }
+    return NULL;
 }
