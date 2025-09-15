@@ -727,3 +727,14 @@ Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --
 **Discovery:** Removed unencoded binary from repository
 
 **Details:** Dropped `es-shell.bin` from version control to avoid committing large binaries; the base64-encoded snapshot `es-shell.bin.b64` remains for archival.
+### [2025-09-15] Build – static base64 snapshot
+
+**Discovery:** Encoded statically linked binary
+
+**Details:** Ran `./build.sh --static` to produce a statically linked `es-shell`. Verified it runs via `./bin-static/es-shell -c 'echo static build works'` and archived the result as `es-shell-static.bin.b64` to keep the repository free of raw binaries.
+
+### [2025-09-15] Build – wrapped static snapshot
+
+**Discovery:** Newline-wrapped static binary archive
+
+**Details:** Rebuilt `es-shell` with `./build.sh --static` and encoded it with default line wrapping so `es-shell-static.bin.b64` spans multiple 76-character lines for readability.
