@@ -25,8 +25,8 @@ static Tree *arithword(Tree *t) {
 %token		MATCH
 
 %left           '^' '='
-%left           '+' '-'
-%left           '*'
+%left           ADD PLUS SUBTRACT MINUS
+%left           MULTIPLY DIVIDE
 %left		MATCH LOCAL LET FOR CLOSURE ')'
 %left		ANDAND OROR NL
 %left		'!'
@@ -138,9 +138,11 @@ comword : param				{ $$ = $1; }
 	| BACKBACK word	sword		{ $$ = backquote($2, $3); }
 	| BBFLAT word sword             { $$ = flatten(backquote($2, $3), " " ); }
 
-arith   : arith '+' arith           { $$ = mk(nCall, prefix("%add", treecons($1, treecons($3, NULL)))); }
-        | arith '-' arith           { $$ = mk(nCall, prefix("%sub", treecons($1, treecons($3, NULL)))); }
-        | arith '*' arith           { $$ = mk(nCall, prefix("%mul", treecons($1, treecons($3, NULL)))); }
+arith   : arith ADD arith           { $$ = mk(nCall, prefix("%add", treecons($1, treecons($3, NULL)))); }
+        | arith PLUS arith          { $$ = mk(nCall, prefix("%add", treecons($1, treecons($3, NULL)))); }
+        | arith SUBTRACT arith      { $$ = mk(nCall, prefix("%sub", treecons($1, treecons($3, NULL)))); }
+        | arith MINUS arith         { $$ = mk(nCall, prefix("%sub", treecons($1, treecons($3, NULL)))); }
+        | arith MULTIPLY arith      { $$ = mk(nCall, prefix("%mul", treecons($1, treecons($3, NULL)))); }
         | sword                     { $$ = arithword($1); }
 
 param	: WORD				{ $$ = mk(nWord, $1); }
