@@ -645,3 +645,85 @@ Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --
 **Discovery:** Rebuilt `es` after updating `initial.es` and executed test suite under timeouts.
 
 **Details:** Ran `autoreconf -i`, `./configure`, `make`, and `make test` with `timeout` to guard against hangs; tests verified `map`, `filter`, `reduce`, and list helpers work correctly.
+
+### [2025-09-14] Core Module – prim-etc.c
+
+**Discovery:** Basic arithmetic primitives
+
+**Details:** Implemented `$&add`, `$&sub`, `$&mul`, and `$&div` to perform integer addition, subtraction, multiplication, and division. Registered each in `initprims_etc`, exposed corresponding `%` hooks in `initial.es`, and verified behavior with `test/tests/math.es`.
+
+### [2025-09-14] Parser – arithmetic grammar and bit shifting
+
+**Discovery:** Infix arithmetic and bitshift support
+
+**Details:** Extended `parse.y` and `token.c` with a mini-expression grammar supporting `+`, `-`, `*`, `<<`, and `>>`, rewriting to arithmetic primitives. Added `$&shl` and `$&shr` for bit shifting, exposed `%shl` and `%shr`, and covered the new operators with regression tests.
+
+### [2025-09-14] Build – initial.es parsing failure
+
+**Discovery:** `esdump` cannot process hyphenated function names
+
+**Details:** Running `make` after introducing infix arithmetic causes `esdump` to halt with `initial.es:66: syntax error`. The lexer now interprets the `-` in names like `fn-.` as an operator token. Adjusted `parse.y` to separate arithmetic from general words and experimented with `token.c` to merge hyphenated identifiers, but the build still exits at `initial.c` generation.
+
+### [2025-09-14] Lexer – hyphenated identifiers
+
+**Discovery:** Disambiguated minus operator from hyphenated names
+
+**Details:** Adjusted token scanning to treat '-' as part of a word unless it follows an initial digit, and simplified '-' token handling so arithmetic like `10-3` emits operator tokens while names like `fn-.` remain whole.
+
+### [2025-09-14] Lexer – consecutive hyphen handling
+
+**Discovery:** Support for option-like tokens
+
+**Details:** Updated `token.c` so an initial `-` consumes subsequent `-`, `*`, `+`, and non-meta characters, allowing words like `--junit` to tokenize correctly instead of being split into arithmetic operators.
+
+### [2025-09-14] Parser – drop arithmetic parentheses
+
+**Discovery:** List parentheses restored
+
+**Details:** Removed the `("(" arith ")")` branch from `parse.y`'s arithmetic grammar to prevent it from capturing list expressions such as `(a b c)`. Parenthesized lists now parse without triggering expression parsing conflicts.
+
+### [2025-09-15] Primitives – modulus operation
+
+**Discovery:** Implemented `$&mod` for integer remainder
+
+**Details:** Added a `$&mod` primitive that returns the remainder of dividing its two integer arguments. Registered `%mod` in `initial.es` and extended `test/tests/math.es` to verify the new operation.
+
+### [2025-09-15] Parser – arithmetic variable resolution
+
+**Discovery:** Bare identifiers in expressions resolve to variable values
+
+**Details:** Introduced an `arithword` helper in `parse.y` that converts non-numeric words into variable nodes within arithmetic expressions. This allows infix operators like `+`, `-`, `*`, `<<`, and `>>` to operate directly on variables. Extended the math and bitshift regression tests to cover variable operands.
+
+
+### [2025-09-15] Lexer – wildcard after quoted strings
+
+**Discovery:** Preserve `*` as a word following quotes
+
+**Details:** `token.c` now tracks when the previous token was a quoted word so a subsequent `*` is emitted as text rather than a multiplication operator. This fix allows patterns like `*'uncaught'*` to parse, restoring the disabled `match.es` and `trip.es` regression suites.
+
+### [2025-09-15] Parser – shift operators conflict with heredocs
+
+**Discovery:** Infix `<<` and `>>` removed to avoid clashing with here-doc syntax
+
+**Details:** Dropped `LSHIFT`/`RSHIFT` tokens and related grammar from `parse.y` after discovering they misparsed constructs like `cat<<eof`. The bitshift functionality remains available through `%shl` and `%shr` primitives.
+
+### [2025-09-15] Tests – arithmetic logging
+
+**Discovery:** Log expressions and results for math primitives
+
+**Details:** Extended `test/tests/math.es` with a loop that echoes each `%add`, `%sub`, `%mul`, `%div`, and `%mod` invocation alongside its computed value, providing clearer traceability of numeric behavior.
+### [2025-09-15] Lexer – wildcard concatenation
+
+**Discovery:** `*` merges with trailing text when starting a word
+
+**Details:** Updated `token.c` so a leading `*` consumes subsequent non-meta characters, keeping patterns like `*ow` as a single token instead of `*^ow`. This resolves the mismatch in the `match sugar` rewrite test and leaves other arithmetic uses of `*` unaffected.
+### [2025-09-15] Build – base64 binary snapshot
+
+**Discovery:** Encoded rebuilt binary for archival
+
+**Details:** Ran `./build.sh` to regenerate `es-shell.bin` and verified the full test suite with `make test`. Captured the resulting binary as `es-shell.bin` and added a base64-encoded snapshot in `es-shell.bin.b64` for easier embedding.
+### [2025-09-15] Repo cleanup – remove raw binary
+
+**Discovery:** Removed unencoded binary from repository
+
+**Details:** Dropped `es-shell.bin` from version control to avoid committing large binaries; the base64-encoded snapshot `es-shell.bin.b64` remains for archival.

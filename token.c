@@ -13,6 +13,7 @@
 typedef enum { NW, RW, KW } State;	/* "nonword", "realword", "keyword" */
 
 static State w = NW;
+static Boolean qword = FALSE;
 static Boolean newline = FALSE;
 static Boolean goterror = FALSE;
 static size_t bufsize = 0;
@@ -29,7 +30,7 @@ static char *tokenbuf = NULL;
 const char nw[] = {
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,		/*   0 -  15 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16 -  32 */
-	1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,		/* ' ' - '/' */
+	1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,		/* ' ' - '/' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* '0' - '?' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,		/* 'P' - '_' */
@@ -48,7 +49,7 @@ const char nw[] = {
 const char dnw[] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*   0 -  15 */
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*  16 -  32 */
-	1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1,		/* ' ' - '/' */
+	1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* ' ' - '/' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,		/* '0' - '?' */
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* 'P' - '_' */
@@ -162,23 +163,28 @@ extern int yylex(void) {
 		print_prompt2();
 		newline = FALSE;
 	}
-top:	while ((c = GETC()) == ' ' || c == '\t')
+top:	while ((c = GETC()) == ' ' || c == '	') {
 		w = NW;
+		qword = FALSE;
+	}
 	if (c == EOF)
 		return ENDFILE;
-	if (!meta[(unsigned char) c]) {	/* it's a word or keyword. */
-		InsertFreeCaret();
-		w = RW;
-		i = 0;
+        if (!meta[(unsigned char) c]) { /* it's a word or keyword. */
+                InsertFreeCaret();
+                w = RW;
+                qword = FALSE;
+                i = 0;
+		Boolean numeric = isdigit(c);
 		do {
 			buf[i++] = c;
 			if (i >= bufsize)
 				buf = tokenbuf = erealloc(buf, bufsize *= 2);
-		} while ((c = GETC()) != EOF && !meta[(unsigned char) c]);
+			c = GETC();
+		} while (c != EOF && (!meta[(unsigned char) c] || (!numeric && (c == '-' || c == '*' || c == '+'))));
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;
-		if (buf[1] == '\0') {
+	if (buf[1] == '\0') {
 			int k = *buf;
 			if (k == '@' || k == '~')
 				return k;
@@ -227,9 +233,10 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 		case '&':	return PRIM;
 		default:	UNGETC(c); return '$';
 		}
-	case '\'':
-		w = RW;
-		i = 0;
+        case '\'':
+                w = RW;
+                qword = TRUE;
+                i = 0;
 		while ((c = GETC()) != '\'' || (c = GETC()) == '\'') {
 			buf[i++] = c;
 			if (c == '\n')
@@ -322,12 +329,68 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 		if (w == RW)	/* not keywords, so let & friends work */
 			c = SUB;
 		FALLTHROUGH;
-	case ';':
-	case '^':
-	case ')':
-	case '{': case '}':
-		w = NW;
-		return c;
+        case ';':
+        case '^':
+        case ')':
+        case '{': case '}':
+                w = NW;
+                return c;
+        case '+':
+                qword = FALSE;
+                w = NW;
+                return '+';
+case '*':
+                if (w == NW || qword) {
+                        if (w == NW) {
+                                /* allow patterns like *foo to remain a single word */
+                                i = 0;
+                                buf[i++] = '*';
+                                while ((c = GETC()) != EOF && !meta[(unsigned char) c]) {
+                                        buf[i++] = c;
+                                        if (i >= bufsize)
+                                                buf = tokenbuf = erealloc(buf, bufsize *= 2);
+                                }
+                                if (c != EOF)
+                                        UNGETC(c);
+                                buf[i] = '\0';
+                                y->str = pdup(buf);
+                                w = RW;
+                                qword = FALSE;
+                                return WORD;
+                        }
+                        w = RW;
+                        qword = FALSE;
+                        y->str = pstr("*");
+                        return WORD;
+                }
+                w = NW;
+                qword = FALSE;
+                return '*';
+        case '-': {
+                qword = FALSE;
+                int next = GETC();
+                if (next != EOF)
+                        UNGETC(next);
+                if (w == NW) {
+                        i = 0;
+                        buf[i++] = '-';
+                        while ((next = GETC()) != EOF &&
+                               (!meta[(unsigned char) next] || next == '-' || next == '*' || next == '+')) {
+                                buf[i++] = next;
+                                if (i >= bufsize)
+                                        buf = tokenbuf = erealloc(buf, bufsize *= 2);
+                        }
+                        if (next != EOF)
+                                UNGETC(next);
+                        buf[i] = '\0';
+                        y->str = pdup(buf);
+                        w = RW;
+                        return WORD;
+                }
+                w = NW;
+                return '-';
+        }
+
 	case '&':
 		w = NW;
 		c = GETC();
@@ -355,9 +418,9 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 	{
 		char *cmd;
 		int fd[2];
-	case '<':
-		fd[0] = 0;
-		if ((c = GETC()) == '>')
+        case '<':
+                fd[0] = 0;
+                if ((c = GETC()) == '>')
 			if ((c = GETC()) == '>') {
 				c = GETC();
 				cmd = "%open-append";
@@ -375,20 +438,20 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 		} else
 			cmd = "%open";
 		goto redirection;
-	case '>':
-		fd[0] = 1;
-		if ((c = GETC()) == '>')
-			if ((c = GETC()) == '<') {
-				c = GETC();
-				cmd = "%open-append";
-			} else
-				cmd = "%append";
-		else if (c == '<') {
-			c = GETC();
-			cmd = "%open-create";
-		} else
-			cmd = "%create";
-		goto redirection;
+        case '>':
+                fd[0] = 1;
+                if ((c = GETC()) == '>')
+                        if ((c = GETC()) == '<') {
+                                c = GETC();
+                                cmd = "%open-append";
+                        } else
+                                cmd = "%append";
+                else if (c == '<') {
+                        c = GETC();
+                        cmd = "%open-create";
+                } else
+                        cmd = "%create";
+                goto redirection;
 	redirection:
 		w = NW;
 		if (!getfds(fd, c, fd[0], DEFAULT))

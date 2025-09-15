@@ -5,16 +5,28 @@
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
+
+static Tree *arithword(Tree *t) {
+       if (t != NULL && t->kind == nWord) {
+               char *end;
+               strtol(t->u[0].s, &end, 10);
+               if (*end != '\0')
+                       return mk(nVar, t);
+       }
+       return t;
+}
 %}
 
 %token <str>	WORD QWORD
 %token		LOCAL LET FOR CLOSURE FN
 %token <tree>	REDIR DUP
-%token		ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
+%token          ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
 %token		NL ENDFILE ERROR
 %token		MATCH
 
-%left		'^' '='
+%left           '^' '='
+%left           '+' '-'
+%left           '*'
 %left		MATCH LOCAL LET FOR CLOSURE ')'
 %left		ANDAND OROR NL
 %left		'!'
@@ -29,7 +41,7 @@
 }
 
 %type <str>	keyword
-%type <tree>	body cmd cmdsa cmdsan comword first fn line word param assign
+%type <tree>	body cmd cmdsa cmdsan comword first fn line word param assign arith
 		args binding bindings params nlwords words simple redir sword
 		cases case
 %type <kind>	binder
@@ -107,10 +119,11 @@ first	: comword			{ $$ = $1; }
 sword	: comword			{ $$ = $1; }
 	| keyword			{ $$ = mk(nWord, $1); }
 
-word	: sword				{ $$ = $1; }
-	| word '^' sword		{ $$ = mk(nConcat, $1, $3); }
+word    : arith                         { $$ = $1; }
+        | sword                         { $$ = $1; }
+        | word '^' sword                { $$ = mk(nConcat, $1, $3); }
 
-comword	: param				{ $$ = $1; }
+comword : param				{ $$ = $1; }
 	| '(' nlwords ')'		{ $$ = $2; }
 	| '{' body '}'			{ $$ = thunkify($2); }
 	| '@' params '{' body '}'	{ $$ = mklambda($2, $4); }
@@ -123,7 +136,12 @@ comword	: param				{ $$ = $1; }
 	| '`' sword			{ $$ = backquote(mk(nVar, mk(nWord, "ifs")), $2); }
 	| BFLAT sword			{ $$ = flatten(backquote(mk(nVar, mk(nWord, "ifs")), $2), " "); }
 	| BACKBACK word	sword		{ $$ = backquote($2, $3); }
-	| BBFLAT word sword		{ $$ = flatten(backquote($2, $3), " "); }
+	| BBFLAT word sword             { $$ = flatten(backquote($2, $3), " " ); }
+
+arith   : arith '+' arith           { $$ = mk(nCall, prefix("%add", treecons($1, treecons($3, NULL)))); }
+        | arith '-' arith           { $$ = mk(nCall, prefix("%sub", treecons($1, treecons($3, NULL)))); }
+        | arith '*' arith           { $$ = mk(nCall, prefix("%mul", treecons($1, treecons($3, NULL)))); }
+        | sword                     { $$ = arithword($1); }
 
 param	: WORD				{ $$ = mk(nWord, $1); }
 	| QWORD				{ $$ = mk(nQword, $1); }

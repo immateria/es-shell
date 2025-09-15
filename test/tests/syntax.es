@@ -78,24 +78,24 @@ tag
 }
 
 test 'match sugar' {
-	let (
-		have = 'match $sound (
-				$bc {result 3}
-				($bp $bw *ow) {}
-				* {
-					false
-				}
-			)'
+       let (
+               have = 'match $sound (
+                               $bc {result 3}
+                               ($bp $bw *ow) {}
+                               * {
+                                       false
+                               }
+                       )'
 
-		# bit awkward
-		want = 'local(matchexpr=$sound){'^\
-				'if {~ $matchexpr $bc} {result 3} '^\
-				   '{~ $matchexpr $bp $bw *ow} {} '^\
-				   '{~ $matchexpr *} {false}'^\
-			'}'
-	) {
-		assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
-	}
+               # bit awkward
+               want = 'local(matchexpr=$sound){'^\
+                               'if {~ $matchexpr $bc} {result 3} '^\
+                                  '{~ $matchexpr $bp $bw *ow} {} '^\
+                                  '{~ $matchexpr *} {false}'^\
+                       '}'
+       ) {
+               assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
+       }
 }
 
 test 'complex variables' {
