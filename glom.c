@@ -3,327 +3,405 @@
 #include "es.h"
 #include "gc.h"
 
-/* concat -- cartesion cross product concatenation */
-extern List *concat(List *list1, List *list2) {
-	List **p, *result = NULL;
+/* concat -- cartesian cross product concatenation
+ * Combines two lists by concatenating every element from list1 with every element from list2
+ * Example: list1=[a,b], list2=[1,2] -> result=[a1,a2,b1,b2]
+ */
+extern List *concat(List *first_list, List *second_list)
+{   List **list_ptr;
+    List  *result   = NULL;
 
-	gcdisable();
-	for (p = &result; list1 != NULL; list1 = list1->next) {
-		List *lp;
-		for (lp = list2; lp != NULL; lp = lp->next) {
-			List *np = mklist(termcat(list1->term, lp->term), NULL);
-			*p = np;
-			p = &np->next;
-		}
-	}
+    gcdisable();
+    for (list_ptr = &result; first_list != NULL; first_list = first_list->next)
+    {   List *current_item;
+        for (current_item   =  second_list; current_item != NULL; current_item = current_item->next)
+        {    List *new_node =  mklist(termcat(first_list->term, current_item->term), NULL);
+            *list_ptr       =  new_node;
+             list_ptr       = &new_node->next;
+        }
+    }
 
-	Ref(List *, list, result);
-	gcenable();
-	RefReturn(list);
+    Ref(List *, list, result);
+    gcenable();
+    RefReturn(list);
 }
 
 /* qcat -- concatenate two quote flag terms */
-static char *qcat(const char *q1, const char *q2, Term *t1, Term *t2) {
-	size_t len1, len2;
-	char *result, *s;
+static char *qcat(const char *quote1, const char *quote2, Term *term1, Term *term2)
+{   size_t  length1;
+    size_t  length2;
+    char   *result;
+    char   *string_ptr;
 
-	assert(gcisblocked());
+    assert(gcisblocked());
 
-	if (q1 == QUOTED && q2 == QUOTED)
-		return QUOTED;
-	if (q1 == UNQUOTED && q2 == UNQUOTED)
-		return UNQUOTED;
+    if (quote1 == QUOTED && quote2 == QUOTED)
+        return QUOTED;
+ 
+    if (quote1 == UNQUOTED && quote2 == UNQUOTED)
+        return UNQUOTED;
 
-	len1 = (q1 == QUOTED || q1 == UNQUOTED) ? strlen(getstr(t1)) : strlen(q1);
-	len2 = (q2 == QUOTED || q2 == UNQUOTED) ? strlen(getstr(t2)) : strlen(q2);
-	result = s = gcalloc(len1 + len2 + 1, &StringTag);
+    length1 = (quote1 == QUOTED || quote1 == UNQUOTED) ? strlen(getstr(term1)) : strlen(quote1);
+    length2 = (quote2 == QUOTED || quote2 == UNQUOTED) ? strlen(getstr(term2)) : strlen(quote2);
+    result  = string_ptr = gcalloc(length1 + length2 + 1, &StringTag);
 
-	if (q1 == QUOTED)
-		memset(s, 'q', len1);
-	else if (q1 == UNQUOTED)
-		memset(s, 'r', len1);
-	else
-		memcpy(s, q1, len1);
-	s += len1;
-	if (q2 == QUOTED)
-		memset(s, 'q', len2);
-	else if (q2 == UNQUOTED)
-		memset(s, 'r', len2);
-	else
-		memcpy(s, q2, len2);
-	s += len2;
-	*s = '\0';
+    if (quote1 == QUOTED)
+        memset(string_ptr, 'q', length1);
+		
+    else if (quote1 == UNQUOTED)
+        memset(string_ptr, 'r', length1);
+		
+    else
+        memcpy(string_ptr, quote1, length1);
+ 
+    string_ptr += length1;
+    
+    if (quote2 == QUOTED)
+        memset(string_ptr, 'q', length2);
+		
+    else if (quote2 == UNQUOTED)
+        memset(string_ptr, 'r', length2);
+		
+    else
+        memcpy(string_ptr, quote2, length2);
+ 
+    string_ptr  += length2;
+    *string_ptr  = '\0';
 
-	return result;
+    return result;
 }
 
-/* qconcat -- cartesion cross product concatenation; also produces a quote list */
-static List *qconcat(List *list1, List *list2, StrList *ql1, StrList *ql2, StrList **quotep) {
-	List **p, *result = NULL;
-	StrList **qp;
+/* qconcat -- cartesian cross product concatenation; also produces a quote list */
+static List *qconcat(List *first_list, List *second_list, StrList *quote_list1, StrList *quote_list2, StrList **quote_result)
+{   List    **list_ptr;
+    List     *result    = NULL;
+    StrList **quote_ptr;
 
-	gcdisable();
-	for (p = &result, qp = quotep; list1 != NULL; list1 = list1->next, ql1 = ql1->next) {
-		List *lp;
-		StrList *qlp;
-		for (lp = list2, qlp = ql2; lp != NULL; lp = lp->next, qlp = qlp->next) {
-			List *np;
-			StrList *nq;
-			np = mklist(termcat(list1->term, lp->term), NULL);
-			*p = np;
-			p = &np->next;
-			nq = mkstrlist(qcat(ql1->str, qlp->str, list1->term, lp->term), NULL);
-			*qp = nq;
-			qp = &nq->next;
-		}
-	}
+    gcdisable();
+    for (list_ptr = &result, quote_ptr = quote_result; first_list != NULL; first_list = first_list->next, quote_list1 = quote_list1->next)
+    {   List    *current_item;
+        StrList *current_quote;
+        
+        for (current_item = second_list, current_quote = quote_list2; current_item != NULL; current_item = current_item->next, current_quote = current_quote->next)
+        {   List    *new_node;
+            StrList *new_quote;
+            
+             new_node  =  mklist(termcat(first_list->term, current_item->term), NULL);
+            *list_ptr  =  new_node;
+             list_ptr  = &new_node->next;
+            
+             new_quote =  mkstrlist(qcat(quote_list1->str, current_quote->str, first_list->term, current_item->term), NULL);
+            *quote_ptr =  new_quote;
+             quote_ptr = &new_quote->next;
+        }
+    }
 
-	Ref(List *, list, result);
-	gcenable();
-	RefReturn(list);
+    Ref(List *, list, result);
+    gcenable();
+    RefReturn(list);
 }
 
-/* subscript -- variable subscripting */
-static List *subscript(List *list, List *subs) {
-	int lo, hi, len, counter;
-	List *result, **prevp, *current;
+/* subscript -- variable subscripting with range support
+ * Supports syntax like: $var(1), $var(2...5), $var(1...)
+ */
+static List *subscript(List *list, List *subscript_list)
+{   int    low_index;
+    int    high_index;
+    int    list_length;
+    int    current_position;
 
-	gcdisable();
+    List  *result;
+    List **previous_ptr;
+    List  *current_node;
 
-	result = NULL;
-	prevp = &result;
-	len = length(list);
-	current = list;
-	counter = 1;
+    gcdisable();
 
-	if (subs != NULL && streq(getstr(subs->term), "...")) {
-		lo = 1;
-		goto mid_range;
-	}
+    result           =  NULL;
+    previous_ptr     = &result;
+    list_length      =  length(list);
+    current_node     =  list;
+    current_position =  1;
 
-	while (subs != NULL) {
-		lo = atoi(getstr(subs->term));
-		if (lo < 1) {
-			Ref(char *, bad, getstr(subs->term));
-			gcenable();
-			fail("es:subscript", "bad subscript: %s", bad);
-			RefEnd(bad);
-		}
-		subs = subs->next;
-		if (subs != NULL && streq(getstr(subs->term), "...")) {
-		mid_range:
-			subs = subs->next;
-			if (subs == NULL)
-				hi = len;
-			else {
-				hi = atoi(getstr(subs->term));
-				if (hi < 1) {
-					Ref(char *, bad, getstr(subs->term));
-					gcenable();
-					fail("es:subscript", "bad subscript: %s", bad);
-					RefEnd(bad);
-				}
-				if (hi > len)
-					hi = len;
-				subs = subs->next;
-			}
-		} else
-			hi = lo;
-		if (lo > len)
-			continue;
-		if (counter > lo) {
-			current = list;
-			counter = 1;
-		}
-		for (; counter < lo; counter++, current = current->next)
-			;
-		for (; counter <= hi; counter++, current = current->next) {
-			*prevp = mklist(current->term, NULL);
-			prevp = &(*prevp)->next;
-		}
-	}
+    if (subscript_list != NULL && streq(getstr(subscript_list->term), "..."))
+    {   low_index = 1;
+        goto mid_range;
+    }
 
-	Ref(List *, r, result);
-	gcenable();
-	RefReturn(r);
+    while (subscript_list != NULL)
+    {   low_index = atoi(getstr(subscript_list->term));
+        if (low_index < 1)
+        {   Ref(char *, bad_subscript, getstr(subscript_list->term));
+            gcenable();
+            fail("es:subscript", "bad subscript: %s", bad_subscript);
+            RefEnd(bad_subscript);
+        }
+        subscript_list = subscript_list->next;
+        
+        if (subscript_list != NULL && streq(getstr(subscript_list->term), "..."))
+        {
+        mid_range:
+            subscript_list = subscript_list->next;
+			
+            if (subscript_list == NULL)
+                high_index = list_length;
+				
+            else
+            {   high_index = atoi(getstr(subscript_list->term));
+                if (high_index < 1)
+                {   Ref(char *, bad_subscript, getstr(subscript_list->term));
+                    gcenable();
+	
+                    fail("es:subscript", "bad subscript: %s", bad_subscript);
+                    RefEnd(bad_subscript);
+                }
+				 
+                if (high_index > list_length)
+                    high_index = list_length;
+				 
+                subscript_list = subscript_list->next;
+            }
+        }
+			
+        else
+            high_index = low_index;
+            
+        if (low_index > list_length)
+            continue;
+            
+        if (current_position > low_index)
+        {   current_node     = list;
+            current_position = 1;
+        }
+        
+        for (; current_position < low_index; current_position++, current_node = current_node->next)
+            ;
+            
+        for (; current_position <= high_index; current_position++, current_node = current_node->next)
+        {   *previous_ptr = mklist(current_node->term, NULL);
+            previous_ptr  = &(*previous_ptr)->next;
+        }
+    }
+
+    Ref(List *, result_ref, result);
+    gcenable();
+    RefReturn(result_ref);
 }
 
 /* glom1 -- glom when we don't need to produce a quote list */
-static List *glom1(Tree *tree, Binding *binding) {
-	Ref(List *, result, NULL);
-	Ref(List *, tail, NULL);
-	Ref(Tree *, tp, tree);
-	Ref(Binding *, bp, binding);
+static List *glom1(Tree *tree, Binding *binding)
+{   Ref(List    *, result,      NULL);
+    Ref(List    *, tail,        NULL);
+    Ref(Tree    *, tree_ptr,    tree);
+    Ref(Binding *, binding_ptr, binding);
 
-	assert(!gcisblocked());
+    assert(!gcisblocked());
 
-	while (tp != NULL) {
-		Ref(List *, list, NULL);
+    while (tree_ptr != NULL)
+    {   Ref(List *, list, NULL);
 
-		switch (tp->kind) {
-		case nQword:
-			list = mklist(mkterm(tp->u[0].s, NULL), NULL);
-			tp = NULL;
-			break;
-		case nWord:
-			list = mklist(mkterm(tp->u[0].s, NULL), NULL);
-			tp = NULL;
-			break;
-		case nThunk:
-		case nLambda:
-			list = mklist(mkterm(NULL, mkclosure(tp, bp)), NULL);
-			tp = NULL;
-			break;
-		case nPrim:
-			list = mklist(mkterm(NULL, mkclosure(tp, NULL)), NULL);
-			tp = NULL;
-			break;
-		case nVar:
-			Ref(List *, var, glom1(tp->u[0].p, bp));
-			tp = NULL;
-			for (; var != NULL; var = var->next) {
-				list = listcopy(varlookup(getstr(var->term), bp));
-				if (list != NULL) {
-					if (result == NULL)
-						tail = result = list;
-					else
-						tail->next = list;
-					for (; tail->next != NULL; tail = tail->next)
-						;
-				}
-				list = NULL;
-			}
-			RefEnd(var);
-			break;
-		case nVarsub:
-			list = glom1(tp->u[0].p, bp);
-			if (list == NULL)
-				fail("es:glom", "null variable name in subscript");
-			if (list->next != NULL)
-				fail("es:glom", "multi-word variable name in subscript");
-			Ref(char *, name, getstr(list->term));
-			list = varlookup(name, bp);
-			Ref(List *, sub, glom1(tp->u[1].p, bp));
-			tp = NULL;
-			list = subscript(list, sub);
-			RefEnd2(sub, name);
-			break;
-		case nCall:
-			list = listcopy(walk(tp->u[0].p, bp, 0));
-			tp = NULL;
-			break;
-		case nList:
-			list = glom1(tp->u[0].p, bp);
-			tp = tp->u[1].p;
-			break;
-		case nConcat:
-			Ref(List *, l, glom1(tp->u[0].p, bp));
-			Ref(List *, r, glom1(tp->u[1].p, bp));
-			tp = NULL;
-			list = concat(l, r);
-			RefEnd2(r, l);
-			break;
-		default:
-			fail("es:glom", "glom1: bad node kind %d", tree->kind);
-		}
+        switch (tree_ptr->kind)
+        {
+        case nQword:
+            list     = mklist(mkterm(tree_ptr->u[0].s, NULL), NULL);
+            tree_ptr = NULL;
+            break;
+            
+        case nWord:
+            list     = mklist(mkterm(tree_ptr->u[0].s, NULL), NULL);
+            tree_ptr = NULL;
+            break;
+            
+        case nThunk:
+        case nLambda:
+            list     = mklist(mkterm(NULL, mkclosure(tree_ptr, binding_ptr)), NULL);
+            tree_ptr = NULL;
+            break;
+            
+        case nPrim:
+            list     = mklist(mkterm(NULL, mkclosure(tree_ptr, NULL)), NULL);
+            tree_ptr = NULL;
+            break;
+            
+        case nVar:
+            Ref(List *, variable_name, glom1(tree_ptr->u[0].p, binding_ptr));
+            tree_ptr = NULL;
+            
+            for (; variable_name != NULL; variable_name = variable_name->next)
+            {   list = listcopy(varlookup(getstr(variable_name->term), binding_ptr));
+                if (list != NULL)
+                {   if (result == NULL)
+                        tail = result = list;
+					
+                    else
+                        tail->next = list;
+				 
+                    for (; tail->next != NULL; tail = tail->next)
+                        ;
+                }
+                list = NULL;
+            }
+            RefEnd(variable_name);
+            break;
+            
+        case nVarsub:
+            list = glom1(tree_ptr->u[0].p, binding_ptr);
+			
+            if (list == NULL)
+                fail("es:glom", "null variable name in subscript");
+			
+            if (list->next != NULL)
+                fail("es:glom", "multi-word variable name in subscript");
+                
+            Ref(char *, variable_name, getstr(list->term));
+            list     = varlookup(variable_name, binding_ptr);
+			
+            Ref(List *, subscript_expr, glom1(tree_ptr->u[1].p, binding_ptr));
+            tree_ptr = NULL;
+            list     = subscript(list, subscript_expr);
+			
+            RefEnd2(subscript_expr, variable_name);
+            break;
+            
+        case nCall:
+            list     = listcopy(walk(tree_ptr->u[0].p, binding_ptr, 0));
+            tree_ptr = NULL;
+            break;
+            
+        case nList:
+            list     = glom1(tree_ptr->u[0].p, binding_ptr);
+            tree_ptr = tree_ptr->u[1].p;
+            break;
+            
+        case nConcat:
+            Ref(List *, left_list,  glom1(tree_ptr->u[0].p, binding_ptr));
+            Ref(List *, right_list, glom1(tree_ptr->u[1].p, binding_ptr));
+            tree_ptr = NULL;
+            list     = concat(left_list, right_list);
+			
+            RefEnd2(right_list, left_list);
+            break;
+            
+        default:
+            fail("es:glom", "glom1: bad node kind %d", tree->kind);
+        }
 
-		if (list != NULL) {
-			if (result == NULL)
-				tail = result = list;
-			else
-				tail->next = list;
-			for (; tail->next != NULL; tail = tail->next)
-				;
-		}
-		RefEnd(list);
-	}
+        if (list != NULL)
+        {   if (result == NULL)
+                tail = result = list;
+			
+            else
+                tail->next = list;
+		 
+            for (; tail->next != NULL; tail = tail->next)
+                ;
+        }
+        RefEnd(list);
+    }
 
-	RefEnd3(bp, tp, tail);
-	RefReturn(result);
+    RefEnd3(binding_ptr, tree_ptr, tail);
+    RefReturn(result);
 }
 
 /* glom2 -- glom and produce a quoting list */
-extern List *glom2(Tree *tree, Binding *binding, StrList **quotep) {
-	Ref(List *, result, NULL);
-	Ref(List *, tail, NULL);
-	Ref(StrList *, qtail, NULL);
-	Ref(Tree *, tp, tree);
-	Ref(Binding *, bp, binding);
+extern List *glom2(Tree *tree, Binding *binding, StrList **quote_result)
+{   Ref(List    *, result,      NULL);
+    Ref(List    *, tail,        NULL);
+    Ref(StrList *, quote_tail,  NULL);
+    Ref(Tree    *, tree_ptr,    tree);
+    Ref(Binding *, binding_ptr, binding);
 
-	assert(!gcisblocked());
-	assert(quotep != NULL);
+    assert(!gcisblocked());
+    assert(quote_result != NULL);
 
-	/*
-	 * this loop covers only the cases where we might produce some
-	 * unquoted (raw) values.  all other cases are handled in glom1
-	 * and we just add quoted word flags to them.
-	 */
+    /*
+     * This loop covers only the cases where we might produce some
+     * unquoted (raw) values. All other cases are handled in glom1
+     * and we just add quoted word flags to them.
+     */
 
-	while (tp != NULL) {
-		Ref(List *, list, NULL);
-		Ref(StrList *, qlist, NULL);
+    while (tree_ptr != NULL)
+    {   Ref(List    *, list,       NULL);
+        Ref(StrList *, quote_list, NULL);
 
-		switch (tp->kind) {
-		case nWord:
-			list = mklist(mkterm(tp->u[0].s, NULL), NULL);
-			qlist = mkstrlist(UNQUOTED, NULL);
-			tp = NULL;
-			break;
-		case nList:
-			list = glom2(tp->u[0].p, bp, &qlist);
-			tp = tp->u[1].p;
-			break;
-		case nConcat:
-			Ref(List *, l, NULL);
-			Ref(List *, r, NULL);
-			Ref(StrList *, ql, NULL);
-			Ref(StrList *, qr, NULL);
-			l = glom2(tp->u[0].p, bp, &ql);
-			r = glom2(tp->u[1].p, bp, &qr);
-			list = qconcat(l, r, ql, qr, &qlist);
-			RefEnd4(qr, ql, r, l);
-			tp = NULL;
-			break;
-		default:
-			list = glom1(tp, bp);
-			Ref(List *, lp, list);
-			for (; lp != NULL; lp = lp->next)
-				qlist = mkstrlist(QUOTED, qlist);
-			RefEnd(lp);
-			tp = NULL;
-			break;
-		}
+        switch (tree_ptr->kind)
+        {
+        case nWord:
+            list       = mklist(mkterm(tree_ptr->u[0].s, NULL), NULL);
+            quote_list = mkstrlist(UNQUOTED, NULL);
+            tree_ptr   = NULL;
+            break;
+            
+        case nList:
+            list     = glom2(tree_ptr->u[0].p, binding_ptr, &quote_list);
+            tree_ptr = tree_ptr->u[1].p;
+            break;
+            
+        case nConcat:
+            Ref(List    *, left_list,   NULL);
+            Ref(List    *, right_list,  NULL);
+            Ref(StrList *, left_quote,  NULL);
+            Ref(StrList *, right_quote, NULL);
+            
+            left_list  = glom2(tree_ptr->u[0].p, binding_ptr, &left_quote);
+            right_list = glom2(tree_ptr->u[1].p, binding_ptr, &right_quote);
+            list       = qconcat(left_list, right_list, left_quote, right_quote, &quote_list);
+			
+            RefEnd4(right_quote, left_quote, right_list, left_list);
+            tree_ptr   = NULL;
+            break;
+            
+        default:
+            list = glom1(tree_ptr, binding_ptr);
+            Ref(List *, list_item, list);
+			
+            for (; list_item != NULL; list_item = list_item->next)
+                quote_list = mkstrlist(QUOTED, quote_list);
+			
+            RefEnd(list_item);
+            tree_ptr = NULL;
+            break;
+        }
 
-		if (list != NULL) {
-			if (result == NULL) {
-				assert(*quotep == NULL);
-				result = tail = list;
-				*quotep = qtail = qlist;
-			} else {
-				assert(*quotep != NULL);
-				tail->next = list;
-				qtail->next = qlist;
-			}
-			for (; tail->next != NULL; tail = tail->next, qtail = qtail->next)
-				;
-			assert(qtail->next == NULL);
-		}
-		RefEnd2(qlist, list);
-	}
+        if (list != NULL)
+        {   if (result == NULL)
+            {   assert(*quote_result == NULL);
+                 result       = tail = list;
+                *quote_result = quote_tail = quote_list;
+            }
+			
+            else
+            {   assert(*quote_result != NULL);
+                tail->next       = list;
+                quote_tail->next = quote_list;
+            }
+            
+            for (; tail->next != NULL; tail = tail->next, quote_tail = quote_tail->next)
+                ;
+		 
+            assert(quote_tail->next == NULL);
+        }
+        RefEnd2(quote_list, list);
+    }
 
-	RefEnd4(bp, tp, qtail, tail);
-	RefReturn(result);
+    RefEnd4(binding_ptr, tree_ptr, quote_tail, tail);
+    RefReturn(result);
 }
 
-/* glom -- top level glom dispatching */
-extern List *glom(Tree *tree, Binding *binding, Boolean globit) {
-	if (globit) {
-		Ref(List *, list, NULL);
-		Ref(StrList *, quote, NULL);
-		list = glom2(tree, binding, &quote);
-		list = glob(list, quote);
-		RefEnd(quote);
-		RefReturn(list);
-	} else
-		return glom1(tree, binding);
+/* glom -- top level glom dispatching
+ * If globit is true, performs globbing on the result
+ */
+extern List *glom(Tree *tree, Binding *binding, Boolean globit)
+{   if (globit)
+    {   Ref(List    *, list,  NULL);
+        Ref(StrList *, quote, NULL);
+        
+        list = glom2(tree, binding, &quote);
+        list = glob(list, quote);
+		
+        RefEnd(quote);
+        RefReturn(list);
+    }
+	 
+    else
+        return glom1(tree, binding);
 }
