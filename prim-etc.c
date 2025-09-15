@@ -85,6 +85,75 @@ PRIM(shr)
 }
 
 
+PRIM(and)
+{   char *endptr;
+    long result;
+    
+    if (list == NULL)
+        fail("$&and", "usage: $&and number [number ...]");
+    
+    result = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&and", "arguments must be integers");
+    
+    for (list = list->next; list != NULL; list = list->next)
+    {   long operand = strtol(getstr(list->term), &endptr, 0);
+        
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&and", "arguments must be integers");
+        
+        result &= operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(or)
+{   char *endptr;
+    long result = 0;
+    
+    for (List *lp = list; lp != NULL; lp = lp->next)
+    {   long operand = strtol(getstr(lp->term), &endptr, 0);
+        
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&or", "arguments must be integers");
+        
+        result |= operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(xor)
+{   char *endptr;
+    long result = 0;
+    
+    for (List *lp = list; lp != NULL; lp = lp->next)
+    {   long operand = strtol(getstr(lp->term), &endptr, 0);
+        
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&xor", "arguments must be integers");
+        
+        result ^= operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(not)
+{   char *endptr;
+    long input_value;
+    
+    if (list == NULL || list->next != NULL)
+        fail("$&not", "usage: $&not number");
+    
+    input_value = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&not", "argument must be an integer");
+    
+    return mklist(mkstr(str("%ld", ~input_value)), NULL);
+}
+
+
 PRIM(add)
 {   long result = 0;
  
@@ -172,6 +241,98 @@ PRIM(mod) {
                 fail("$&mod", "division by zero");
         return mklist(mkstr(str("%ld", dividend % divisor)), NULL);
 }
+
+PRIM(pow)
+{   char *endptr;
+    long base_value;
+    long exponent_value;
+    long result = 1;
+    
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&pow", "usage: $&pow base exponent");
+    
+    base_value = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&pow", "base must be an integer");
+    
+    exponent_value = strtol(getstr(list->next->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&pow", "exponent must be an integer");
+    
+    if (exponent_value < 0)
+        fail("$&pow", "negative exponents not supported");
+    
+    for (long i = 0; i < exponent_value; i++)
+        result *= base_value;
+    
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(abs)
+{   char *endptr;
+    long input_value;
+    
+    if (list == NULL || list->next != NULL)
+        fail("$&abs", "usage: $&abs number");
+    
+    input_value = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&abs", "argument must be an integer");
+    
+    return mklist(mkstr(str("%ld", input_value < 0 ? -input_value : input_value)), NULL);
+}
+
+PRIM(min)
+{   char *endptr;
+    long minimum_value;
+    
+    if (list == NULL)
+        fail("$&min", "usage: $&min number [number ...]");
+    
+    minimum_value = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&min", "arguments must be integers");
+    
+    for (list = list->next; list != NULL; list = list->next)
+    {   long current_value = strtol(getstr(list->term), &endptr, 0);
+        
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&min", "arguments must be integers");
+        
+        if (current_value < minimum_value)
+            minimum_value = current_value;
+    }
+    return mklist(mkstr(str("%ld", minimum_value)), NULL);
+}
+
+PRIM(max)
+{   char *endptr;
+    long maximum_value;
+    
+    if (list == NULL)
+        fail("$&max", "usage: $&max number [number ...]");
+    
+    maximum_value = strtol(getstr(list->term), &endptr, 0);
+    
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&max", "arguments must be integers");
+    
+    for (list = list->next; list != NULL; list = list->next)
+    {   long current_value = strtol(getstr(list->term), &endptr, 0);
+        
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&max", "arguments must be integers");
+        
+        if (current_value > maximum_value)
+            maximum_value = current_value;
+    }
+    return mklist(mkstr(str("%ld", maximum_value)), NULL);
+}
+
 
 PRIM(setnoexport) {
 	Ref(List *, lp, list);
