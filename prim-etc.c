@@ -26,33 +26,64 @@ PRIM(count) {
         return mklist(mkstr(str("%d", length(list))), NULL);
 }
 
-PRIM(shl) {
-        char *s;
-        long n, shift;
-        if (list == NULL || list->next == NULL || list->next->next != NULL)
-                fail("$&shl", "usage: $&shl value shift");
-        n = strtol(getstr(list->term), &s, 0);
-        if (s != NULL && *s != '\0')
-                fail("$&shl", "arguments must be integers");
-        shift = strtol(getstr(list->next->term), &s, 0);
-        if (s != NULL && *s != '\0')
-                fail("$&shl", "arguments must be integers");
-        return mklist(mkstr(str("%ld", n << shift)), NULL);
+PRIM(shl)
+{   char *endptr_for_value;
+    char *endptr_for_shift;
+    long input_value;
+    long shift_amount;
+    const int max_shift_bits = sizeof(long) * 8 - 1;
+    
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&shl", "usage: $&shl value shift_amount");
+    
+    input_value = strtol(getstr(list->term), &endptr_for_value, 0);
+    
+    if (endptr_for_value != NULL && *endptr_for_value != '\0')
+        fail("$&shl", "value argument must be an integer");
+    
+    shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
+    
+    if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
+        fail("$&shl", "shift_amount argument must be an integer");
+    
+    if (shift_amount < 0)
+        fail("$&shl", "shift_amount cannot be negative");
+    
+    if (shift_amount > max_shift_bits)
+        fail("$&shl", "shift_amount too large (maximum %d bits)", max_shift_bits);
+    
+    return mklist(mkstr(str("%ld", input_value << shift_amount)), NULL);
 }
 
-PRIM(shr) {
-        char *s;
-        long n, shift;
-        if (list == NULL || list->next == NULL || list->next->next != NULL)
-                fail("$&shr", "usage: $&shr value shift");
-        n = strtol(getstr(list->term), &s, 0);
-        if (s != NULL && *s != '\0')
-                fail("$&shr", "arguments must be integers");
-        shift = strtol(getstr(list->next->term), &s, 0);
-        if (s != NULL && *s != '\0')
-                fail("$&shr", "arguments must be integers");
-        return mklist(mkstr(str("%ld", n >> shift)), NULL);
+PRIM(shr)
+{   char *endptr_for_value;
+    char *endptr_for_shift;
+    long input_value;
+    long shift_amount;
+    const int max_shift_bits = sizeof(long) * 8 - 1;
+    
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&shr", "usage: $&shr value shift_amount");
+    
+    input_value = strtol(getstr(list->term), &endptr_for_value, 0);
+    
+    if (endptr_for_value != NULL && *endptr_for_value != '\0')
+        fail("$&shr", "value argument must be an integer");
+    
+    shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
+    
+    if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
+        fail("$&shr", "shift_amount argument must be an integer");
+    
+    if (shift_amount < 0)
+        fail("$&shr", "shift_amount cannot be negative");
+    
+    if (shift_amount > max_shift_bits)
+        fail("$&shr", "shift_amount too large (maximum %d bits)", max_shift_bits);
+    
+    return mklist(mkstr(str("%ld", input_value >> shift_amount)), NULL);
 }
+
 
 PRIM(add)
 {   long result = 0;
