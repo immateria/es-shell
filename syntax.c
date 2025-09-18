@@ -1,5 +1,7 @@
 /* syntax.c -- abstract syntax tree re-writing rules ($Revision: 1.1.1.1 $) */
 
+#include <ctype.h>
+
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
@@ -45,12 +47,388 @@ extern Tree *thunkify(Tree *tree) {
 /* firstis -- check if the first word of a literal command matches a known string */
 static Boolean firstis(Tree *t, const char *s) {
 	if (t == NULL || t->kind != nList)
-		return FALSE;
+	        return FALSE;
 	t = t->CAR;
 	if (t == NULL || t->kind != nWord)
-		return FALSE;
+	        return FALSE;
 	assert(t->u[0].s != NULL);
 	return streq(t->u[0].s, s);
+}
+
+typedef enum {
+        infixNone,
+        infixAdd,
+        infixSub,
+        infixMul,
+        infixDiv,
+        infixMod,
+        infixPow,
+        infixMin,
+        infixMax,
+        infixBitAnd,
+        infixBitOr,
+        infixBitXor,
+        infixShiftLeft,
+        infixShiftRight
+} InfixOp;
+
+static Boolean caselessmatch(const char *word, const char *keyword) {
+        unsigned char cw, ck;
+
+        if (word == NULL || keyword == NULL)
+                return FALSE;
+        while (*word != '\0' && *keyword != '\0') {
+                cw = (unsigned char) *word++;
+                ck = (unsigned char) *keyword++;
+                if (tolower(cw) != tolower(ck))
+                        return FALSE;
+        }
+        return *word == '\0' && *keyword == '\0';
+}
+
+static Boolean matchany(const char *word, const char *const *choices, size_t count) {
+        size_t i;
+
+        if (word == NULL)
+                return FALSE;
+        for (i = 0; i < count; i++)
+                if (caselessmatch(word, choices[i]))
+                        return TRUE;
+        return FALSE;
+}
+
+static InfixOp classifyinfix(Tree *t) {
+        static const char *const addwords[] = { "plus" };
+        static const char *const subwords[] = { "minus", "subtract" };
+        static const char *const mulwords[] = { "multiply", "multiplied-by" };
+        static const char *const divwords[] = { "divide", "divided-by" };
+        static const char *const modwords[] = { "mod", "modulo", "modulus" };
+        static const char *const powwords[] = { "power", "pow", "raised-to", "to-the-power-of" };
+        static const char *const minwords[] = { "min", "minimum" };
+        static const char *const maxwords[] = { "max", "maximum" };
+        static const char *const bandwords[] = { "~and", "bitwise-and", "bitwiseand" };
+        static const char *const borwords[] = { "~or", "bitwise-or", "bitwiseor" };
+        static const char *const bxorwords[] = { "~xor", "bitwise-xor", "bitwisexor" };
+        static const char *const shlwords[] = { "~shl", "shift-left", "shift-left-by", "bitwise-shift-left" };
+        static const char *const shrwords[] = { "~shr", "shift-right", "shift-right-by", "bitwise-shift-right" };
+
+        if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
+                return infixNone;
+        const char *s = t->u[0].s;
+        if (matchany(s, addwords, sizeof addwords / sizeof addwords[0]))
+                return infixAdd;
+        if (matchany(s, subwords, sizeof subwords / sizeof subwords[0]))
+                return infixSub;
+        if (matchany(s, mulwords, sizeof mulwords / sizeof mulwords[0]))
+                return infixMul;
+        if (matchany(s, divwords, sizeof divwords / sizeof divwords[0]))
+                return infixDiv;
+        if (matchany(s, modwords, sizeof modwords / sizeof modwords[0]))
+                return infixMod;
+        if (matchany(s, powwords, sizeof powwords / sizeof powwords[0]))
+                return infixPow;
+        if (matchany(s, minwords, sizeof minwords / sizeof minwords[0]))
+                return infixMin;
+        if (matchany(s, maxwords, sizeof maxwords / sizeof maxwords[0]))
+                return infixMax;
+        if (matchany(s, bandwords, sizeof bandwords / sizeof bandwords[0]))
+                return infixBitAnd;
+        if (matchany(s, borwords, sizeof borwords / sizeof borwords[0]))
+                return infixBitOr;
+        if (matchany(s, bxorwords, sizeof bxorwords / sizeof bxorwords[0]))
+                return infixBitXor;
+        if (matchany(s, shlwords, sizeof shlwords / sizeof shlwords[0]))
+                return infixShiftLeft;
+        if (matchany(s, shrwords, sizeof shrwords / sizeof shrwords[0]))
+                return infixShiftRight;
+        return infixNone;
+}
+
+static Boolean isbitwisenot(Tree *t) {
+        static const char *const notwords[] = { "~not", "bitwise-not", "bitwisenot" };
+
+        if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
+                return FALSE;
+        return matchany(t->u[0].s, notwords, sizeof notwords / sizeof notwords[0]);
+}
+
+static Boolean isabsword(Tree *t) {
+        static const char *const abswords[] = {
+                "abs",
+                "absolute",
+                "absolute-value",
+                "absolute-value-of"
+        };
+
+        if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
+                return FALSE;
+        return matchany(t->u[0].s, abswords, sizeof abswords / sizeof abswords[0]);
+}
+
+static Boolean iscountword(Tree *t) {
+        static const char *const countwords[] = { "count" };
+
+        if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
+                return FALSE;
+        return matchany(t->u[0].s, countwords, sizeof countwords / sizeof countwords[0]);
+}
+
+static Tree *normalizeinfix(Tree *operand) {
+	if (operand != NULL && operand->kind == nWord) {
+	        char *end;
+	        strtol(operand->u[0].s, &end, 10);
+	        if (*end != '\0')
+	                return mk(nVar, operand);
+	}
+	return operand;
+}
+
+static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
+        const char *prim;
+        lhs = normalizeinfix(lhs);
+        rhs = normalizeinfix(rhs);
+        switch (op) {
+        case infixAdd:
+                prim = "%addition";
+                break;
+        case infixSub:
+                prim = "%subtraction";
+                break;
+        case infixMul:
+                prim = "%multiplication";
+                break;
+        case infixDiv:
+                prim = "%division";
+                break;
+        case infixMod:
+                prim = "%modulo";
+                break;
+        case infixPow:
+                prim = "%pow";
+                break;
+        case infixMin:
+                prim = "%min";
+                break;
+        case infixMax:
+                prim = "%max";
+                break;
+        case infixBitAnd:
+                prim = "%bitwiseand";
+                break;
+        case infixBitOr:
+                prim = "%bitwiseor";
+                break;
+        case infixBitXor:
+                prim = "%bitwisexor";
+                break;
+        case infixShiftLeft:
+                prim = "%bitwiseshiftleft";
+                break;
+        case infixShiftRight:
+                prim = "%bitwiseshiftright";
+                break;
+        default:
+                return NULL;
+        }
+        return mk(nCall, prefix((char *) prim,
+                treecons(lhs, treecons(rhs, NULL))));
+}
+
+static Tree *parseproduct(Tree *lhs, Tree **restp, Boolean *sawop);
+static Tree *parsesum(Tree *lhs, Tree **restp, Boolean *sawop);
+static Tree *parsebitwise(Tree *lhs, Tree **restp, Boolean *sawop);
+
+static Tree *resolveinfixoperand(Tree *operand) {
+        if (operand == NULL)
+                return NULL;
+        if (operand->kind == nList) {
+                Tree *group = operand;
+                if (operand->CAR != NULL && operand->CAR->kind == nList && operand->CDR == NULL)
+                        group = operand->CAR;
+                if (group == NULL || group->kind != nList)
+                        return NULL;
+                Tree *rest = group->CDR;
+                Boolean localsaw = FALSE;
+                Tree *parsed = parsebitwise(group->CAR, &rest, &localsaw);
+                if (parsed == NULL || rest != NULL)
+                        return NULL;
+                if (localsaw) {
+                        if (parsed->kind != nCall)
+                                return NULL;
+                        return parsed;
+                }
+                return normalizeinfix(parsed);
+        }
+        return normalizeinfix(operand);
+}
+
+static Tree *parseproduct(Tree *lhs, Tree **restp, Boolean *sawop) {
+        Tree *result = resolveinfixoperand(lhs);
+        if (result == NULL)
+                return NULL;
+        while (*restp != NULL) {
+                Tree *node = *restp;
+                if (node->kind != nList)
+                        return NULL;
+                InfixOp op = classifyinfix(node->CAR);
+                if (op != infixMul && op != infixDiv && op != infixMod &&
+                                op != infixPow &&
+                                op != infixShiftLeft && op != infixShiftRight)
+                        break;
+                if (sawop != NULL)
+                        *sawop = TRUE;
+                *restp = node->CDR;
+                if (*restp == NULL)
+	                return NULL;
+	        node = *restp;
+	        if (node->kind != nList)
+	                return NULL;
+                Tree *rhs = resolveinfixoperand(node->CAR);
+                if (rhs == NULL)
+                        return NULL;
+                *restp = node->CDR;
+                result = makeinfixcall(op, result, rhs);
+	        if (result == NULL)
+	                return NULL;
+	}
+	return result;
+}
+
+static Tree *parsesum(Tree *lhs, Tree **restp, Boolean *sawop) {
+        Tree *result = parseproduct(lhs, restp, sawop);
+        if (result == NULL)
+                return NULL;
+        while (*restp != NULL) {
+	        Tree *node = *restp;
+	        InfixOp op;
+	        Tree *rhsnode;
+	        Tree *rhs;
+
+	        if (node->kind != nList)
+	                return NULL;
+                op = classifyinfix(node->CAR);
+                if (op != infixAdd && op != infixSub &&
+                                op != infixMin && op != infixMax)
+                        break;
+                if (sawop != NULL)
+                        *sawop = TRUE;
+                *restp = node->CDR;
+                if (*restp == NULL)
+                        return NULL;
+                rhsnode = *restp;
+                if (rhsnode->kind != nList)
+	                return NULL;
+	        rhs = rhsnode->CAR;
+	        *restp = rhsnode->CDR;
+	        rhs = parseproduct(rhs, restp, sawop);
+	        if (rhs == NULL)
+	                return NULL;
+                result = makeinfixcall(op, result, rhs);
+                if (result == NULL)
+                        return NULL;
+        }
+        return result;
+}
+
+static Tree *parsebitwise(Tree *lhs, Tree **restp, Boolean *sawop) {
+        Tree *result = parsesum(lhs, restp, sawop);
+        if (result == NULL)
+                return NULL;
+        while (*restp != NULL) {
+                Tree *node = *restp;
+                InfixOp op;
+                Tree *rhsnode;
+                Tree *rhs;
+
+                if (node->kind != nList)
+                        return NULL;
+                op = classifyinfix(node->CAR);
+                if (op != infixBitAnd && op != infixBitOr && op != infixBitXor)
+                        break;
+                if (sawop != NULL)
+                        *sawop = TRUE;
+                *restp = node->CDR;
+                if (*restp == NULL)
+                        return NULL;
+                rhsnode = *restp;
+                if (rhsnode->kind != nList)
+                        return NULL;
+                rhs = rhsnode->CAR;
+                *restp = rhsnode->CDR;
+                rhs = parsesum(rhs, restp, sawop);
+                if (rhs == NULL)
+                        return NULL;
+                result = makeinfixcall(op, result, rhs);
+                if (result == NULL)
+                        return NULL;
+        }
+        return result;
+}
+
+extern Tree *rewriteinfix(Tree *first, Tree *args) {
+        Tree *rest;
+        Tree *result;
+        Boolean sawop = FALSE;
+
+        if (first == NULL)
+                return NULL;
+        if (isbitwisenot(first)) {
+                Tree *operand;
+
+                if (args == NULL)
+                        return NULL;
+                rest = args->CDR;
+                operand = parsebitwise(args->CAR, &rest, &sawop);
+                if (operand == NULL || rest != NULL)
+                        return NULL;
+                operand = normalizeinfix(operand);
+                result = mk(nCall, prefix("%bitwisenot", treecons(operand, NULL)));
+                if (result == NULL)
+                        return NULL;
+                return result->u[0].p;
+        }
+        if (isabsword(first)) {
+                Tree *operand;
+
+                if (args == NULL || args->CDR != NULL)
+                        return NULL;
+                operand = resolveinfixoperand(args->CAR);
+                if (operand == NULL)
+                        return NULL;
+                result = mk(nCall, prefix("%abs", treecons(operand, NULL)));
+                if (result == NULL)
+                        return NULL;
+                return result->u[0].p;
+        }
+        if (iscountword(first)) {
+                Tree *converted = NULL;
+                Tree **tailp = &converted;
+                Tree *argnode;
+
+                for (argnode = args; argnode != NULL; argnode = argnode->CDR) {
+                        Tree *operand = resolveinfixoperand(argnode->CAR);
+                        Tree *cell;
+
+                        if (operand == NULL)
+                                return NULL;
+                        cell = treecons(operand, NULL);
+                        if (cell == NULL)
+                                return NULL;
+                        *tailp = cell;
+                        tailp = &cell->CDR;
+                }
+                result = mk(nCall, prefix("%count", converted));
+                if (result == NULL)
+                        return NULL;
+                return result->u[0].p;
+        }
+        rest = args;
+        result = parsebitwise(first, &rest, &sawop);
+        if (!sawop || result == NULL || rest != NULL)
+                return NULL;
+        if (result->kind != nCall)
+                return NULL;
+        return result->u[0].p;
 }
 
 /* prefix -- prefix a tree with a given word */

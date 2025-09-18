@@ -49,7 +49,7 @@ const char nw[] = {
 const char dnw[] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*   0 -  15 */
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*  16 -  32 */
-	1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* ' ' - '/' */
+	1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,		/* ' ' - '/' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,		/* '0' - '?' */
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* 'P' - '_' */
@@ -169,7 +169,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 	}
 	if (c == EOF)
 		return ENDFILE;
-        if (!meta[(unsigned char) c]) { /* it's a word or keyword. */
+        if (!meta[(unsigned char) c] || c == '-' || c == '*' || c == '+') { /* it's a word or keyword. */
                 InsertFreeCaret();
                 w = RW;
                 qword = FALSE;
@@ -184,37 +184,41 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;
-	if (buf[1] == '\0') {
-			int k = *buf;
-			if (k == '@' || k == '~')
-				return k;
-		} else if (*buf == 'f') {
-			if (streq(buf + 1, "n"))	return FN;
-			if (streq(buf + 1, "or"))	return FOR;
-		} else if (*buf == 'l') {
-			if (streq(buf + 1, "ocal"))	return LOCAL;
-			if (streq(buf + 1, "et"))	return LET;
-		} else if (streq(buf, "~~"))
-			return EXTRACT;
-		else if (streq(buf, "%closure"))
-			return CLOSURE;
-		else if (streq(buf, "match"))
-			return MATCH;
-        } else if (*buf == 'a' || *buf == 'A') {
-                if (streq(buf + 1, "dd") || streq(buf + 1, "DD")) return ADD;
-        } else if (*buf == 'p' || *buf == 'P') {
-                if (streq(buf + 1, "lus") || streq(buf + 1, "LUS")) return PLUS;
-        } else if (*buf == 's' || *buf == 'S') {
-                if (streq(buf + 1, "ubtract") || streq(buf + 1, "UBTRACT")) return SUBTRACT;
-        } else if (*buf == 'm' || *buf == 'M') {
-                if (streq(buf + 1, "inus") || streq(buf + 1, "INUS")) return MINUS;
-                if (streq(buf + 1, "ultiply") || streq(buf + 1, "ULTIPLY")) return MULTIPLY;
-        } else if (*buf == 'd' || *buf == 'D') {
-                if (streq(buf + 1, "ivide") || streq(buf + 1, "IVIDE")) return DIVIDE;
-		w = RW;
-		y->str = pdup(buf);
-		return WORD;
-	}
+                if (buf[1] == '\0') {
+                        int k = *buf;
+                        if (k == '@' || k == '~')
+                                return k;
+                } else if (*buf == 'f') {
+                        if (streq(buf + 1, "n"))        return FN;
+                        if (streq(buf + 1, "or"))       return FOR;
+                } else if (*buf == 'l') {
+                        if (streq(buf + 1, "ocal"))     return LOCAL;
+                        if (streq(buf + 1, "et"))       return LET;
+                } else if (streq(buf, "~~")) {
+                        return EXTRACT;
+                } else if (streq(buf, "%closure")) {
+                        return CLOSURE;
+                } else if (streq(buf, "match")) {
+                        return MATCH;
+                } else if (*buf == 'p' || *buf == 'P') {
+                        if (streq(buf + 1, "lus") || streq(buf + 1, "LUS"))
+                                return PLUS;
+                } else if (*buf == 's' || *buf == 'S') {
+                        if (streq(buf + 1, "ubtract") || streq(buf + 1, "UBTRACT"))
+                                return SUBTRACT;
+                } else if (*buf == 'm' || *buf == 'M') {
+                        if (streq(buf + 1, "inus") || streq(buf + 1, "INUS"))
+                                return MINUS;
+                        if (streq(buf + 1, "ultiply") || streq(buf + 1, "ULTIPLY"))
+                                return MULTIPLY;
+                } else if (*buf == 'd' || *buf == 'D') {
+                        if (streq(buf + 1, "ivide") || streq(buf + 1, "IVIDE"))
+                                return DIVIDE;
+                }
+                w = RW;
+                y->str = pdup(buf);
+                return WORD;
+        }
 	if (c == '`' || c == '!' || c == '$' || c == '\'' || c == '=') {
 		InsertFreeCaret();
 		if (c == '!' || c == '=')
@@ -241,7 +245,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 		switch (c = GETC()) {
 		case '#':	return COUNT;
 		case '^':	return FLAT;
-		case '&':	return PRIM;
+                case '&':       return PRIM;
 		default:	UNGETC(c); return '$';
 		}
         case '\'':

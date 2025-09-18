@@ -315,13 +315,21 @@ fn vars {
 
 fn-%count      = $&count
 fn-%flatten    = $&flatten
-fn-%add        = $&add
-fn-%sub        = $&sub
-fn-%mul        = $&mul
-fn-%div        = $&div
-fn-%mod        = $&mod
-fn-%shl        = $&shl
-fn-%shr        = $&shr
+fn-%addition           = $&addition
+fn-%subtraction        = $&subtraction
+fn-%multiplication     = $&multiplication
+fn-%division           = $&division
+fn-%modulo             = $&modulo
+fn-%pow                = $&pow
+fn-%abs                = $&abs
+fn-%min                = $&min
+fn-%max                = $&max
+fn-%bitwiseshiftleft   = $&bitwiseshiftleft
+fn-%bitwiseshiftright  = $&bitwiseshiftright
+fn-%bitwiseand         = $&and
+fn-%bitwiseor          = $&or
+fn-%bitwisexor         = $&xor
+fn-%bitwisenot         = $&not
 
 #    Note that $&backquote returns the status of the child process
 #    as the first value of its result list.  The default %backquote

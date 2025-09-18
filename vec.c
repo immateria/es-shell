@@ -5,6 +5,9 @@
 
 DefineTag(Vector, static);
 
+/* Forward declaration to allow use before definition */
+extern Vector *vectorresize(Vector *vector, int new_capacity);
+
 /* mkvector -- create a new vector with specified capacity
  * Arguments:
  *   capacity: maximum number of elements the vector can hold

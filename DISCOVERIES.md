@@ -738,3 +738,145 @@ Attempted to mimic a Termux environment with `es_cv_local_getenv=no CC="clang --
 **Discovery:** Newline-wrapped static binary archive
 
 **Details:** Rebuilt `es-shell` with `./build.sh --static` and encoded it with default line wrapping so `es-shell-static.bin.b64` spans multiple 76-character lines for readability.
+### [2025-09-15] Build – missing primitive definitions
+
+**Discovery:** Arithmetic primitive compilation failure
+
+**Details:** Running `./build.sh` and `make test` fails in `prim-etc.c`; macros registering primitives like `X(count)` and `X(shl)` expect corresponding `prim_*` functions (`prim_count`, `prim_shl`, `prim_shr`, `prim_add`, `prim_sub`, `prim_mul`, `prim_div`, `prim_mod`), but these are undefined, aborting the build and test stages.
+
+### [2025-09-15] Build – duplicate primitive registration
+
+**Discovery:** Removed math primitives from `initprims_etc`
+
+**Details:** `prim-etc.c` redundantly registered arithmetic primitives already defined with `PRIM()` implementations in `prim-math.c`. Removing `X(count)`, `X(shl)`, `X(shr)`, `X(add)`, `X(sub)`, `X(mul)`, `X(div)`, and `X(mod)` from `initprims_etc` resolves compile-time undefined reference errors.
+
+### [2025-09-15] Build – missing vectorresize prototype
+
+**Discovery:** Declared `vectorresize` before use in `vec.c`
+
+**Details:** `vectorappend` invoked `vectorresize` prior to its definition, yielding implicit declaration and conflicting type errors during compilation. Introducing a forward declaration of `vectorresize` near the top of `vec.c` eliminates these errors.
+
+### [2025-09-15] Build – scanner missing default `WORD` fallback
+
+**Discovery:** Restored general word tokenization so hyphenated names parse
+
+**Details:** `./build.sh` failed with `initial.es:66: syntax error` because `token.c` returned no token for words that weren't recognized keywords. This dropped assignments like `fn-. = $&dot` at the start of `initial.es`. Moving the fallback `WORD` return outside the keyword checks ensures all non-keywords, including hyphenated function variables, are lexed correctly.
+
+### [2025-09-15] Build – variable star flattened incorrectly
+
+**Discovery:** Allow `*` in variable names after `$^`
+
+**Details:** `esdump` reported `initial.es:85: syntax error` when encountering `$^*` in `fn-eval`. The `dnw` array treated `*` as a non-word character, so the lexer emitted a bare `*` token instead of a word, confusing the parser. Marking `*` as a word character in `dnw` lets `$^*` tokenize correctly.
+
+### [2025-09-15] Build – arithmetic keywords break primitive references
+
+**Discovery:** Removed special tokens for spelled-out arithmetic operators
+
+**Details:** The lexer previously converted words like `add`, `sub`, and `mul` into distinct tokens (`ADD`, `SUBTRACT`, etc.). When `initial.es` defined functions like `fn-%add = $&add`, the lexer returned `ADD` instead of a plain word, yielding syntax errors. Dropping these conversions restores normal primitive naming.
+
+### [2025-09-15] Build – leading `*` tokens misparsed in tests
+
+**Discovery:** Treat `*` and `+` as valid word starters
+
+**Details:** The test driver `test/test.es` failed with `stdin:160: syntax error` at `* = $*(2 ...)` because the lexer returned a bare `*` token instead of a `WORD`. Extending the start-of-word condition in `token.c` to accept `*` (and `+`) ensures star-prefixed variables tokenize correctly, allowing the test suite to run.
+
+### [2025-09-15] Language – infix arithmetic words disabled
+
+**Discovery:** Removing `ADD`/`SUBTRACT`/`MULTIPLY` tokens disables infix `add`/`sub`/`mul` forms
+
+**Details:** With `token.c` now treating `add`, `sub`, and `mul` as ordinary words, expressions like `1 add 2` are parsed as attempts to run command `1`. Arithmetic primitives such as `%add` and `%sub` still function, but infix syntax using these words is no longer recognized.
+
+### [2025-09-15] Parser – partial restoration of arithmetic keywords
+
+**Discovery:** Reintroduced `ADD` token for the word `add`
+
+**Details:** Updated `token.c` to map the string `"add"` back to the `ADD` token so that infix expressions like `1 add 2` are parsed as arithmetic again. Other spelled-out operators remain ordinary words.
+
+### [2025-09-15] Build – primitive names after $& mis-tokenized
+
+**Discovery:** Track primitive-word context to keep `$&add` parseable
+
+**Details:** Mapping the word `add` to an `ADD` token enabled infix arithmetic but caused `$&add` in `initial.es` to tokenize as `ADD`, triggering a syntax error. Introducing a `primword` flag in `token.c` marks the word following `$&` as a plain `WORD`, preserving primitive lookups while still recognizing infix `add` in other contexts.
+
+### [2025-09-15] Language – renamed addition primitive to avoid keyword clash
+
+**Discovery:** Converted `%add` primitive to `%addition`
+
+**Details:** Renamed the core addition primitive and its registration from `add` to `addition`, updated the parser to invoke `%addition` for `+`, and dropped the `ADD` token and related lexer logic. Updated `initial.es` and tests to reference `%addition`, freeing the word `add` for general use without syntax conflicts.
+
+### [2025-09-15] Language – standardized arithmetic primitive names
+
+**Discovery:** Extended descriptive names to remaining math primitives
+
+**Details:** Renamed subtraction, multiplication, division, modulo, and bit-shift primitives to `%subtraction`, `%multiplication`, `%division`, `%modulo`, `%bitwiseshiftleft`, and `%bitwiseshiftright` (with corresponding `$&` forms). Updated `parse.y` so infix `-` and `*` map to the new names, refreshed the initial environment bindings in `initial.es`, and revised math and bitshift regression tests to call the updated primitives.
+
+### [2025-09-15] Testing – math and bitwise primitive coverage
+
+**Discovery:** Prefix primitives succeed but infix operator tokens still fail
+
+**Details:** Ran `test/run-math-bitwise-primitives.sh` to exercise `%addition`, `%subtraction`, `%multiplication`, `%division`, `%modulo`, `%bitwiseshiftleft`, and `%bitwiseshiftright`. The generated log (`test/logs/math-bitwise-primitives.log`) shows each primitive returning the expected value. Attempts to invoke the infix forms (`1 + 2`, `5 - 2`, `3 * 4`, `8 / 2`) still parse as commands (`1`, `5`, etc.), yielding “No such file or directory” errors instead of numeric results.
+### [2025-09-15] Language – spelled-out arithmetic tokens restored
+
+**Discovery:** Lexer now emits `PLUS`/`MINUS`/`SUBTRACT`/`MULTIPLY`/`DIVIDE`
+
+**Details:** Reintroduced keyword recognition in `token.c` so the spelled-out arithmetic words map to their dedicated parser tokens again. Added matching entries in `parse.y`'s `keyword` rule so the tokens can still be used as ordinary words when needed. The change keeps primitive invocations like `$&division` working while letting the parser observe infix arithmetic spelled with `plus`, `minus`, `subtract`, `multiply`, and `divide`.
+
+### [2025-09-15] Testing – infix logs now exercise word-based operators
+
+**Discovery:** Manual math log covers `plus`/`minus`/`subtract`/`multiply`/`divide`
+
+**Details:** Updated `test/run-math-bitwise-primitives.sh` so the infix portion of the log runs commands such as `echo <={1 plus 2}` and `echo <={8 divide 2}`. The regenerated `test/logs/math-bitwise-primitives.log` captures the expected results alongside the current “No such file or directory” failures, documenting that the spelled-out operators are still parsed as commands rather than arithmetic rewrites.
+
+### [2025-09-15] Language – infix math words rewrite to primitives
+
+**Discovery:** Parser rewrites `plus`/`minus`/`subtract`/`multiply`/`divide`
+
+**Details:** Added a `rewriteinfix` helper in `syntax.c` that recognizes command forms like `1 plus 2` and rewrites them into the `%addition`/`%subtraction`/`%multiplication`/`%division` calls the evaluator already understands. The helper walks the argument list honoring multiply/divide precedence, so expressions such as `1 plus 2 multiply 3` become `%addition 1 <={%multiplication 2 3}`. Hooked the helper into `simple` command construction so plain words continue to behave as before while infix expressions now evaluate successfully. Regenerated the manual log to confirm `plus`/`minus`/`subtract`/`multiply`/`divide` all return the expected values.
+
+### [2025-09-15] Language – bitwise primitive hooks for parser sugar
+
+**Discovery:** Added `%bitwise*` helpers to back upcoming rewrites
+
+**Details:** Extended `initial.es` so `%bitwiseand`, `%bitwiseor`, `%bitwisexor`, and `%bitwisenot` resolve straight to their corresponding primitives. Refreshed `test/run-math-bitwise-primitives.sh` to cover the new helpers, giving the math/bitwise manual log concrete pass/fail data for the full set of prefix operators.
+
+### [2025-09-15] Language – expanded infix rewrites for arithmetic and bitwise words
+
+**Discovery:** `rewriteinfix` now understands hyphenated math synonyms and bitwise tilde forms
+
+**Details:** Taught the infix rewriter in `syntax.c` to treat words like `multiplied-by` and `divided-by` as multiplication and division, added modulo handling, and introduced a higher-level pass so `~AND`, `~OR`, `~XOR`, `~SHL`, and `~SHR` fold into the `%bitwise*` hooks. Unary `~NOT` is recognized as a prefix bitwise-not expression, and shift helpers reuse the new parsing logic so operands can be literals or variables. Updated `test/run-math-bitwise-primitives.sh` (plus a helper script in `test/scripts/`) to log the new infix spellings alongside prefix primitives, with the regenerated `test/logs/math-bitwise-primitives.log` capturing the passing results.
+
+### [2025-09-17] Language – extended infix coverage to power/min/max words
+
+**Discovery:** Added `pow`, `power`, `minimum`, and `maximum` rewrites
+
+**Details:** Expanded the `InfixOp` enum in `syntax.c` to include power, min, and max operators and mapped new word lists such as `power`, `raised-to`, `minimum`, and `maximum` onto the `%pow`, `%min`, and `%max` primitives. Updated `makeinfixcall` so every rewrite funnels through the `%*` helpers defined in `initial.es`, and adjusted the product/sum parsers to recognize the new operators without disturbing existing precedence.
+
+### [2025-09-17] Runtime – hooked remaining math helpers into the initial environment
+
+**Discovery:** `%pow`, `%abs`, `%min`, and `%max` now bind to their primitives on startup
+
+**Details:** Added the missing hook assignments in `initial.es` so the new infix rewrites and manual tests can call `$&pow`, `$&abs`, `$&min`, and `$&max` through their `%` aliases. This keeps the syntactic sugar consistent with the rest of the math hooks already provided in the startup image.
+
+### [2025-09-17] Testing – manual math log covers power/min/max/count scenarios
+
+**Discovery:** Regression script exercises the new primitives and infix spellings
+
+**Details:** Extended `test/run-math-bitwise-primitives.sh` so it now checks prefix and infix forms of `%pow`, `%min`, `%max`, and `%count`, including variable/literal permutations. Regenerated `test/logs/math-bitwise-primitives.log` to capture the passing results, verifying both the new rewrites and the corrected `%count` expectations.
+
+### [2025-09-17] Language – parenthesized infix operands rewrite correctly
+
+**Discovery:** Nested infix groups parse through `rewriteinfix`
+
+**Details:** Introduced a `resolveinfixoperand` helper in `syntax.c` that re-parses operand lists through `parsebitwise`, letting `(10 divide (0 plus 2))` reduce to `%division` with a `%addition` subtree instead of triggering division-by-zero. Updated the manual math/bitwise script to log successful grouped prefix/infix cases and to capture the intentional failure from `10 divide 0 plus 2`, demonstrating that parentheses now govern evaluation order.
+
+### [2025-09-17] Math – `%pow` now accepts negative exponents
+
+**Discovery:** Negative exponents yield fractional strings instead of panics
+
+**Details:** Updated `prim-math.c` so `$&pow` no longer rejects negative exponents. The primitive now divides through the base when the exponent is below zero, formats the fractional result with `snprintf`, and guards against impossible magnitudes like `LONG_MIN`. This lets expressions such as `%pow 3 -12` and `3 power -12` return the expected `1.88167642315892e-06`. Extended `test/run-math-bitwise-primitives.sh` to cover the new fractional cases along with additional negative-operand checks, then regenerated `test/logs/math-bitwise-primitives.log` to capture the passing results.
+
+### [2025-09-17] Language – expanded rewrites for `abs`/`count`
+
+**Discovery:** Word forms call `%abs` and `%count`
+
+**Details:** Extended `rewriteinfix` in `syntax.c` so bare commands beginning with `abs`, `absolute`, or `absolute-value` rewrite into `%abs`, allowing expressions like `abs (5 minus 9)` to evaluate without a manual primitive call. Added similar handling for `count`, rewriting `count 1 2 3` into `%count` while normalizing each operand so grouped infix expressions remain valid arguments. Updated `test/run-math-bitwise-primitives.sh` (and the recorded log) with direct checks for the new word forms to confirm they dispatch through the primitives successfully.
