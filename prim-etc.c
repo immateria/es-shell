@@ -347,20 +347,12 @@ PRIM(resetterminal) {
 
 extern Dict *initprims_etc(Dict *primdict) {
         X(echo);
-        X(count);
-        X(shl);
-        X(shr);
-        X(add);
-        X(sub);
-        X(mul);
-        X(div);
-        X(mod);
         X(version);
         X(exec);
-	X(dot);
-	X(flatten);
-	X(whatis);
-	X(split);
+        X(dot);
+        X(flatten);
+        X(whatis);
+        X(split);
 	X(fsplit);
 	X(var);
 	X(parse);

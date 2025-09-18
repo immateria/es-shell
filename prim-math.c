@@ -3,114 +3,117 @@
 #include "es.h"
 #include "prim.h"
 
+#include <limits.h>
+#include <stdio.h>
+
 /*
  * Arithmetic Operations
  */
 
-PRIM(add)
+PRIM(addition)
 {   long result = 0;
- 
+
     for (List *lp = list; lp != NULL; lp = lp->next)
     {   char *endptr;
         long  operand = strtol(getstr(lp->term), &endptr, 0);
 
         if (endptr != NULL && *endptr != '\0')
-            fail("$&add", "arguments must be integers");
-     
+            fail("$&addition", "arguments must be integers");
+
         result += operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(sub)
+PRIM(subtraction)
 {   char *endptr;
     long  result;
- 
+
     if (list == NULL || list->next == NULL)
-        fail("$&sub", "usage: $&sub number number [...]");
-    
+        fail("$&subtraction", "usage: $&subtraction number number [...]");
+
     result = strtol(getstr(list->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
-        fail("$&sub", "arguments must be integers");
- 
+        fail("$&subtraction", "arguments must be integers");
+
     for (list = list->next; list != NULL; list = list->next)
     {   long operand = strtol(getstr(list->term), &endptr, 0);
-     
+
         if (endptr != NULL && *endptr != '\0')
-            fail("$&sub", "arguments must be integers");
-            
+            fail("$&subtraction", "arguments must be integers");
+
         result -= operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(mul)
+PRIM(multiplication)
 {   char *endptr;
     long  result = 1;
- 
+
     if (list == NULL)
-        fail("$&mul", "usage: $&mul number [...]");
- 
+        fail("$&multiplication", "usage: $&multiplication number [...]");
+
     for (List *lp = list; lp != NULL; lp = lp->next)
     {   long operand = strtol(getstr(lp->term), &endptr, 0);
-     
+
         if (endptr != NULL && *endptr != '\0')
-            fail("$&mul", "arguments must be integers");
-     
+            fail("$&multiplication", "arguments must be integers");
+
         result *= operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(div)
+PRIM(division)
 {   char *endptr;
     long  result;
- 
+
     if (list == NULL || list->next == NULL)
-        fail("$&div", "usage: $&div dividend divisor [...]");
-    
+        fail("$&division", "usage: $&division dividend divisor [...]");
+
     result = strtol(getstr(list->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
-        fail("$&div", "arguments must be integers");
- 
+        fail("$&division", "arguments must be integers");
+
     for (list = list->next; list != NULL; list = list->next)
     {   long divisor = strtol(getstr(list->term), &endptr, 0);
-     
+
         if (endptr != NULL && *endptr != '\0')
-            fail("$&div", "arguments must be integers");
-        
+            fail("$&division", "arguments must be integers");
+
         if (divisor == 0)
-            fail("$&div", "division by zero");
-            
+            fail("$&division", "division by zero");
+
         result /= divisor;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(mod)
+PRIM(modulo)
 {   char *endptr;
     long  dividend;
     long  divisor;
- 
+
     if (list == NULL || list->next == NULL || list->next->next != NULL)
-        fail("$&mod", "usage: $&mod dividend divisor");
-    
+        fail("$&modulo", "usage: $&modulo dividend divisor");
+
     dividend = strtol(getstr(list->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
-        fail("$&mod", "arguments must be integers");
-    
+        fail("$&modulo", "arguments must be integers");
+
     list = list->next;
     divisor = strtol(getstr(list->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
-        fail("$&mod", "arguments must be integers");
-    
+        fail("$&modulo", "arguments must be integers");
+
     if (divisor == 0)
-        fail("$&mod", "division by zero");
-        
+        fail("$&modulo", "division by zero");
+
     return mklist(mkstr(str("%ld", dividend % divisor)), NULL);
 }
 
@@ -118,28 +121,54 @@ PRIM(pow)
 {   char *endptr;
     long  base_value;
     long  exponent_value;
-    long  result = 1;
- 
+    long  integer_result = 1;
+
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&pow", "usage: $&pow base exponent");
-    
+
     base_value = strtol(getstr(list->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
         fail("$&pow", "base must be an integer");
-    
+
     exponent_value = strtol(getstr(list->next->term), &endptr, 0);
-    
+
     if (endptr != NULL && *endptr != '\0')
         fail("$&pow", "exponent must be an integer");
-    
-    if (exponent_value < 0)
-        fail("$&pow", "negative exponents not supported");
-    
+
+    if (exponent_value < 0) {
+        unsigned long magnitude;
+        double fractional_result = 1.0;
+        double base_as_double;
+        char buffer[128];
+        int written;
+
+        if (base_value == 0)
+            fail("$&pow", "zero cannot be raised to a negative power");
+        if (exponent_value == LONG_MIN)
+            fail("$&pow", "exponent magnitude too large");
+
+        magnitude = (unsigned long) -exponent_value;
+        base_as_double = (double) base_value;
+
+        for (unsigned long i = 0; i < magnitude; i++)
+            fractional_result /= base_as_double;
+
+        if (fractional_result == 0.0)
+            return mklist(mkstr(str("0")), NULL);
+
+        written = snprintf(buffer, sizeof buffer, "%.15g", fractional_result);
+
+        if (written < 0 || written >= (int) sizeof buffer)
+            fail("$&pow", "unable to format fractional result");
+
+        return mklist(mkstr(str("%s", buffer)), NULL);
+    }
+
     for (long i = 0; i < exponent_value; i++)
-        result *= base_value;
-    
-    return mklist(mkstr(str("%ld", result)), NULL);
+        integer_result *= base_value;
+
+    return mklist(mkstr(str("%ld", integer_result)), NULL);
 }
 
 PRIM(abs)
@@ -213,61 +242,61 @@ PRIM(count)
  * Bitwise Operations
  */
 
-PRIM(shl)
+PRIM(bitwiseshiftleft)
 {   char *endptr_for_value;
     char *endptr_for_shift;
     long  input_value;
     long  shift_amount;
     const int max_shift_bits = sizeof(long) * 8 - 1;
- 
+
     if (list == NULL || list->next == NULL || list->next->next != NULL)
-        fail("$&shl", "usage: $&shl value shift_amount");
-    
+        fail("$&bitwiseshiftleft", "usage: $&bitwiseshiftleft value shift_amount");
+
     input_value = strtol(getstr(list->term), &endptr_for_value, 0);
-    
+
     if (endptr_for_value != NULL && *endptr_for_value != '\0')
-        fail("$&shl", "value argument must be an integer");
-    
+        fail("$&bitwiseshiftleft", "value argument must be an integer");
+
     shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
-    
+
     if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
-        fail("$&shl", "shift_amount argument must be an integer");
-    
+        fail("$&bitwiseshiftleft", "shift_amount argument must be an integer");
+
     if (shift_amount < 0)
-        fail("$&shl", "shift_amount cannot be negative");
-    
+        fail("$&bitwiseshiftleft", "shift_amount cannot be negative");
+
     if (shift_amount > max_shift_bits)
-        fail("$&shl", "shift_amount too large (maximum %d bits)", max_shift_bits);
-    
+        fail("$&bitwiseshiftleft", "shift_amount too large (maximum %d bits)", max_shift_bits);
+
     return mklist(mkstr(str("%ld", input_value << shift_amount)), NULL);
 }
 
-PRIM(shr)
+PRIM(bitwiseshiftright)
 {   char *endptr_for_value;
     char *endptr_for_shift;
     long  input_value;
     long  shift_amount;
     const int max_shift_bits = sizeof(long) * 8 - 1;
- 
+
     if (list == NULL || list->next == NULL || list->next->next != NULL)
-        fail("$&shr", "usage: $&shr value shift_amount");
-    
+        fail("$&bitwiseshiftright", "usage: $&bitwiseshiftright value shift_amount");
+
     input_value = strtol(getstr(list->term), &endptr_for_value, 0);
-    
+
     if (endptr_for_value != NULL && *endptr_for_value != '\0')
-        fail("$&shr", "value argument must be an integer");
-    
+        fail("$&bitwiseshiftright", "value argument must be an integer");
+
     shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
-    
+
     if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
-        fail("$&shr", "shift_amount argument must be an integer");
-    
+        fail("$&bitwiseshiftright", "shift_amount argument must be an integer");
+
     if (shift_amount < 0)
-        fail("$&shr", "shift_amount cannot be negative");
-    
+        fail("$&bitwiseshiftright", "shift_amount cannot be negative");
+
     if (shift_amount > max_shift_bits)
-        fail("$&shr", "shift_amount too large (maximum %d bits)", max_shift_bits);
-    
+        fail("$&bitwiseshiftright", "shift_amount too large (maximum %d bits)", max_shift_bits);
+
     return mklist(mkstr(str("%ld", input_value >> shift_amount)), NULL);
 }
 
@@ -345,11 +374,11 @@ PRIM(not)
 
 extern Dict *initprims_math(Dict *primdict)
 {   /* Arithmetic operations */
-    X(add);
-    X(sub);
-    X(mul);
-    X(div);
-    X(mod);
+    X(addition);
+    X(subtraction);
+    X(multiplication);
+    X(division);
+    X(modulo);
     X(pow);
     X(abs);
     X(min);
@@ -357,8 +386,8 @@ extern Dict *initprims_math(Dict *primdict)
     X(count);
     
     /* Bitwise operations */
-    X(shl);
-    X(shr);
+    X(bitwiseshiftleft);
+    X(bitwiseshiftright);
     X(and);
     X(or);
     X(xor);

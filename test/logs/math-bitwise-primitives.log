@@ -1,0 +1,989 @@
+Math & Bitwise Primitive Manual Test Log
+Generated: 2025-09-18T03:26:05Z
+
+Test: Prefix addition primitive
+Command: ./es -c "echo <={%addition 1 2}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Prefix addition primitive (negative operands)
+Command: ./es -c "echo <={%addition -5 -7}"
+Expected: -12
+Actual: -12
+Exit status: 0
+Result: PASS
+
+Test: Prefix subtraction primitive
+Command: ./es -c "echo <={%subtraction 5 2}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Prefix multiplication primitive
+Command: ./es -c "echo <={%multiplication 3 4}"
+Expected: 12
+Actual: 12
+Exit status: 0
+Result: PASS
+
+Test: Prefix multiplication primitive (mixed sign)
+Command: ./es -c "echo <={%multiplication -6 4}"
+Expected: -24
+Actual: -24
+Exit status: 0
+Result: PASS
+
+Test: Prefix division primitive
+Command: ./es -c "echo <={%division 8 2}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Prefix modulo primitive
+Command: ./es -c "echo <={%modulo 9 4}"
+Expected: 1
+Actual: 1
+Exit status: 0
+Result: PASS
+
+Test: Prefix power primitive
+Command: ./es -c "echo <={%pow 2 3}"
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Prefix power primitive (negative exponent)
+Command: ./es -c "echo <={%pow 3 -12}"
+Expected: 1.88167642315892e-06
+Actual: 1.88167642315892e-06
+Exit status: 0
+Result: PASS
+
+Test: Prefix abs primitive
+Command: ./es -c "echo <={%abs -7}"
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Abs word command
+Command: ./es -c "echo <={abs -7}"
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Abs word with grouped infix operand
+Command: ./es -c "echo <={abs (5 minus 9)}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Prefix min primitive
+Command: ./es -c "echo <={%min 7 3 5}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Prefix max primitive
+Command: ./es -c "echo <={%max 7 3 5}"
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Prefix count primitive
+Command: ./es -c "echo <={%count 1 2 3}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Count word command
+Command: ./es -c "echo <={count 1 2 3}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise shift left primitive
+Command: ./es -c "echo <={%bitwiseshiftleft 1 3}"
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise shift right primitive
+Command: ./es -c "echo <={%bitwiseshiftright 8 1}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise and primitive
+Command: ./es -c "echo <={%bitwiseand 6 3}"
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise or primitive
+Command: ./es -c "echo <={%bitwiseor 4 1}"
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise xor primitive
+Command: ./es -c "echo <={%bitwisexor 5 3}"
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Prefix bitwise not primitive
+Command: ./es -c "echo <={%bitwisenot 0}"
+Expected: -1
+Actual: -1
+Exit status: 0
+Result: PASS
+
+Test: Prefix division nested with addition
+Command: ./es -c "echo <={%division 10 <={%addition 0 2}}"
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Prefix shift left nested with addition
+Command: ./es -c "echo <={%bitwiseshiftleft 1 <={%addition 1 1}}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Addition primitive (var first)
+Command: ./es -c 'X = 3
+echo <={%addition $X 4}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Addition primitive (var second)
+Command: ./es -c 'Y = 4
+echo <={%addition 3 $Y}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Addition primitive (both vars)
+Command: ./es -c 'X = 3
+Y = 4
+echo <={%addition $X $Y}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Subtraction primitive (var first)
+Command: ./es -c 'X = 10
+echo <={%subtraction $X 4}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Subtraction primitive (var second)
+Command: ./es -c 'Y = 4
+echo <={%subtraction 10 $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Subtraction primitive (both vars)
+Command: ./es -c 'X = 10
+Y = 4
+echo <={%subtraction $X $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Multiplication primitive (var first)
+Command: ./es -c 'X = 6
+echo <={%multiplication $X 5}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Multiplication primitive (var second)
+Command: ./es -c 'Y = 5
+echo <={%multiplication 6 $Y}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Multiplication primitive (both vars)
+Command: ./es -c 'X = 6
+Y = 5
+echo <={%multiplication $X $Y}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Division primitive (var first)
+Command: ./es -c 'X = 20
+echo <={%division $X 5}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Division primitive (var second)
+Command: ./es -c 'Y = 5
+echo <={%division 20 $Y}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Division primitive (both vars)
+Command: ./es -c 'X = 20
+Y = 5
+echo <={%division $X $Y}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Modulo primitive (var first)
+Command: ./es -c 'X = 17
+echo <={%modulo $X 5}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Modulo primitive (var second)
+Command: ./es -c 'Y = 5
+echo <={%modulo 17 $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Modulo primitive (both vars)
+Command: ./es -c 'X = 17
+Y = 5
+echo <={%modulo $X $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Power primitive (base var)
+Command: ./es -c 'BASE = 2
+echo <={%pow $BASE 5}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Power primitive (exponent var)
+Command: ./es -c 'EXP = 5
+echo <={%pow 2 $EXP}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Power primitive (both vars)
+Command: ./es -c 'BASE = 2
+EXP = 5
+echo <={%pow $BASE $EXP}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Abs primitive (var input)
+Command: ./es -c 'VALUE = -11
+echo <={%abs $VALUE}'
+Expected: 11
+Actual: 11
+Exit status: 0
+Result: PASS
+
+Test: Min primitive (var inputs)
+Command: ./es -c 'A = 9
+B = 2
+echo <={%min $A $B}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Max primitive (var inputs)
+Command: ./es -c 'A = 9
+B = 2
+echo <={%max $A $B}'
+Expected: 9
+Actual: 9
+Exit status: 0
+Result: PASS
+
+Test: Count primitive (list var)
+Command: ./es -c 'LIST = a b c d
+echo <={%count $LIST}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Bitwise and primitive (var first)
+Command: ./es -c 'X = 6
+echo <={%bitwiseand $X 3}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise and primitive (var second)
+Command: ./es -c 'Y = 3
+echo <={%bitwiseand 6 $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise and primitive (both vars)
+Command: ./es -c 'X = 6
+Y = 3
+echo <={%bitwiseand $X $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise or primitive (var first)
+Command: ./es -c 'X = 4
+echo <={%bitwiseor $X 1}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise or primitive (var second)
+Command: ./es -c 'Y = 1
+echo <={%bitwiseor 4 $Y}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise or primitive (both vars)
+Command: ./es -c 'X = 4
+Y = 1
+echo <={%bitwiseor $X $Y}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise xor primitive (var first)
+Command: ./es -c 'X = 5
+echo <={%bitwisexor $X 3}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise xor primitive (var second)
+Command: ./es -c 'Y = 3
+echo <={%bitwisexor 5 $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise xor primitive (both vars)
+Command: ./es -c 'X = 5
+Y = 3
+echo <={%bitwisexor $X $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left primitive (var first)
+Command: ./es -c 'BASE = 2
+echo <={%bitwiseshiftleft $BASE 3}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left primitive (var second)
+Command: ./es -c 'SHIFT = 3
+echo <={%bitwiseshiftleft 2 $SHIFT}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left primitive (both vars)
+Command: ./es -c 'BASE = 2
+SHIFT = 3
+echo <={%bitwiseshiftleft $BASE $SHIFT}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right primitive (var first)
+Command: ./es -c 'BASE = 32
+echo <={%bitwiseshiftright $BASE 2}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right primitive (var second)
+Command: ./es -c 'SHIFT = 2
+echo <={%bitwiseshiftright 32 $SHIFT}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right primitive (both vars)
+Command: ./es -c 'BASE = 32
+SHIFT = 2
+echo <={%bitwiseshiftright $BASE $SHIFT}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Infix addition token
+Command: ./es -c "echo <={1 plus 2}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Infix subtraction token (minus)
+Command: ./es -c "echo <={5 minus 2}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Infix subtraction token (subtract)
+Command: ./es -c "echo <={9 subtract 4}"
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Infix multiplication token
+Command: ./es -c "echo <={3 multiply 4}"
+Expected: 12
+Actual: 12
+Exit status: 0
+Result: PASS
+
+Test: Infix division token
+Command: ./es -c "echo <={8 divide 2}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Infix multiplication alternate word
+Command: ./es -c "echo <={3 multiplied-by 4}"
+Expected: 12
+Actual: 12
+Exit status: 0
+Result: PASS
+
+Test: Infix division alternate word
+Command: ./es -c "echo <={8 divided-by 2}"
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Infix modulo word
+Command: ./es -c "echo <={9 mod 4}"
+Expected: 1
+Actual: 1
+Exit status: 0
+Result: PASS
+
+Test: Infix power word
+Command: ./es -c "echo <={2 power 5}"
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Infix power alternate word
+Command: ./es -c "echo <={2 raised-to 3}"
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Infix addition with negative operands
+Command: ./es -c "echo <={-4 plus -6}"
+Expected: -10
+Actual: -10
+Exit status: 0
+Result: PASS
+
+Test: Infix subtraction with negative right operand
+Command: ./es -c "echo <={5 minus -3}"
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Infix power negative exponent
+Command: ./es -c "echo <={3 power -12}"
+Expected: 1.88167642315892e-06
+Actual: 1.88167642315892e-06
+Exit status: 0
+Result: PASS
+
+Test: Infix min word
+Command: ./es -c "echo <={7 minimum 3}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Infix max word
+Command: ./es -c "echo <={7 maximum 3}"
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Addition infix (var first)
+Command: ./es -c 'X = 3
+echo <={$X plus 4}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Addition infix (var second)
+Command: ./es -c 'Y = 4
+echo <={3 plus $Y}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Addition infix (both vars)
+Command: ./es -c 'X = 3
+Y = 4
+echo <={$X plus $Y}'
+Expected: 7
+Actual: 7
+Exit status: 0
+Result: PASS
+
+Test: Subtraction infix (var first)
+Command: ./es -c 'X = 10
+echo <={$X minus 4}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Subtraction infix (var second)
+Command: ./es -c 'Y = 4
+echo <={10 minus $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Subtraction infix (both vars)
+Command: ./es -c 'X = 10
+Y = 4
+echo <={$X minus $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Multiplication infix (var first)
+Command: ./es -c 'X = 6
+echo <={$X multiply 5}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Multiplication infix (var second)
+Command: ./es -c 'Y = 5
+echo <={6 multiply $Y}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Multiplication infix (both vars)
+Command: ./es -c 'X = 6
+Y = 5
+echo <={$X multiply $Y}'
+Expected: 30
+Actual: 30
+Exit status: 0
+Result: PASS
+
+Test: Division infix (var first)
+Command: ./es -c 'X = 20
+echo <={$X divide 5}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Division infix (var second)
+Command: ./es -c 'Y = 5
+echo <={20 divide $Y}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Division infix (both vars)
+Command: ./es -c 'X = 20
+Y = 5
+echo <={$X divide $Y}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Modulo infix (var first)
+Command: ./es -c 'X = 17
+echo <={$X mod 5}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Modulo infix (var second)
+Command: ./es -c 'Y = 5
+echo <={17 mod $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Modulo infix (both vars)
+Command: ./es -c 'X = 17
+Y = 5
+echo <={$X mod $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Power infix (base var)
+Command: ./es -c 'BASE = 2
+echo <={$BASE power 5}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Power infix (exponent var)
+Command: ./es -c 'EXP = 5
+echo <={2 power $EXP}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Power infix (both vars)
+Command: ./es -c 'BASE = 2
+EXP = 5
+echo <={$BASE power $EXP}'
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Power infix alternate word with vars
+Command: ./es -c 'BASE = 3
+EXP = 3
+echo <={$BASE raised-to $EXP}'
+Expected: 27
+Actual: 27
+Exit status: 0
+Result: PASS
+
+Test: Min infix (var first)
+Command: ./es -c 'A = 9
+echo <={$A minimum 4}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Min infix (var second)
+Command: ./es -c 'B = 4
+echo <={9 minimum $B}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Min infix (both vars)
+Command: ./es -c 'A = 9
+B = 4
+echo <={$A minimum $B}'
+Expected: 4
+Actual: 4
+Exit status: 0
+Result: PASS
+
+Test: Max infix (var first)
+Command: ./es -c 'A = 9
+echo <={$A maximum 4}'
+Expected: 9
+Actual: 9
+Exit status: 0
+Result: PASS
+
+Test: Max infix (var second)
+Command: ./es -c 'B = 4
+echo <={9 maximum $B}'
+Expected: 9
+Actual: 9
+Exit status: 0
+Result: PASS
+
+Test: Max infix (both vars)
+Command: ./es -c 'A = 9
+B = 4
+echo <={$A maximum $B}'
+Expected: 9
+Actual: 9
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix and (~AND) var first
+Command: ./es -c 'X = 6
+echo <={$X ~AND 3}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix and (~AND) var second
+Command: ./es -c 'Y = 3
+echo <={6 ~AND $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix and (~AND) both vars
+Command: ./es -c 'X = 6
+Y = 3
+echo <={$X ~AND $Y}'
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix or (~OR) var first
+Command: ./es -c 'X = 4
+echo <={$X ~OR 1}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix or (~OR) var second
+Command: ./es -c 'Y = 1
+echo <={4 ~OR $Y}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix or (~OR) both vars
+Command: ./es -c 'X = 4
+Y = 1
+echo <={$X ~OR $Y}'
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix xor (~XOR) var first
+Command: ./es -c 'X = 5
+echo <={$X ~XOR 3}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix xor (~XOR) var second
+Command: ./es -c 'Y = 3
+echo <={5 ~XOR $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix xor (~XOR) both vars
+Command: ./es -c 'X = 5
+Y = 3
+echo <={$X ~XOR $Y}'
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left (~SHL) var first
+Command: ./es -c 'BASE = 2
+echo <={$BASE ~SHL 3}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left (~SHL) var second
+Command: ./es -c 'SHIFT = 3
+echo <={2 ~SHL $SHIFT}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left (~SHL) both vars
+Command: ./es -c 'BASE = 2
+SHIFT = 3
+echo <={$BASE ~SHL $SHIFT}'
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right (~SHR) var first
+Command: ./es -c 'BASE = 32
+echo <={$BASE ~SHR 2}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right (~SHR) var second
+Command: ./es -c 'SHIFT = 2
+echo <={32 ~SHR $SHIFT}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right (~SHR) both vars
+Command: ./es -c 'BASE = 32
+SHIFT = 2
+echo <={$BASE ~SHR $SHIFT}'
+Expected: 8
+Actual: 8
+Exit status: 0
+Result: PASS
+
+Test: Infix division grouped with addition
+Command: ./es -c "echo <={10 divide (0 plus 2)}"
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Infix shift-left grouped with addition
+Command: ./es -c "echo <={4 shift-left (1 plus 1)}"
+Expected: 16
+Actual: 16
+Exit status: 0
+Result: PASS
+
+Test: Ungrouped divide by zero propagates
+Command: ./es -c "echo <={10 divide 0 plus 2}"
+Expected failure output: division by zero
+Actual: division by zero
+Exit status: 1
+Result: PASS
+
+Test: Bitwise infix and (~AND)
+Command: ./es -c "echo <={6 ~AND 3}"
+Expected: 2
+Actual: 2
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix or (~OR)
+Command: ./es -c "echo <={4 ~OR 1}"
+Expected: 5
+Actual: 5
+Exit status: 0
+Result: PASS
+
+Test: Bitwise infix xor (~XOR)
+Command: ./es -c "echo <={5 ~XOR 3}"
+Expected: 6
+Actual: 6
+Exit status: 0
+Result: PASS
+
+Test: Bitwise prefix not (~NOT)
+Command: ./es -c "echo <={~NOT 0}"
+Expected: -1
+Actual: -1
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift left (~SHL)
+Command: ./es -c "echo <={8 ~SHL 2}"
+Expected: 32
+Actual: 32
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift right (~SHR)
+Command: ./es -c "echo <={12 ~SHR 2}"
+Expected: 3
+Actual: 3
+Exit status: 0
+Result: PASS
+
+Test: Bitwise shift with variables (~SHL/~SHR)
+Command: ./es test/scripts/bitwise-infix-vars.es
+Expected: 32 4
+Actual: 32 4
+Exit status: 0
+Result: PASS
+
