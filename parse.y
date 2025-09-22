@@ -39,7 +39,7 @@ static Tree *arithword(Tree *t) {
 }
 
 %type <str>	keyword
-%type <tree>	body cmd cmdsa cmdsan comword first fn line word param assign arith
+%type <tree>	body cmd cmdsa cmdsan comword first fn line word param assign
 		args binding bindings params nlwords words simple redir sword
 		cases case
 %type <kind>	binder
@@ -117,8 +117,7 @@ first	: comword			{ $$ = $1; }
 sword	: comword			{ $$ = $1; }
 	| keyword			{ $$ = mk(nWord, $1); }
 
-word    : arith                         { $$ = $1; }
-        | sword                         { $$ = $1; }
+word    : sword                         { $$ = arithword($1); }
         | word '^' sword                { $$ = mk(nConcat, $1, $3); }
 
 comword : param				{ $$ = $1; }
@@ -135,8 +134,6 @@ comword : param				{ $$ = $1; }
 	| BFLAT sword			{ $$ = flatten(backquote(mk(nVar, mk(nWord, "ifs")), $2), " "); }
 	| BACKBACK word	sword		{ $$ = backquote($2, $3); }
 	| BBFLAT word sword             { $$ = flatten(backquote($2, $3), " " ); }
-
-arith   : sword                     { $$ = arithword($1); }
 
 param	: WORD				{ $$ = mk(nWord, $1); }
 	| QWORD				{ $$ = mk(nQword, $1); }

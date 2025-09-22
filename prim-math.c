@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
  * Arithmetic Operations
@@ -457,6 +458,156 @@ PRIM(notequal)
 }
 
 /*
+ * Type Conversion Operations
+ */
+
+PRIM(toint)
+{   char *endptr;
+    long result;
+
+    if (list == NULL || list->next != NULL)
+        fail("$&toint", "usage: $&toint number");
+
+    result = strtol(getstr(list->term), &endptr, 0);
+    if (endptr != NULL && *endptr != '\0') {
+        /* Try parsing as float first, then convert to int */
+        double d = strtod(getstr(list->term), &endptr);
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&toint", "argument must be a number");
+        result = (long)d;
+    }
+
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(tofloat)
+{   char *endptr;
+    double result;
+
+    if (list == NULL || list->next != NULL)
+        fail("$&tofloat", "usage: $&tofloat number");
+
+    result = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&tofloat", "argument must be a number");
+
+    return mklist(mkstr(str("%g", result)), NULL);
+}
+
+PRIM(isint)
+{   char *endptr;
+    long dummy;
+
+    if (list == NULL || list->next != NULL)
+        fail("$&isint", "usage: $&isint value");
+
+    dummy = strtol(getstr(list->term), &endptr, 0);
+    (void)dummy; /* suppress unused variable warning */
+    
+    return (endptr != NULL && *endptr != '\0') ? lfalse : ltrue;
+}
+
+PRIM(isfloat)
+{   char *endptr;
+    double dummy;
+    const char *str_val = getstr(list->term);
+
+    if (list == NULL || list->next != NULL)
+        fail("$&isfloat", "usage: $&isfloat value");
+
+    dummy = strtod(str_val, &endptr);
+    (void)dummy; /* suppress unused variable warning */
+    
+    /* It's a float if it parses as a number AND contains a decimal point */
+    return (endptr != NULL && *endptr != '\0') ? lfalse : 
+           (strchr(str_val, '.') != NULL) ? ltrue : lfalse;
+}
+
+/*
+ * Integer-only Arithmetic Operations
+ */
+
+PRIM(intaddition)
+{   char *endptr;
+    long result = 0;
+
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        long operand = strtol(getstr(lp->term), &endptr, 0);
+
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&intaddition", "arguments must be integers");
+
+        result += operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(intsubtraction)
+{   char *endptr;
+    long result;
+
+    if (list == NULL || list->next == NULL)
+        fail("$&intsubtraction", "usage: $&intsubtraction number number [...]");
+
+    result = strtol(getstr(list->term), &endptr, 0);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&intsubtraction", "arguments must be integers");
+
+    for (list = list->next; list != NULL; list = list->next) {
+        long operand = strtol(getstr(list->term), &endptr, 0);
+
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&intsubtraction", "arguments must be integers");
+
+        result -= operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(intmultiplication)
+{   char *endptr;
+    long result = 1;
+
+    if (list == NULL)
+        fail("$&intmultiplication", "usage: $&intmultiplication number [...]");
+
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        long operand = strtol(getstr(lp->term), &endptr, 0);
+
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&intmultiplication", "arguments must be integers");
+
+        result *= operand;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+PRIM(intdivision)
+{   char *endptr;
+    long result;
+
+    if (list == NULL || list->next == NULL)
+        fail("$&intdivision", "usage: $&intdivision dividend divisor [...]");
+
+    result = strtol(getstr(list->term), &endptr, 0);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&intdivision", "arguments must be integers");
+
+    for (list = list->next; list != NULL; list = list->next) {
+        long divisor = strtol(getstr(list->term), &endptr, 0);
+
+        if (endptr != NULL && *endptr != '\0')
+            fail("$&intdivision", "arguments must be integers");
+
+        if (divisor == 0)
+            fail("$&intdivision", "division by zero");
+
+        result /= divisor;
+    }
+    return mklist(mkstr(str("%ld", result)), NULL);
+}
+
+/*
  * Initialization
  */
 
@@ -472,6 +623,18 @@ extern Dict *initprims_math(Dict *primdict)
     X(min);
     X(max);
     X(count);
+    
+    /* Integer-only arithmetic operations */
+    X(intaddition);
+    X(intsubtraction);
+    X(intmultiplication);
+    X(intdivision);
+    
+    /* Type conversion operations */
+    X(toint);
+    X(tofloat);
+    X(isint);
+    X(isfloat);
     
     /* Bitwise operations */
     X(bitwiseshiftleft);

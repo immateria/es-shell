@@ -12,7 +12,7 @@ test 'math with variables' {
         assert {~ <={%addition $X $Y} 10} 'addition vars primitive'
         assert {~ <={%subtraction $Y $X} 2} 'subtraction vars primitive'
         assert {~ <={%multiplication $X $Y} 24} 'multiplication vars primitive'
-        assert {~ <={%division $Y $X} 1} 'division vars primitive'
+        assert {~ <={%division $Y $X} 1.5} 'division vars primitive'
         assert {~ <={%modulo $Y $X} 2} 'modulo vars primitive'
 }
 

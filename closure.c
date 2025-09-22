@@ -153,10 +153,10 @@ extern Closure *extractbindings(Tree *input_tree)
                 tree = tree->u[0].p;
         }
 
-    CatchException(exception)
+    CatchException(caught_exception)
 
         chain = chain->next;
-        throw(exception);
+        throw(caught_exception);
 
     EndExceptionHandler
 

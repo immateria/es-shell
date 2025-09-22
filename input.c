@@ -463,7 +463,7 @@ extern Boolean isfromfd(void) {
  */
 #if HAVE_READLINE
 /* quote -- teach readline how to quote a word in es during completion */
-static char *quote(char *text, int type, char *qp) {
+static __attribute__((unused)) char *quote(char *text, int type, char *qp) {
 	char *p, *r;
 
 	/* worst-case size: string is 100% quote characters which will all be
@@ -492,7 +492,7 @@ static char *quote(char *text, int type, char *qp) {
 }
 
 /* unquote -- teach es how to unquote a word */
-static char *unquote(char *text, int quote_char) {
+static __attribute__((unused)) char *unquote(char *text, int quote_char) {
 	char *p, *r;
 
 	p = r = ealloc(strlen(text) + 1);
