@@ -53,6 +53,7 @@ static inline Boolean is_deleted_entry(const char *entry_name)
 {   return entry_name == DELETED_ENTRY;
 }
 
+static inline Boolean is_empty_entry(const char *entry_name) __attribute__((unused));
 static inline Boolean is_empty_entry(const char *entry_name)
 {   return entry_name == NULL;
 }

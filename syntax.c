@@ -69,7 +69,13 @@ typedef enum {
         infixBitOr,
         infixBitXor,
         infixShiftLeft,
-        infixShiftRight
+        infixShiftRight,
+        infixGreater,
+        infixLess,
+        infixGreaterEqual,
+        infixLessEqual,
+        infixEqual,
+        infixNotEqual
 } InfixOp;
 
 static Boolean caselessmatch(const char *word, const char *keyword) {
@@ -111,6 +117,12 @@ static InfixOp classifyinfix(Tree *t) {
         static const char *const bxorwords[] = { "~xor", "bitwise-xor", "bitwisexor" };
         static const char *const shlwords[] = { "~shl", "shift-left", "shift-left-by", "bitwise-shift-left" };
         static const char *const shrwords[] = { "~shr", "shift-right", "shift-right-by", "bitwise-shift-right" };
+        static const char *const gtwords[] = { "greater", "greater-than", "gt" };
+        static const char *const ltwords[] = { "less", "less-than", "lt" };
+        static const char *const gewords[] = { "greater-equal", "greater-than-or-equal", "ge", "gte" };
+        static const char *const lewords[] = { "less-equal", "less-than-or-equal", "le", "lte" };
+        static const char *const eqwords[] = { "equal", "equals", "eq" };
+        static const char *const newords[] = { "not-equal", "not-equals", "ne", "neq" };
 
         if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
                 return infixNone;
@@ -141,6 +153,18 @@ static InfixOp classifyinfix(Tree *t) {
                 return infixShiftLeft;
         if (matchany(s, shrwords, sizeof shrwords / sizeof shrwords[0]))
                 return infixShiftRight;
+        if (matchany(s, gtwords, sizeof gtwords / sizeof gtwords[0]))
+                return infixGreater;
+        if (matchany(s, ltwords, sizeof ltwords / sizeof ltwords[0]))
+                return infixLess;
+        if (matchany(s, gewords, sizeof gewords / sizeof gewords[0]))
+                return infixGreaterEqual;
+        if (matchany(s, lewords, sizeof lewords / sizeof lewords[0]))
+                return infixLessEqual;
+        if (matchany(s, eqwords, sizeof eqwords / sizeof eqwords[0]))
+                return infixEqual;
+        if (matchany(s, newords, sizeof newords / sizeof newords[0]))
+                return infixNotEqual;
         return infixNone;
 }
 
@@ -227,6 +251,24 @@ static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
         case infixShiftRight:
                 prim = "%bitwiseshiftright";
                 break;
+        case infixGreater:
+                prim = "%greater";
+                break;
+        case infixLess:
+                prim = "%less";
+                break;
+        case infixGreaterEqual:
+                prim = "%greaterequal";
+                break;
+        case infixLessEqual:
+                prim = "%lessequal";
+                break;
+        case infixEqual:
+                prim = "%equal";
+                break;
+        case infixNotEqual:
+                prim = "%notequal";
+                break;
         default:
                 return NULL;
         }
@@ -237,6 +279,7 @@ static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
 static Tree *parseproduct(Tree *lhs, Tree **restp, Boolean *sawop);
 static Tree *parsesum(Tree *lhs, Tree **restp, Boolean *sawop);
 static Tree *parsebitwise(Tree *lhs, Tree **restp, Boolean *sawop);
+static Tree *parsecomparison(Tree *lhs, Tree **restp, Boolean *sawop);
 
 static Tree *resolveinfixoperand(Tree *operand) {
         if (operand == NULL)
@@ -249,7 +292,7 @@ static Tree *resolveinfixoperand(Tree *operand) {
                         return NULL;
                 Tree *rest = group->CDR;
                 Boolean localsaw = FALSE;
-                Tree *parsed = parsebitwise(group->CAR, &rest, &localsaw);
+                Tree *parsed = parsecomparison(group->CAR, &rest, &localsaw);
                 if (parsed == NULL || rest != NULL)
                         return NULL;
                 if (localsaw) {
@@ -365,6 +408,42 @@ static Tree *parsebitwise(Tree *lhs, Tree **restp, Boolean *sawop) {
         return result;
 }
 
+static Tree *parsecomparison(Tree *lhs, Tree **restp, Boolean *sawop) {
+        Tree *result = parsebitwise(lhs, restp, sawop);
+        if (result == NULL)
+                return NULL;
+        while (*restp != NULL) {
+                Tree *node = *restp;
+                InfixOp op;
+                Tree *rhsnode;
+                Tree *rhs;
+
+                if (node->kind != nList)
+                        return NULL;
+                op = classifyinfix(node->CAR);
+                if (op != infixGreater && op != infixLess && op != infixGreaterEqual &&
+                                op != infixLessEqual && op != infixEqual && op != infixNotEqual)
+                        break;
+                if (sawop != NULL)
+                        *sawop = TRUE;
+                *restp = node->CDR;
+                if (*restp == NULL)
+                        return NULL;
+                rhsnode = *restp;
+                if (rhsnode->kind != nList)
+                        return NULL;
+                rhs = rhsnode->CAR;
+                *restp = rhsnode->CDR;
+                rhs = parsebitwise(rhs, restp, sawop);
+                if (rhs == NULL)
+                        return NULL;
+                result = makeinfixcall(op, result, rhs);
+                if (result == NULL)
+                        return NULL;
+        }
+        return result;
+}
+
 extern Tree *rewriteinfix(Tree *first, Tree *args) {
         Tree *rest;
         Tree *result;
@@ -378,7 +457,7 @@ extern Tree *rewriteinfix(Tree *first, Tree *args) {
                 if (args == NULL)
                         return NULL;
                 rest = args->CDR;
-                operand = parsebitwise(args->CAR, &rest, &sawop);
+                operand = parsecomparison(args->CAR, &rest, &sawop);
                 if (operand == NULL || rest != NULL)
                         return NULL;
                 operand = normalizeinfix(operand);
@@ -423,7 +502,7 @@ extern Tree *rewriteinfix(Tree *first, Tree *args) {
                 return result->u[0].p;
         }
         rest = args;
-        result = parsebitwise(first, &rest, &sawop);
+        result = parsecomparison(first, &rest, &sawop);
         if (!sawop || result == NULL || rest != NULL)
                 return NULL;
         if (result->kind != nCall)

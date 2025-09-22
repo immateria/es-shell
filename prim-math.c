@@ -4,6 +4,7 @@
 #include "prim.h"
 
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 
 /*
@@ -11,227 +12,200 @@
  */
 
 PRIM(addition)
-{   long result = 0;
+{   double result = 0.0;
 
     for (List *lp = list; lp != NULL; lp = lp->next)
     {   char *endptr;
-        long  operand = strtol(getstr(lp->term), &endptr, 0);
+        double operand = strtod(getstr(lp->term), &endptr);
 
         if (endptr != NULL && *endptr != '\0')
-            fail("$&addition", "arguments must be integers");
+            fail("$&addition", "arguments must be numbers");
 
         result += operand;
     }
-    return mklist(mkstr(str("%ld", result)), NULL);
+    return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(subtraction)
 {   char *endptr;
-    long  result;
+    double result;
 
     if (list == NULL || list->next == NULL)
         fail("$&subtraction", "usage: $&subtraction number number [...]");
 
-    result = strtol(getstr(list->term), &endptr, 0);
+    result = strtod(getstr(list->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&subtraction", "arguments must be integers");
+        fail("$&subtraction", "arguments must be numbers");
 
     for (list = list->next; list != NULL; list = list->next)
-    {   long operand = strtol(getstr(list->term), &endptr, 0);
+    {   double operand = strtod(getstr(list->term), &endptr);
 
         if (endptr != NULL && *endptr != '\0')
-            fail("$&subtraction", "arguments must be integers");
+            fail("$&subtraction", "arguments must be numbers");
 
         result -= operand;
     }
-    return mklist(mkstr(str("%ld", result)), NULL);
+    return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(multiplication)
 {   char *endptr;
-    long  result = 1;
+    double result = 1.0;
 
     if (list == NULL)
         fail("$&multiplication", "usage: $&multiplication number [...]");
 
     for (List *lp = list; lp != NULL; lp = lp->next)
-    {   long operand = strtol(getstr(lp->term), &endptr, 0);
+    {   double operand = strtod(getstr(lp->term), &endptr);
 
         if (endptr != NULL && *endptr != '\0')
-            fail("$&multiplication", "arguments must be integers");
+            fail("$&multiplication", "arguments must be numbers");
 
         result *= operand;
     }
-    return mklist(mkstr(str("%ld", result)), NULL);
+    return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(division)
 {   char *endptr;
-    long  result;
+    double result;
 
     if (list == NULL || list->next == NULL)
         fail("$&division", "usage: $&division dividend divisor [...]");
 
-    result = strtol(getstr(list->term), &endptr, 0);
+    result = strtod(getstr(list->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&division", "arguments must be integers");
+        fail("$&division", "arguments must be numbers");
 
     for (list = list->next; list != NULL; list = list->next)
-    {   long divisor = strtol(getstr(list->term), &endptr, 0);
+    {   double divisor = strtod(getstr(list->term), &endptr);
 
         if (endptr != NULL && *endptr != '\0')
-            fail("$&division", "arguments must be integers");
+            fail("$&division", "arguments must be numbers");
 
-        if (divisor == 0)
+        if (divisor == 0.0)
             fail("$&division", "division by zero");
 
         result /= divisor;
     }
-    return mklist(mkstr(str("%ld", result)), NULL);
+    return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(modulo)
 {   char *endptr;
-    long  dividend;
-    long  divisor;
+    double dividend;
+    double divisor;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&modulo", "usage: $&modulo dividend divisor");
 
-    dividend = strtol(getstr(list->term), &endptr, 0);
+    dividend = strtod(getstr(list->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be integers");
+        fail("$&modulo", "arguments must be numbers");
 
     list = list->next;
-    divisor = strtol(getstr(list->term), &endptr, 0);
+    divisor = strtod(getstr(list->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be integers");
+        fail("$&modulo", "arguments must be numbers");
 
-    if (divisor == 0)
+    if (divisor == 0.0)
         fail("$&modulo", "division by zero");
 
-    return mklist(mkstr(str("%ld", dividend % divisor)), NULL);
+    return mklist(mkstr(str("%g", fmod(dividend, divisor))), NULL);
 }
 
 PRIM(pow)
 {   char *endptr;
-    long  base_value;
-    long  exponent_value;
-    long  integer_result = 1;
+    double base_value;
+    double exponent_value;
+    double result;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&pow", "usage: $&pow base exponent");
 
-    base_value = strtol(getstr(list->term), &endptr, 0);
+    base_value = strtod(getstr(list->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&pow", "base must be an integer");
+        fail("$&pow", "base must be a number");
 
-    exponent_value = strtol(getstr(list->next->term), &endptr, 0);
+    exponent_value = strtod(getstr(list->next->term), &endptr);
 
     if (endptr != NULL && *endptr != '\0')
-        fail("$&pow", "exponent must be an integer");
+        fail("$&pow", "exponent must be a number");
 
-    if (exponent_value < 0) {
-        unsigned long magnitude;
-        double fractional_result = 1.0;
-        double base_as_double;
-        char buffer[128];
-        int written;
+    if (base_value == 0.0 && exponent_value < 0.0)
+        fail("$&pow", "zero cannot be raised to a negative power");
 
-        if (base_value == 0)
-            fail("$&pow", "zero cannot be raised to a negative power");
-        if (exponent_value == LONG_MIN)
-            fail("$&pow", "exponent magnitude too large");
+    result = pow(base_value, exponent_value);
 
-        magnitude = (unsigned long) -exponent_value;
-        base_as_double = (double) base_value;
-
-        for (unsigned long i = 0; i < magnitude; i++)
-            fractional_result /= base_as_double;
-
-        if (fractional_result == 0.0)
-            return mklist(mkstr(str("0")), NULL);
-
-        written = snprintf(buffer, sizeof buffer, "%.15g", fractional_result);
-
-        if (written < 0 || written >= (int) sizeof buffer)
-            fail("$&pow", "unable to format fractional result");
-
-        return mklist(mkstr(str("%s", buffer)), NULL);
-    }
-
-    for (long i = 0; i < exponent_value; i++)
-        integer_result *= base_value;
-
-    return mklist(mkstr(str("%ld", integer_result)), NULL);
+    return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(abs)
 {   char *endptr;
-    long  input_value;
+    double input_value;
  
     if (list == NULL || list->next != NULL)
         fail("$&abs", "usage: $&abs number");
     
-    input_value = strtol(getstr(list->term), &endptr, 0);
+    input_value = strtod(getstr(list->term), &endptr);
     
     if (endptr != NULL && *endptr != '\0')
-        fail("$&abs", "argument must be an integer");
+        fail("$&abs", "argument must be a number");
     
-    return mklist(mkstr(str("%ld", input_value < 0 ? -input_value : input_value)), NULL);
+    return mklist(mkstr(str("%g", fabs(input_value))), NULL);
 }
 
 PRIM(min)
 {   char *endptr;
-    long  minimum_value;
+    double minimum_value;
  
     if (list == NULL)
         fail("$&min", "usage: $&min number [number ...]");
     
-    minimum_value = strtol(getstr(list->term), &endptr, 0);
+    minimum_value = strtod(getstr(list->term), &endptr);
     
     if (endptr != NULL && *endptr != '\0')
-        fail("$&min", "arguments must be integers");
+        fail("$&min", "arguments must be numbers");
  
     for (list = list->next; list != NULL; list = list->next)
-    {   long current_value = strtol(getstr(list->term), &endptr, 0);
+    {   double current_value = strtod(getstr(list->term), &endptr);
      
         if (endptr != NULL && *endptr != '\0')
-            fail("$&min", "arguments must be integers");
+            fail("$&min", "arguments must be numbers");
         
         if (current_value < minimum_value)
             minimum_value = current_value;
     }
-    return mklist(mkstr(str("%ld", minimum_value)), NULL);
+    return mklist(mkstr(str("%g", minimum_value)), NULL);
 }
 
 PRIM(max)
 {   char *endptr;
-    long  maximum_value;
+    double maximum_value;
  
     if (list == NULL)
         fail("$&max", "usage: $&max number [number ...]");
     
-    maximum_value = strtol(getstr(list->term), &endptr, 0);
+    maximum_value = strtod(getstr(list->term), &endptr);
     
     if (endptr != NULL && *endptr != '\0')
-        fail("$&max", "arguments must be integers");
+        fail("$&max", "arguments must be numbers");
  
     for (list = list->next; list != NULL; list = list->next)
-    {   long current_value = strtol(getstr(list->term), &endptr, 0);
+    {   double current_value = strtod(getstr(list->term), &endptr);
      
         if (endptr != NULL && *endptr != '\0')
-            fail("$&max", "arguments must be integers");
+            fail("$&max", "arguments must be numbers");
         
         if (current_value > maximum_value)
             maximum_value = current_value;
     }
-    return mklist(mkstr(str("%ld", maximum_value)), NULL);
+    return mklist(mkstr(str("%g", maximum_value)), NULL);
 }
 
 PRIM(count)
@@ -369,6 +343,120 @@ PRIM(not)
 }
 
 /*
+ * Comparison Operations
+ */
+
+PRIM(greater)
+{   char *endptr;
+    double first, second;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&greater", "usage: $&greater number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&greater", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&greater", "arguments must be numbers");
+
+    return first > second ? ltrue : lfalse;
+}
+
+PRIM(less)
+{   char *endptr;
+    double first, second;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&less", "usage: $&less number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&less", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&less", "arguments must be numbers");
+
+    return first < second ? ltrue : lfalse;
+}
+
+PRIM(greaterequal)
+{   char *endptr;
+    double first, second;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&greaterequal", "usage: $&greaterequal number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&greaterequal", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&greaterequal", "arguments must be numbers");
+
+    return first >= second ? ltrue : lfalse;
+}
+
+PRIM(lessequal)
+{   char *endptr;
+    double first, second;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&lessequal", "usage: $&lessequal number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&lessequal", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&lessequal", "arguments must be numbers");
+
+    return first <= second ? ltrue : lfalse;
+}
+
+PRIM(equal)
+{   char *endptr;
+    double first, second;
+    const double epsilon = 1e-15;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&equal", "usage: $&equal number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&equal", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&equal", "arguments must be numbers");
+
+    return fabs(first - second) < epsilon ? ltrue : lfalse;
+}
+
+PRIM(notequal)
+{   char *endptr;
+    double first, second;
+    const double epsilon = 1e-15;
+
+    if (list == NULL || list->next == NULL || list->next->next != NULL)
+        fail("$&notequal", "usage: $&notequal number1 number2");
+
+    first = strtod(getstr(list->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&notequal", "arguments must be numbers");
+
+    second = strtod(getstr(list->next->term), &endptr);
+    if (endptr != NULL && *endptr != '\0')
+        fail("$&notequal", "arguments must be numbers");
+
+    return fabs(first - second) >= epsilon ? ltrue : lfalse;
+}
+
+/*
  * Initialization
  */
 
@@ -392,6 +480,14 @@ extern Dict *initprims_math(Dict *primdict)
     X(or);
     X(xor);
     X(not);
+    
+    /* Comparison operations */
+    X(greater);
+    X(less);
+    X(greaterequal);
+    X(lessequal);
+    X(equal);
+    X(notequal);
     
     return primdict;
 }

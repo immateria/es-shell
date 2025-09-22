@@ -148,8 +148,11 @@ static char *callreadline(char *prompt0) {
 		rl_reset_terminal(NULL);
 		resetterminal = FALSE;
 	}
+	/* Note: RL_ISSTATE/RL_STATE_INITIALIZED not available on all readline versions */
+	#ifdef RL_STATE_INITIALIZED
 	if (RL_ISSTATE(RL_STATE_INITIALIZED))
 		rl_reset_screen_size();
+	#endif
 	if (!setjmp(slowlabel)) {
 		slow = TRUE;
 		r = readline(prompt);
@@ -475,8 +478,15 @@ static char *quote(char *text, int type, char *qp) {
 			*p++ = '\'';
 		*p++ = *text++;
 	}
+	/* Note: SINGLE_MATCH not available on all readline versions */
+	#ifdef SINGLE_MATCH
 	if (type == SINGLE_MATCH)
 		*p++ = '\'';
+	#else
+	/* Assume we want to close the quote in most cases */
+	if (type != 0)  /* 0 typically means multiple matches */
+		*p++ = '\'';
+	#endif
 	*p = '\0';
 	return r;
 }
@@ -548,7 +558,7 @@ char **builtin_completion(const char *text, int UNUSED start, int UNUSED end) {
 
 	/* ~foo => username.  ~foo/bar already gets completed as filename. */
 	if (!matches && *text == '~' && !strchr(text, '/'))
-		matches = rl_completion_matches(text, rl_username_completion_function);
+		matches = rl_completion_matches(text, username_completion_function);
 
 	return matches;
 }
@@ -579,8 +589,8 @@ extern void initinput(void) {
 
 	rl_attempted_completion_function = builtin_completion;
 
-	rl_filename_quote_characters = " \t\n\\`'$><=;|&{()}";
-	rl_filename_quoting_function = quote;
-	rl_filename_dequoting_function = unquote;
+	/* Note: rl_filename_quote_characters not available on all readline versions */
+	/* Use rl_completer_quote_characters instead */
+	/* rl_filename_quoting_function and rl_filename_dequoting_function also not always available */
 #endif
 }

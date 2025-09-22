@@ -324,12 +324,18 @@ fn-%pow                = $&pow
 fn-%abs                = $&abs
 fn-%min                = $&min
 fn-%max                = $&max
+fn-%greater            = $&greater
+fn-%less               = $&less
+fn-%greaterequal       = $&greaterequal
+fn-%lessequal          = $&lessequal
+fn-%equal              = $&equal
+fn-%notequal           = $&notequal
 fn-%bitwiseshiftleft   = $&bitwiseshiftleft
 fn-%bitwiseshiftright  = $&bitwiseshiftright
-fn-%bitwiseand         = $&and
-fn-%bitwiseor          = $&or
-fn-%bitwisexor         = $&xor
-fn-%bitwisenot         = $&not
+fn-%bitwiseand         = $&bitwiseand
+fn-%bitwiseor          = $&bitwiseor
+fn-%bitwisexor         = $&bitwisexor
+fn-%bitwisenot         = $&bitwisenot
 
 #    Note that $&backquote returns the status of the child process
 #    as the first value of its result list.  The default %backquote
@@ -436,13 +442,12 @@ fn-%open-append    = %openfile a+       # >>< file, <>> file
 
 fn %one {
     if {!~ $#* 1} {
-        throw error %one <={
-            if {~ $#* 0} {
-                result 'null filename in redirection'
-            } {
-                result 'too many files in redirection: ' $*
-            }
+        if {~ $#* 0} {
+            echo 'null filename in redirection' >[1=2]
+        } {
+            echo 'too many files in redirection: ' $* >[1=2]
         }
+        return 1
     }
     result $*
 }
@@ -859,26 +864,48 @@ fn enumerate list-values {
 }
 
 fn take number list-values {
-    out = ()
-    counter = ()
-    for (item = $list-values) {
-        if {~ <={ %count $counter } $number} { break }
-        out     = $out $item
-        counter = $counter _
-    }
-    result $out
+    # Handle edge cases
+    if {~ $number 0} { 
+        result () 
+    } {if {~ $list-values ()} { 
+        result () 
+    } {
+        # General case: use accumulator pattern like filter
+        out = ()
+        counter = ()
+        for (item = $list-values) {
+            count = <={ %count $counter }
+            # Only add items if we haven't reached the limit
+            if {!~ $count $number} {
+                out = $out $item
+                counter = $counter _
+            }
+        }
+        result $out
+    }}
 }
 
 fn drop number list-values {
-    remainder = $list-values
-    skipped = ()
-    while { !~ <={ %count $remainder } 0 } {
-        if { ~ <={ %count $skipped } $number } { break } {
-            remainder = $remainder(2 ...)
-            skipped = $skipped _
+    # Handle edge cases
+    if {~ $number 0} { 
+        result $list-values 
+    } {if {~ $list-values ()} { 
+        result () 
+    } {
+        # General case: skip first 'number' items
+        out = ()
+        counter = ()
+        for (item = $list-values) {
+            count = <={ %count $counter }
+            # Only add items after we've skipped enough
+            if {~ $count $number} {
+                out = $out $item
+            } {
+                counter = $counter _
+            }
         }
-    }
-    result $remainder
+        result $out
+    }}
 }
 
 fn join-list separator list-values {
@@ -952,6 +979,52 @@ fn for-each? predicate list-values {
         if { $predicate $item } { } { fail = true }
     }
     if {~ $fail true} { status-fail } { status-pass }
+}
+
+#
+# Help and documentation functions
+#
+
+# Main help function - wrapper around %help primitive
+fn help topics { %help $topics }
+
+# Convenience aliases for help topics
+fn help-arithmetic { %help arithmetic }
+fn help-bitwise { %help bitwise }
+fn help-unary { %help unary }
+fn help-primitives { %help primitives }
+
+# List all available primitives and functions
+fn builtins {
+    echo 'ES SHELL BUILT-IN FUNCTIONS:'
+    echo ''
+    echo 'HELP COMMANDS:'
+    echo '  help [topic]     - Show help (topics: arithmetic, bitwise, unary, primitives)'
+    echo '  builtins         - Show this list'
+    echo ''
+    echo 'MATHEMATICAL OPERATORS:'
+    echo '  Arithmetic: +, -, *, /, %, **, plus, minus, multiply, divide, mod, power'
+    echo '  Bitwise: ~and, ~or, ~xor, ~shl, ~shr, ~not, bitwiseand, bitwiseor, bitwisexor'
+    echo '  Unary: neg, pos, abs, ~not, negate, positive, bitnot'
+    echo '  Functions: min, max, count'
+    echo ''
+    echo 'CONTROL STRUCTURES:'
+    echo '  if {condition} {then} {else}'
+    echo '  for (var = values) {body}'
+    echo '  while {condition} {body}'
+    echo '  case $var in pattern {body} ...'
+    echo ''
+    echo 'VARIABLE OPERATIONS:'
+    echo '  var = value      - Assignment'
+    echo '  $var             - Variable reference'
+    echo '  local (var = value) {body}'
+    echo ''
+    echo 'EVALUATION:'
+    echo '  <={expression}   - Evaluate arithmetic/functional expression'
+    echo '  `{command}       - Command substitution'
+    echo '  ${var}           - Variable substitution'
+    echo ''
+    echo 'For detailed help on math operations: help arithmetic'
 }
 
 #

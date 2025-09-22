@@ -25,8 +25,6 @@ static Tree *arithword(Tree *t) {
 %token		MATCH
 
 %left           '^' '='
-%left           PLUS SUBTRACT MINUS
-%left           MULTIPLY DIVIDE
 %left		MATCH LOCAL LET FOR CLOSURE ')'
 %left		ANDAND OROR NL
 %left		'!'
@@ -138,12 +136,7 @@ comword : param				{ $$ = $1; }
 	| BACKBACK word	sword		{ $$ = backquote($2, $3); }
 	| BBFLAT word sword             { $$ = flatten(backquote($2, $3), " " ); }
 
-arith   : arith PLUS arith          { $$ = mk(nCall, prefix("%addition", treecons($1, treecons($3, NULL)))); }
-        | arith SUBTRACT arith      { $$ = mk(nCall, prefix("%subtraction", treecons($1, treecons($3, NULL)))); }
-        | arith MINUS arith         { $$ = mk(nCall, prefix("%subtraction", treecons($1, treecons($3, NULL)))); }
-        | arith MULTIPLY arith      { $$ = mk(nCall, prefix("%multiplication", treecons($1, treecons($3, NULL)))); }
-        | arith DIVIDE arith        { $$ = mk(nCall, prefix("%division", treecons($1, treecons($3, NULL)))); }
-        | sword                     { $$ = arithword($1); }
+arith   : sword                     { $$ = arithword($1); }
 
 param	: WORD				{ $$ = mk(nWord, $1); }
 	| QWORD				{ $$ = mk(nQword, $1); }
@@ -179,9 +172,4 @@ keyword	: '!'		{ $$ = "!"; }
 	| FN		{ $$ = "fn"; }
 	| CLOSURE	{ $$ = "%closure"; }
 	| MATCH		{ $$ = "match"; }
-	| PLUS		{ $$ = "plus"; }
-	| SUBTRACT	{ $$ = "subtract"; }
-	| MINUS		{ $$ = "minus"; }
-	| MULTIPLY	{ $$ = "multiply"; }
-	| DIVIDE		{ $$ = "divide"; }
 

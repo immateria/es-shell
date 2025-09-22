@@ -95,7 +95,7 @@ extern void loghistory(char *cmd) {
 	if (history == NULL)
 		return;
 
-	if ((err = append_history(1, history))) {
+	if ((err = write_history(history))) {
 		eprint("history(%s): %s\n", history, esstrerror(err));
 		vardef("history", NULL, NULL);
 	}

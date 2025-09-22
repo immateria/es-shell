@@ -200,20 +200,6 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
                         return CLOSURE;
                 } else if (streq(buf, "match")) {
                         return MATCH;
-                } else if (*buf == 'p' || *buf == 'P') {
-                        if (streq(buf + 1, "lus") || streq(buf + 1, "LUS"))
-                                return PLUS;
-                } else if (*buf == 's' || *buf == 'S') {
-                        if (streq(buf + 1, "ubtract") || streq(buf + 1, "UBTRACT"))
-                                return SUBTRACT;
-                } else if (*buf == 'm' || *buf == 'M') {
-                        if (streq(buf + 1, "inus") || streq(buf + 1, "INUS"))
-                                return MINUS;
-                        if (streq(buf + 1, "ultiply") || streq(buf + 1, "ULTIPLY"))
-                                return MULTIPLY;
-                } else if (*buf == 'd' || *buf == 'D') {
-                        if (streq(buf + 1, "ivide") || streq(buf + 1, "IVIDE"))
-                                return DIVIDE;
                 }
                 w = RW;
                 y->str = pdup(buf);

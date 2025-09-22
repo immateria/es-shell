@@ -340,6 +340,105 @@ PRIM(resetterminal) {
 }
 #endif
 
+PRIM(help) {
+	const char *topic = NULL;
+	
+	if (list != NULL) {
+		if (list->next != NULL)
+			fail("$&help", "usage: help [topic]");
+		topic = getstr(list->term);
+	}
+	
+	if (topic == NULL || streq(topic, "")) {
+		print("Es Shell Help - Available Topics:\n\n");
+		print("ARITHMETIC OPERATORS:\n");
+		print("  Infix:     3 + 5, 10 - 3, 4 * 5, 20 / 4, 13 %% 5\n");
+		print("  Words:     3 plus 5, 10 minus 3, 4 multiply 5, 20 divide 4, 13 mod 5\n");
+		print("  Power:     2 ** 3, 2 power 3\n");
+		print("  Min/Max:   5 min 3, 5 max 3\n\n");
+		
+		print("BITWISE OPERATORS:\n");
+		print("  Words:     5 ~and 3, 5 ~or 3, 5 ~xor 3, 8 ~shl 1, 16 ~shr 1\n");
+		print("  Alternate: 5 bitwiseand 3, 5 bitwiseor 3, 5 bitwisexor 3\n\n");
+		
+		print("UNARY OPERATORS:\n");
+		print("  Negate:    neg 5, negate 5 (result: -5)\n");
+		print("  Positive:  pos 5, positive 5 (result: 5)\n");
+		print("  Bitwise:   ~not 5, bitnot 5 (result: -6)\n");
+		print("  Absolute:  abs -5 (result: 5)\n\n");
+		
+		print("PRIMITIVES (use with %%):\n");
+		print("  %%addition, %%subtraction, %%multiplication, %%division, %%modulo\n");
+		print("  %%pow, %%abs, %%min, %%max, %%count\n");
+		print("  %%bitwiseand, %%bitwiseor, %%bitwisexor, %%bitwisenot\n");
+		print("  %%bitwiseshiftleft, %%bitwiseshiftright\n\n");
+		
+		print("EXAMPLES:\n");
+		print("  echo <={2 + 3 * 4}     # 14 (precedence: * before +)\n");
+		print("  echo <={neg 5 + 3}     # -2 (unary then infix)\n");
+		print("  echo <={5 ~and 3}      # 1  (bitwise AND)\n");
+		print("  echo <={2 ** 3}        # 8  (power)\n");
+		print("  echo <={abs neg 10}    # 10 (absolute of negative)\n\n");
+		
+		print("For specific help: help arithmetic, help bitwise, help unary, help primitives\n");
+	} else if (streq(topic, "arithmetic")) {
+		print("ARITHMETIC OPERATORS:\n\n");
+		print("Addition:      3 + 5  or  3 plus 5       → 8\n");
+		print("Subtraction:   10 - 3  or  10 minus 3     → 7\n");
+		print("Multiplication: 4 * 5  or  4 multiply 5   → 20\n");
+		print("Division:      20 / 4  or  20 divide 4    → 5\n");
+		print("Modulo:        13 %% 5  or  13 mod 5       → 3\n");
+		print("Power:         2 ** 3  or  2 power 3      → 8\n");
+		print("Minimum:       5 min 3                    → 3\n");
+		print("Maximum:       5 max 3                    → 5\n\n");
+		print("Precedence: *, /, %%, ** before +, -\n");
+		print("Example: 2 + 3 * 4 = 14 (not 20)\n");
+	} else if (streq(topic, "bitwise")) {
+		print("BITWISE OPERATORS:\n\n");
+		print("Bitwise AND:    5 ~and 3  or  5 bitwiseand 3     → 1\n");
+		print("Bitwise OR:     5 ~or 3   or  5 bitwiseor 3      → 7\n");
+		print("Bitwise XOR:    5 ~xor 3  or  5 bitwisexor 3     → 6\n");
+		print("Shift Left:     8 ~shl 1  or  8 shift-left 1     → 16\n");
+		print("Shift Right:    16 ~shr 1 or  16 shift-right 1   → 8\n");
+		print("Bitwise NOT:    ~not 5    or  bitnot 5           → -6\n\n");
+		print("All bitwise operations work on integers.\n");
+	} else if (streq(topic, "unary")) {
+		print("UNARY OPERATORS:\n\n");
+		print("Negate:      neg 5     or  negate 5      → -5\n");
+		print("Positive:    pos 5     or  positive 5    → 5\n");
+		print("Bitwise NOT: ~not 5    or  bitnot 5      → -6\n");
+		print("Absolute:    abs -5                      → 5\n\n");
+		print("Unary operators work with infix expressions:\n");
+		print("  neg 5 + 3 = -2  (negate 5, then add 3)\n");
+	} else if (streq(topic, "primitives")) {
+		print("PRIMITIVE FUNCTIONS (use with %%):\n\n");
+		print("Arithmetic:\n");
+		print("  %%addition 3 5        → 8\n");
+		print("  %%subtraction 10 3    → 7\n");
+		print("  %%multiplication 4 5  → 20\n");
+		print("  %%division 20 4       → 5\n");
+		print("  %%modulo 13 5         → 3\n");
+		print("  %%pow 2 3             → 8\n");
+		print("  %%abs -5              → 5\n");
+		print("  %%min 5 3 8           → 3\n");
+		print("  %%max 5 3 8           → 8\n");
+		print("  %%count a b c d       → 4\n\n");
+		print("Bitwise:\n");
+		print("  %%bitwiseand 5 3       → 1\n");
+		print("  %%bitwiseor 5 3        → 7\n");
+		print("  %%bitwisexor 5 3       → 6\n");
+		print("  %%bitwisenot 5         → -6\n");
+		print("  %%bitwiseshiftleft 8 1 → 16\n");
+		print("  %%bitwiseshiftright 16 1 → 8\n");
+	} else {
+		print("Unknown help topic: %s\n", topic);
+		print("Available topics: arithmetic, bitwise, unary, primitives\n");
+		print("Use 'help' with no arguments for overview.\n");
+	}
+	
+	return ltrue;
+}
+
 
 /*
  * initialization
@@ -367,6 +466,7 @@ extern Dict *initprims_etc(Dict *primdict) {
 	X(exitonfalse);
 	X(noreturn);
 	X(setmaxevaldepth);
+	X(help);
 #if HAVE_READLINE
 	X(sethistory);
 	X(writehistory);

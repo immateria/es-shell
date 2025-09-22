@@ -1,266 +1,490 @@
-/* fd.c -- file descriptor manipulations ($Revision: 1.2 $) */
+/* eval.c -- evaluation of lists and trees ($Revision: 1.2 $) */
 
 #include "es.h"
 
+unsigned long evaldepth = 0, maxevaldepth = MAXmaxevaldepth;
 
-/* mvfd -- duplicate a file descriptor and close the old one */
-extern void mvfd(int old_fd, int new_fd)
-{   if (old_fd != new_fd)
-    {   int duplicated_fd = dup2(old_fd, new_fd);
-        if (duplicated_fd == -1)
-            fail("es:mvfd", "dup2: %s", esstrerror(errno));
-        assert(duplicated_fd == new_fd);
-        close(old_fd);
-    }
+static Noreturn failexec(char *file, List *args) {
+	List *fn;
+	assert(gcisblocked());
+	fn = varlookup("fn-%exec-failure", NULL);
+	if (fn != NULL) {
+		int olderror = errno;
+		Ref(List *, list, append(fn, mklist(mkstr(file), args)));
+		RefAdd(file);
+		gcenable();
+		RefRemove(file);
+		eval(list, NULL, 0);
+		RefEnd(list);
+		errno = olderror;
+	}
+	eprint("%s: %s\n", file, esstrerror(errno));
+	esexit(1);
 }
 
-
-/*
- * Deferred file descriptor operations
- * 
- * We maintain a stack of deferred file descriptor operations if in the parent shell.
- * If already in a forked process, operations are done immediately.
- * The deferred operations are performed later during closefds() call.
- */
-
-typedef struct {
-    int real_fd;
-    int user_fd;
-} Defer;
-
-static Defer *defer_table;
-static int defer_count = 0, defer_capacity = 0;
-
-/* dodeferred -- perform a deferred file descriptor operation
- * real_fd == -1 means close user_fd
- * otherwise duplicate real_fd to user_fd and close real_fd
- */
-static void dodeferred(int real_fd, int user_fd)
-{   assert(user_fd >= 0);
-    releasefd(user_fd);
-
-    if (real_fd == -1)
-        close(user_fd);
-    else
-    {   assert(real_fd >= 0);
-        mvfd(real_fd, user_fd);
-    }
+/* forkexec -- fork (if necessary) and exec */
+extern List *forkexec(char *file, List *list, Boolean inchild) {
+	int pid, status;
+	Vector *env;
+	gcdisable();
+	env = mkenv();
+	pid = efork(!inchild, FALSE);
+	if (pid == 0) {
+		execve(file, vectorize(list)->vector, env->vector);
+		failexec(file, list);
+	}
+	gcenable();
+	status = ewaitfor(pid);
+	if ((status & 0xff) == 0) {
+		sigint_newline = FALSE;
+		SIGCHK();
+		sigint_newline = TRUE;
+	} else
+		SIGCHK();
+	printstatus(0, status);
+	return mklist(mkterm(mkstatus(status), NULL), NULL);
 }
 
-/* pushdefer -- register a deferred fd operation
- * Arguments:
- *   in_parent: Boolean indicating if we're in parent shell
- *   real_fd: actual file descriptor (-1 for close)
- *   user_fd: user-visible file descriptor
- * Returns: ticket number for later undefer, or UNREGISTERED if immediate
- */
-static int pushdefer(Boolean in_parent, int real_fd, int user_fd)
-{   if (in_parent)
-    {   Defer *deferred_op;
-        if (defer_count >= defer_capacity)
-        {   int i;
-            for (i = 0; i < defer_count; i++)
-                unregisterfd(&defer_table[i].real_fd);
-            defer_capacity += 10;
-            defer_table = erealloc(defer_table, defer_capacity * sizeof(Defer));
-            for (i = 0; i < defer_count; i++)
-                registerfd(&defer_table[i].real_fd, TRUE);
-        }
-        deferred_op = &defer_table[defer_count++];
-        deferred_op->real_fd = real_fd;
-        deferred_op->user_fd = user_fd;
-        registerfd(&deferred_op->real_fd, TRUE);
-        return defer_count - 1;
-    }
-    else
-    {   dodeferred(real_fd, user_fd);
-        return UNREGISTERED;
-    }
+/* assign -- bind a list of values to a list of variables */
+static List *assign(Tree *varform, Tree *valueform0, Binding *binding0) {
+	Ref(List *, result, NULL);
+
+	Ref(Tree *, valueform, valueform0);
+	Ref(Binding *, binding, binding0);
+	Ref(List *, vars, glom(varform, binding, FALSE));
+
+	if (vars == NULL)
+		fail("es:assign", "null variable name");
+
+	Ref(List *, values, glom(valueform, binding, TRUE));
+	result = values;
+
+	for (; vars != NULL; vars = vars->next) {
+		List *value;
+		Ref(char *, name, getstr(vars->term));
+		if (values == NULL)
+			value = NULL;
+		else if (vars->next == NULL || values->next == NULL) {
+			value = values;
+			values = NULL;
+		} else {
+			value = mklist(values->term, NULL);
+			values = values->next;
+		}
+		vardef(name, binding, value);
+		RefEnd(name);
+	}
+
+	RefEnd4(values, vars, binding, valueform);
+	RefReturn(result);
 }
 
-/* defer_mvfd -- defer duplicating an fd (or immediately do it if in child) */
-extern int defer_mvfd(Boolean in_parent, int old_fd, int new_fd)
-{   assert(old_fd >= 0);
-    assert(new_fd >= 0);
-    return pushdefer(in_parent, old_fd, new_fd);
+/* letbindings -- create a new Binding containing let-bound variables */
+static Binding *letbindings(Tree *defn0, Binding *outer0,
+			    Binding *context0, int UNUSED evalflags) {
+	Ref(Binding *, binding, outer0);
+	Ref(Binding *, context, context0);
+	Ref(Tree *, defn, defn0);
+
+	for (; defn != NULL; defn = defn->u[1].p) {
+		assert(defn->kind == nList);
+		if (defn->u[0].p == NULL)
+			continue;
+
+		Ref(Tree *, assign, defn->u[0].p);
+		assert(assign->kind == nAssign);
+		Ref(List *, vars, glom(assign->u[0].p, context, FALSE));
+		Ref(List *, values, glom(assign->u[1].p, context, TRUE));
+
+		if (vars == NULL)
+			fail("es:let", "null variable name");
+
+		for (; vars != NULL; vars = vars->next) {
+			List *value;
+			Ref(char *, name, getstr(vars->term));
+			if (values == NULL)
+				value = NULL;
+			else if (vars->next == NULL || values->next == NULL) {
+				value = values;
+				values = NULL;
+			} else {
+				value = mklist(values->term, NULL);
+				values = values->next;
+			}
+			binding = mkbinding(name, value, binding);
+			RefEnd(name);
+		}
+
+		RefEnd3(values, vars, assign);
+	}
+
+	RefEnd2(defn, context);
+	RefReturn(binding);
 }
 
-/* defer_close -- defer closing an fd (or immediately close if in child) */
-extern int defer_close(Boolean in_parent, int fd)
-{   assert(fd >= 0);
-    return pushdefer(in_parent, -1, fd);
+/* localbind -- recursively convert a Bindings list into dynamic binding */
+static List *localbind(Binding *dynamic0, Binding *lexical0,
+		       Tree *body0, int evalflags) {
+	if (dynamic0 == NULL)
+		return walk(body0, lexical0, evalflags);
+	else {
+		Push p;
+		Ref(List *, result, NULL);
+		Ref(Tree *, body, body0);
+		Ref(Binding *, dynamic, dynamic0);
+		Ref(Binding *, lexical, lexical0);
+
+		varpush(&p, dynamic->name, dynamic->defn);
+		result = localbind(dynamic->next, lexical, body, evalflags);
+		varpop(&p);
+
+		RefEnd3(lexical, dynamic, body);
+		RefReturn(result);
+	}
+}
+	
+/* local -- build, recursively, one layer of local assignment */
+static List *local(Tree *defn, Tree *body0,
+		   Binding *bindings0, int evalflags) {
+	Ref(List *, result, NULL);
+	Ref(Tree *, body, body0);
+	Ref(Binding *, bindings, bindings0);
+	Ref(Binding *, dynamic,
+	    reversebindings(letbindings(defn, NULL, bindings, evalflags)));
+
+	result = localbind(dynamic, bindings, body, evalflags);
+
+	RefEnd3(dynamic, bindings, body);
+	RefReturn(result);
 }
 
-/* undefer -- undo a deferred operation by ticket number
- * Closes and unregisters the real fd if appropriate
- */
-extern void undefer(int ticket)
-{   if (ticket != UNREGISTERED)
-    {   Defer *deferred_op;
-        assert(ticket >= 0);
-        assert(defer_count > 0);
-        deferred_op = &defer_table[--defer_count];
-        assert(ticket == defer_count);
-        unregisterfd(&deferred_op->real_fd);
-        if (deferred_op->real_fd != -1)
-            close(deferred_op->real_fd);
-    }
+/* forloop -- evaluate a for loop */
+static List *forloop(Tree *defn0, Tree *body0,
+		     Binding *binding, int evalflags) {
+	static List MULTIPLE = { NULL, NULL };
+
+	Ref(List *, result, ltrue);
+	Ref(Binding *, outer, binding);
+	Ref(Binding *, looping, NULL);
+	Ref(Tree *, body, body0);
+
+	Ref(Tree *, defn, defn0);
+	for (; defn != NULL; defn = defn->u[1].p) {
+		assert(defn->kind == nList);
+		if (defn->u[0].p == NULL)
+			continue;
+		Ref(Tree *, assign, defn->u[0].p);
+		assert(assign->kind == nAssign);
+		Ref(List *, vars, glom(assign->u[0].p, outer, FALSE));
+		Ref(List *, list, glom(assign->u[1].p, outer, TRUE));
+		if (vars == NULL)
+			fail("es:for", "null variable name");
+		for (; vars != NULL; vars = vars->next) {
+			char *var = getstr(vars->term);
+			looping = mkbinding(var, list, looping);
+			list = &MULTIPLE;
+		}
+		RefEnd3(list, vars, assign);
+		SIGCHK();
+	}
+	looping = reversebindings(looping);
+	RefEnd(defn);
+
+	ExceptionHandler
+
+		for (;;) {
+			Boolean allnull = TRUE;
+			Ref(Binding *, bp, outer);
+			Ref(Binding *, lp, looping);
+			Ref(Binding *, sequence, NULL);
+			for (; lp != NULL; lp = lp->next) {
+				Ref(List *, value, NULL);
+				if (lp->defn != &MULTIPLE)
+					sequence = lp;
+				assert(sequence != NULL);
+				if (sequence->defn != NULL) {
+					value = mklist(sequence->defn->term,
+						       NULL);
+					sequence->defn = sequence->defn->next;
+					allnull = FALSE;
+				}
+				bp = mkbinding(lp->name, value, bp);
+				RefEnd(value);
+			}
+			RefEnd2(sequence, lp);
+			if (allnull) {
+				RefPop(bp);
+				break;
+			}
+			result = walk(body, bp, evalflags & eval_exitonfalse);
+			RefEnd(bp);
+			SIGCHK();
+		}
+
+	CatchException (e)
+
+		if (!termeq(e->term, "break"))
+			throw(e);
+		result = e->next;
+
+	EndExceptionHandler
+
+	RefEnd3(body, looping, outer);
+	RefReturn(result);
 }
 
-/* fdmap -- translate user fd to real fd accounting for deferred operations
- * Returns -1 if user fd maps to closed fd
- */
-extern int fdmap(int user_fd)
-{   int index = defer_count;
-    while (--index >= 0)
-    {   Defer *deferred_op = &defer_table[index];
-        if (user_fd == deferred_op->user_fd)
-        {   user_fd = deferred_op->real_fd;
-            if (user_fd == -1)
-                return -1;
-        }
-    }
-    return user_fd;
+/* matchpattern -- does the text match a pattern? */
+static List *matchpattern(Tree *subjectform0, Tree *patternform0,
+			  Binding *binding) {
+	Boolean result;
+	List *pattern;
+	Ref(Binding *, bp, binding);
+	Ref(Tree *, patternform, patternform0);
+	Ref(List *, subject, glom(subjectform0, bp, TRUE));
+	Ref(StrList *, quote, NULL);
+	pattern = glom2(patternform, bp, &quote);
+	result = listmatch(subject, pattern, quote);
+	RefEnd4(quote, subject, patternform, bp);
+	return result ? ltrue : lfalse;
 }
 
-/* remapfds -- apply all deferred fd operations to the current fd table
- * Called to finalize deferred operations
- */
-static void remapfds(void)
-{   Defer *defer, *defer_end;
-
-    if (defer_table == NULL)
-        return;
-    for (defer = defer_table, defer_end = &defer_table[defer_count]; defer < defer_end; defer++)
-    {   unregisterfd(&defer->real_fd);
-        dodeferred(defer->real_fd, defer->user_fd);
-    }
-    defer_count = 0;
+/* extractpattern -- Like matchpattern, but returns matches */
+static List *extractpattern(Tree *subjectform0, Tree *patternform0,
+			    Binding *binding) {
+	List *pattern;
+	Ref(List *, result, NULL);
+	Ref(Binding *, bp, binding);
+	Ref(Tree *, patternform, patternform0);
+	Ref(List *, subject, glom(subjectform0, bp, TRUE));
+	Ref(StrList *, quote, NULL);
+	pattern = glom2(patternform, bp, &quote);
+	result = (List *) extractmatches(subject, pattern, quote);
+	RefEnd4(quote, subject, patternform, bp);
+	RefReturn(result);
 }
 
+/* walk -- walk through a tree, evaluating nodes */
+extern List *walk(Tree *tree0, Binding *binding0, int flags) {
+	Tree *volatile tree = tree0;
+	Binding *volatile binding = binding0;
 
-/*
- * Registered file descriptor list
- * This list tracks pointers to file descriptors owned by the shell.
- * This helps avoid fd collisions and ensures proper cleanup on fork.
- */
+	SIGCHK();
 
-typedef struct {
-    int *fd_ptr;
-    Boolean close_on_fork;
-} Reserve;
+top:
+	if (tree == NULL)
+		return ltrue;
 
-static Reserve *reserved_fds = NULL;
-static int reserved_count = 0, reserved_capacity = 0;
+	switch (tree->kind) {
 
-/* registerfd -- reserve a file descriptor for shell use
- * Arguments:
- *   fd_ptr: pointer to file descriptor variable
- *   close_on_fork: whether to close fd during fork
- */
-extern void registerfd(int *fd_ptr, Boolean close_on_fork)
-{   
-#if ASSERTIONS
-    int i;
-    for (i = 0; i < reserved_count; i++)
-        assert(fd_ptr != reserved_fds[i].fd_ptr);
-#endif
+	    case nConcat: case nList: case nQword: case nVar: case nVarsub:
+	    case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
+		List *list;
+		Ref(Binding *, bp, binding);
+		list = glom(tree, binding, TRUE);
+		binding = bp;
+		RefEnd(bp);
+		return eval(list, binding, flags);
+	    }
 
-    if (reserved_count    >= reserved_capacity)
-    {   reserved_capacity += 10;
-        reserved_fds       = erealloc(reserved_fds, reserved_capacity * sizeof(Reserve));
-    }
+	    case nAssign:
+		return assign(tree->u[0].p, tree->u[1].p, binding);
 
-    reserved_fds[reserved_count].fd_ptr = fd_ptr;
-    reserved_fds[reserved_count].close_on_fork = close_on_fork;
-    reserved_count++;
+	    case nLet: case nClosure:
+		Ref(Tree *, body, tree->u[1].p);
+		binding = letbindings(tree->u[0].p, binding, binding, flags);
+		tree = body;
+		RefEnd(body);
+		goto top;
+
+	    case nLocal:
+		return local(tree->u[0].p, tree->u[1].p, binding, flags);
+
+	    case nFor:
+		return forloop(tree->u[0].p, tree->u[1].p, binding, flags);
+	
+	    case nMatch:
+		return matchpattern(tree->u[0].p, tree->u[1].p, binding);
+
+	    case nExtract:
+		return extractpattern(tree->u[0].p, tree->u[1].p, binding);
+
+	    default:
+		panic("walk: bad node kind %d", tree->kind);
+
+	}
+	NOTREACHED;
 }
 
-/* unregisterfd -- release a reserved file descriptor
- */
-extern void unregisterfd(int *fd_ptr)
-{   int i;
-    assert(reserved_fds != NULL);
-    assert(reserved_count > 0);
-    for (i = 0; i < reserved_count; i++)
-        if (reserved_fds[i].fd_ptr == fd_ptr)
-        {   reserved_fds[i] = reserved_fds[--reserved_count];
-            return;
-        }
-    panic("%x not on file descriptor reserved list", fd_ptr);
+/* bindargs -- bind an argument list to the parameters of a lambda */
+extern Binding *bindargs(Tree *params, List *args, Binding *binding) {
+	if (params == NULL)
+		return mkbinding("*", args, binding);
+
+	gcdisable();
+
+	for (; params != NULL; params = params->u[1].p) {
+		Tree *param;
+		List *value;
+		assert(params->kind == nList);
+		param = params->u[0].p;
+		assert(param->kind == nWord || param->kind == nQword);
+		if (args == NULL)
+			value = NULL;
+		else if (params->u[1].p == NULL || args->next == NULL) {
+			value = args;
+			args = NULL;
+		} else {
+			value = mklist(args->term, NULL);
+			args = args->next;
+		}
+		binding = mkbinding(param->u[0].s, value, binding);
+	}
+
+	Ref(Binding *, result, binding);
+	gcenable();
+	RefReturn(result);
 }
 
-/* closefds -- close reserved file descriptors during fork
- */
-extern void closefds(void)
-{   int i;
-    remapfds();
-    for (i = 0; i < reserved_count; i++)
-    {   Reserve *res = &reserved_fds[i];
-        if (res->close_on_fork)
-        {   int fd = *res->fd_ptr;
-            if (fd >= 3)
-                close(fd);
-            *res->fd_ptr = -1;
-        }
-    }
+/* pathsearch -- evaluate fn %pathsearch + some argument */
+extern List *pathsearch(Term *term) {
+	List *list;
+	Ref(List *, search, NULL);
+	search = varlookup("fn-%pathsearch", NULL);
+	if (search == NULL)
+		fail("es:pathsearch", "%E: fn %%pathsearch undefined", term);
+	list = mklist(term, NULL);
+	list = append(search, list);
+	RefEnd(search);
+	return eval(list, NULL, 0);
 }
 
-/* releasefd -- release a specific file descriptor for reuse
- * Duplicates fd to a safe number and closes original fd
- */
-extern void releasefd(int fd)
-{   int i;
-    assert(fd >= 0);
-    for (i = 0; i < reserved_count; i++)
-    {   int *fd_ptr = reserved_fds[i].fd_ptr;
-        int fd_val = *fd_ptr;
-        if (fd_val == fd)
-        {   *fd_ptr = dup(fd_val);
-            if (*fd_ptr == -1)
-            {   assert(errno != EBADF);
-                fail("es:releasefd", "%s", esstrerror(errno));
-            }
-            close(fd_val);
-        }
-    }
+/* eval -- evaluate a list, producing a list */
+extern List *eval(List *list0, Binding *binding0, int flags) {
+	Closure *volatile cp;
+	List *fn;
+
+	if (++evaldepth >= maxevaldepth)
+		fail("es:eval", "max-eval-depth exceeded");
+
+	Ref(List *, list, list0);
+	Ref(Binding *, binding, binding0);
+	Ref(char *, funcname, NULL);
+
+restart:
+	SIGCHK();
+	if (list == NULL) {
+		RefPop3(funcname, binding, list);
+		--evaldepth;
+		return ltrue;
+	}
+	assert(list->term != NULL);
+
+	if ((cp = getclosure(list->term)) != NULL) {
+		switch (cp->tree->kind) {
+		    case nPrim:
+			assert(cp->binding == NULL);
+			list = prim(cp->tree->u[0].s, list->next, binding, flags);
+			break;
+		    case nThunk:
+			list = walk(cp->tree->u[0].p, cp->binding, flags);
+			break;
+		    case nLambda:
+			ExceptionHandler
+
+				Push p;
+				Ref(Tree *, tree, cp->tree);
+				Ref(Binding *, context,
+					       bindargs(tree->u[0].p,
+							list->next,
+							cp->binding));
+				if (funcname != NULL)
+					varpush(&p, "0",
+						    mklist(mkterm(funcname,
+								  NULL),
+							   NULL));
+				list = walk(tree->u[1].p, context, flags);
+				if (funcname != NULL)
+					varpop(&p);
+				RefEnd2(context, tree);
+	
+			CatchException (e)
+
+				if (termeq(e->term, "return")) {
+					list = e->next;
+					goto done;
+				}
+				throw(e);
+
+			EndExceptionHandler
+			break;
+		    case nList: {
+			Ref(List *, lp, glom(cp->tree, cp->binding, TRUE));
+			list = append(lp, list->next);
+			RefEnd(lp);
+			goto restart;
+		    }
+		    case nConcat: {
+			Ref(Tree *, t, cp->tree);
+			while (t->kind == nConcat)
+				t = t->u[0].p;
+			if (t->kind == nPrim)
+				fail("es:eval", "invalid primitive name: %T", cp->tree);
+			RefEnd(t);
+		    }
+		    FALLTHROUGH;
+		    default:
+			panic("eval: bad closure node kind %d",
+			      cp->tree->kind);
+		    }
+		goto done;
+	}
+
+	/* the logic here is duplicated in $&whatis */
+
+	Ref(char *, name, getstr(list->term));
+	fn = varlookup2("fn-", name, binding);
+	if (fn != NULL) {
+		funcname = name;
+		list = append(fn, list->next);
+		RefPop(name);
+		goto restart;
+	}
+	if (isabsolute(name)) {
+		char *error = checkexecutable(name);
+		if (error != NULL)
+			fail("$&whatis", "%s: %s", name, error);
+		if (funcname != NULL) {
+			Term *fn = mkstr(funcname);
+			list = mklist(fn, list->next);
+		}
+		list = forkexec(name, list, flags & eval_inchild);
+		RefPop(name);
+		goto done;
+	}
+	RefEnd(name);
+
+	fn = pathsearch(list->term);
+	if (fn != NULL && fn->next == NULL
+	    && (cp = getclosure(fn->term)) == NULL) {
+		char *name = getstr(fn->term);
+		list = forkexec(name, list, flags & eval_inchild);
+		goto done;
+	}
+
+	if (fn != NULL)
+		funcname = getstr(list->term);
+	list = append(fn, list->next);
+	goto restart;
+
+done:
+	--evaldepth;
+	if ((flags & eval_exitonfalse) && !istrue(list))
+		esexit(exitstatus(list));
+	RefEnd2(funcname, binding);
+	RefReturn(list);
 }
 
-/* isdeferred -- check if fd is on deferred fd list
- */
-static Boolean isdeferred(int fd)
-{   Defer *defer, *defer_end = &defer_table[defer_count];
-    for (defer = defer_table; defer < defer_end; defer++)
-        if (defer->user_fd == fd)
-            return TRUE;
-    return FALSE;
-}
-
-/* newfd -- get a free file descriptor >= 3, avoiding deferred descriptors
- */
-extern int newfd(void)
-{   int i;
-    for (i = 3;; i++)
-    {   if (!isdeferred(i))
-        {   int fd = dup(i);
-		 
-            if (fd == -1)
-            {   if (errno != EBADF)
-                    fail("$&newfd", "newfd: %s", esstrerror(errno));
-                return i;
-            }
-				
-            else if (isdeferred(fd))
-            {   int new_fd = newfd();
-                close(fd);
-                return new_fd;
-            }
-				
-            else
-            {   close(fd);
-                return fd;
-            }
-		 
-        }
-    }
+/* eval1 -- evaluate a term, producing a list */
+extern List *eval1(Term *term, int flags) {
+	return eval(mklist(term, NULL), NULL, flags);
 }
