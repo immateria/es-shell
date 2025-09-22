@@ -1,0 +1,82 @@
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o access.o access.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o closure.o closure.c
+closure.c:156:5: warning: variable 'exception' is uninitialized when used within its own initialization [-Wuninitialized]
+  156 |     CatchException(exception)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~
+./es.h:538:21: note: expanded from macro 'CatchException'
+  538 |                         List *e = raised(exception); \
+      |                               ~          ^~~~~~~~~
+./es.h:522:20: note: expanded from macro 'raised'
+  522 | #define raised(e)       (e)
+      |                          ^
+1 warning generated.
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o conv.o conv.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o dict.o dict.c
+dict.c:56:23: warning: unused function 'is_empty_entry' [-Wunused-function]
+   56 | static inline Boolean is_empty_entry(const char *entry_name)
+      |                       ^~~~~~~~~~~~~~
+1 warning generated.
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o eval.o eval.c
+eval.c:291:5: warning: variable 'exception' is uninitialized when used within its own initialization [-Wuninitialized]
+  291 |     CatchException(exception)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~
+./es.h:538:21: note: expanded from macro 'CatchException'
+  538 |                         List *e = raised(exception); \
+      |                               ~          ^~~~~~~~~
+./es.h:522:20: note: expanded from macro 'raised'
+  522 | #define raised(e)       (e)
+      |                          ^
+eval.c:516:17: warning: variable 'exception' is uninitialized when used within its own initialization [-Wuninitialized]
+  516 |                 CatchException(exception)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+./es.h:538:21: note: expanded from macro 'CatchException'
+  538 |                         List *e = raised(exception); \
+      |                               ~          ^~~~~~~~~
+./es.h:522:20: note: expanded from macro 'raised'
+  522 | #define raised(e)       (e)
+      |                          ^
+2 warnings generated.
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o except.o except.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o fd.o fd.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o gc.o gc.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o glob.o glob.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o glom.o glom.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o input.o input.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o heredoc.o heredoc.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o history.o history.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o list.o list.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o main.o main.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o match.o match.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o open.o open.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o opt.o opt.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim-ctl.o prim-ctl.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim-etc.o prim-etc.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim-io.o prim-io.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim-math.o prim-math.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim-sys.o prim-sys.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o prim.o prim.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o print.o print.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o proc.o proc.c
+sh ./mksignal /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternalLegacy.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityVersions.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arm/_mcontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arm/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arm/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arm/types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/mach/arm/_structs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/mach/machine/_structs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/_mcontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_posix_availability.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_attr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_symbol_aliasing.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int16_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int32_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int64_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int8_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_intptr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_pid_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_sigaltstack.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_sigset_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_size_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int16_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int32_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int64_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int8_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_ucontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_uid_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_uintptr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/appleapiopts.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/signal.h /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/ptrcheck.h  > sigmsgs.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o sigmsgs.o sigmsgs.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o signal.o signal.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o split.o split.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o status.o status.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o str.o str.c
+bison -y -vd ./parse.y
+conflicts: 5 shift/reduce, 41 reduce/reduce
+cmp -s y.tab.h token.h || cp y.tab.h token.h
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o syntax.o syntax.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o term.o term.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o token.o token.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o tree.o tree.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o util.o util.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o var.o var.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o vec.o vec.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o version.o version.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o y.tab.o y.tab.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o dump.o dump.c
+gcc -o esdump -L/usr/local/opt/icu4c@76/lib  access.o closure.o conv.o dict.o eval.o except.o fd.o gc.o glob.o glom.o input.o heredoc.o history.o list.o main.o match.o open.o opt.o prim-ctl.o prim-etc.o prim-io.o prim-math.o prim-sys.o prim.o print.o proc.o sigmsgs.o signal.o split.o status.o str.o syntax.o term.o token.o tree.o util.o var.o vec.o version.o y.tab.o dump.o 
+./esdump < ./initial.es > initial.c
+gcc -I. -I. -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o initial.o initial.c
+gcc -o es -L/usr/local/opt/icu4c@76/lib  access.o closure.o conv.o dict.o eval.o except.o fd.o gc.o glob.o glom.o input.o heredoc.o history.o list.o main.o match.o open.o opt.o prim-ctl.o prim-etc.o prim-io.o prim-math.o prim-sys.o prim.o print.o proc.o sigmsgs.o signal.o split.o status.o str.o syntax.o term.o token.o tree.o util.o var.o vec.o version.o y.tab.o initial.o 

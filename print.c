@@ -2,6 +2,7 @@
 
 #include "es.h"
 #include "print.h"
+#include <stdio.h>
 
 #define	MAXCONV 256
 
@@ -159,6 +160,33 @@ static Boolean pctconv(Format *format) {
 	return FALSE;
 }
 
+static Boolean fconv(Format *format) {
+	double value = va_arg(format->args, double);
+	char buffer[64];
+	int len = snprintf(buffer, sizeof(buffer), "%f", value);
+	if (len > 0 && len < (int)sizeof(buffer))
+		fmtappend(format, buffer, len);
+	return FALSE;
+}
+
+static Boolean gconv(Format *format) {
+	double value = va_arg(format->args, double);
+	char buffer[64];
+	int len = snprintf(buffer, sizeof(buffer), "%g", value);
+	if (len > 0 && len < (int)sizeof(buffer))
+		fmtappend(format, buffer, len);
+	return FALSE;
+}
+
+static Boolean econv(Format *format) {
+	double value = va_arg(format->args, double);
+	char buffer[64];
+	int len = snprintf(buffer, sizeof(buffer), "%e", value);
+	if (len > 0 && len < (int)sizeof(buffer))
+		fmtappend(format, buffer, len);
+	return FALSE;
+}
+
 static Boolean badconv(Format *format) {
 	panic("bad conversion character in printfmt: %%%c", format->invoker);
 	return FALSE; /* hush up gcc -Wall */
@@ -184,6 +212,9 @@ static void inittab(void) {
 	fmttab['o'] = oconv;
 	fmttab['x'] = xconv;
 	fmttab['%'] = pctconv;
+	fmttab['f'] = fconv;
+	fmttab['g'] = gconv;
+	fmttab['e'] = econv;
 
 	fmttab['u'] = uconv;
 	fmttab['h'] = hconv;

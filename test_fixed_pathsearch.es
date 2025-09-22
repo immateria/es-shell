@@ -1,0 +1,1 @@
+fn-%pathsearch = @ name { access -n $name -1e -xf $path }

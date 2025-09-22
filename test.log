@@ -1,0 +1,66 @@
+./es -ps < ./test/test.es ./test/tests/*
+file permissions: passed!
+file types: passed!
+bitshift primitives: passed!
+bitshift with variables: passed!
+matches match: passed!
+redirects redirect: passed!
+map duplicates each item: passed!
+filter selects matching elements: passed!
+reduce concatenates list: passed!
+list-contains? searches lists: passed!
+for-each? reports predicate failures: passed!
+reduce-one folds list without seed: passed!
+enumerate pairs indexes and values: passed!
+take selects prefix of list: passed!
+drop skips prefix of list: passed!
+join-list interleaves separator: passed!
+zip-by-names pairs two lists: passed!
+file globbing: passed!
+asterisk patterns: passed!
+range patterns: passed!
+hyphenated function names: passed!
+match/if equivalence: passed!
+subjects: passed!
+error handling: passed!
+math primitives: passed!
+math with variables: passed!
+%addition 1 2 -> 3
+%subtraction 5 2 -> 3
+%multiplication 2 4 -> 8
+%division 8 2 -> 4
+%modulo 9 4 -> 1
+math logs: passed!
+es -c: passed!
+es -e: passed!
+es -p: passed!
+es -i: passed!
+syntactic sugar: passed!
+readfrom/writeto sugar: passed!
+heredoc sugar: passed!
+match sugar: passed!
+complex variables: passed!
+precedence: passed!
+lexical analysis: passed!
+tokenizer errors: passed!
+blow the input stack: passed!
+umask: passed!
+segmentation violation
+segmentation violation
+redirections
+- {~ <={%backquote <={%flatten '' \n} {%dup 2 1 {$es -c 'cat >(1 2 3)'}}} *^'too many'^*} failed 
+- {~ <={%backquote <={%flatten '' \n} {%dup 2 1 {$es -c 'cat >()'}}} *^'null'^*} failed 
+- 5 cases passed, 2 failed.
+exceptions: passed!
+signals in exception catchers: passed!
+heredocs and herestrings: passed!
+tilde matching: passed!
+flat command expansion: passed!
+equal sign in command arguments: passed!
+exit with signal codes: passed!
+$0 assignment: passed!
+backslash: passed!
+exit status: passed!
+wait is precise: passed!
+setpgid: passed!
+make: *** [test] Error 1

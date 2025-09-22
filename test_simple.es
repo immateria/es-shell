@@ -1,0 +1,2 @@
+# Simple test
+echo hello

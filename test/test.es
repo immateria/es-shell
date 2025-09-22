@@ -21,7 +21,7 @@ let (
 )
 # xml-escape is necessary to smush arbitrary text coming from es into junit XML.
 let (
-	fn xml-escape {
+	fn-xml-escape = @ {
 		let (result = ()) {
 			for (string = $*) {
 				string = <={%flatten '&amp;' <={%fsplit '&' $string}}
@@ -37,7 +37,7 @@ let (
 # These functions manage the test state variables.  report prints out the
 # results of the test, and returns false if any cases failed.
 let (
-	fn new-test title {
+	fn-new-test = @ title {
 		name = $title
 		cases = ()
 		passed-cases = ()
@@ -46,18 +46,18 @@ let (
 		test-execution-failure = ()
 	}
 
-	fn fail-case test-name cmd msg {
+	fn-fail-case = @ test-name cmd msg {
 		cases = $cases $^cmd
 		failed-cases = $failed-cases $^cmd
 		failure-msgs = $failure-msgs $^msg
 	}
 
-	fn pass-case test-name cmd {
+	fn-pass-case = @ test-name cmd {
 		cases = $cases $^cmd
 		passed-cases = $passed-cases $^cmd
 	}
 
-	fn report {
+	fn-report = @ {
 		if $junit {
 			echo <={%flatten '' \
 				'    <testsuite errors="0" failures="' $#failed-cases \
@@ -107,9 +107,9 @@ let (
 # test body to make up each test case.  after the test body is done executing,
 # test will call report to print the results of the test.
 let (status = ()) {
-	fn test title testbody {
+	fn-test = @ title testbody {
 		local (
-			fn assert cmd message {
+			fn-assert = @ cmd message {
 				let (result = ()) {
 					if {~ $message ()} {
 						message = $^cmd
@@ -140,7 +140,7 @@ let (status = ()) {
 		}
 	}
 
-	fn report-testfile {
+	fn-report-testfile = @ {
 		let (s = $status) {
 			status = ()
 			result $s

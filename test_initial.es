@@ -324,13 +324,7 @@ fn-%pow                = $&pow
 fn-%abs                = $&abs
 fn-%min                = $&min
 fn-%max                = $&max
-fn-%count       = $&count
-
-# Infix math operators for convenience
-fn-plus         = $&addition
-fn-minus        = $&subtraction
-fn-times        = $&multiplication
-fn-div          = $&division
+fn-%greater            = $&greater
 fn-%less               = $&less
 fn-%greaterequal       = $&greaterequal
 fn-%lessequal          = $&lessequal
@@ -599,9 +593,6 @@ fn-%home    = $&home
 
 fn-%pathsearch = @ name { access -n $name -1e -xf $path }
 
-# Initialize basic path for command resolution
-path = (/usr/bin /bin /usr/local/bin)
-
 #    The exec-failure hook is called in the child if an exec() fails.
 #    A default version is provided (under conditional compilation) for
 #    systems that don't do #! interpretation themselves.
@@ -813,7 +804,6 @@ noexport = noexport pid signals apid bqstatus fn-%dispatch path home matchexpr
 
 
 
-
 fn-status-pass = @ { ~ 1 1 }
 fn-status-fail = @ { !{ ~ 1 1 } }
 
@@ -852,7 +842,7 @@ fn-reduce = @ function accumulator list-values {
 }
 
 fn-reduce-one = @ function list-values {
-    if {~ $#list-values 0} { result () }
+    if {~ <={ %count $list-values } 0} { result () }
     accumulator = $list-values(1)
     rest = $list-values(2 ...)
     for (item = $rest) {
@@ -861,18 +851,18 @@ fn-reduce-one = @ function list-values {
     result $accumulator
 }
 
-fn-enumerate = @ list-values {
+fn enumerate list-values {
     counter = ()
     out     = ()
     for (item   = $list-values) {
-        index   = $#counter
+        index   = <={ %count $counter }
         out     = $out ($index $item)
         counter = $counter _
     }
     result $out
 }
 
-fn-take = @ number list-values {
+fn take number list-values {
     # Handle edge cases
     if {~ $number 0} { 
         result () 
@@ -883,7 +873,7 @@ fn-take = @ number list-values {
         out = ()
         counter = ()
         for (item = $list-values) {
-            count = $#counter
+            count = <={ %count $counter }
             # Only add items if we haven't reached the limit
             if {!~ $count $number} {
                 out = $out $item
@@ -894,7 +884,7 @@ fn-take = @ number list-values {
     }}
 }
 
-fn-drop = @ number list-values {
+fn drop number list-values {
     # Handle edge cases
     if {~ $number 0} { 
         result $list-values 
@@ -905,7 +895,7 @@ fn-drop = @ number list-values {
         out = ()
         counter = ()
         for (item = $list-values) {
-            count = $#counter
+            count = <={ %count $counter }
             # Only add items after we've skipped enough
             if {~ $count $number} {
                 out = $out $item
@@ -917,7 +907,7 @@ fn-drop = @ number list-values {
     }}
 }
 
-fn-join-list = @ separator list-values {
+fn join-list separator list-values {
     out = ()
     first = ()
     for (item = $list-values) {
@@ -927,18 +917,18 @@ fn-join-list = @ separator list-values {
 }
 
 # global var lookup (used by zip-by-names)
-fn-get-value-by-name = @ variable-name {
+fn get-value-by-name variable-name {
     code = '{' ^ ' result ' ^ '$' ^ $variable-name ^ ' }'
     result <={ eval $code }
 }
 
-fn-zip-by-names = @ left-name right-name {
+fn zip-by-names left-name right-name {
     left  = <={ get-value-by-name $left-name  }
     right = <={ get-value-by-name $right-name }
     out   = ()
     
-    while  { !~ $#left 0 } {
-        if { ~ $#right 0 } { break }
+    while  { !~ <={ %count $left } 0 } {
+        if { ~ <={ %count $right } 0 } { break }
         out   = $out ($left(1) $right(1))
         left  = $left(2  ...)
         right = $right(2 ...)
@@ -947,33 +937,33 @@ fn-zip-by-names = @ left-name right-name {
 }
 
 # ---------- Status-returning HOFs -----------------------------------
-fn-any? = @ predicate list-values {
+fn any? predicate list-values {
     hit = ()
     for (item = $list-values) {
-        if <={ $predicate $item } { hit = true }
+        if { $predicate $item } { hit = true }
     }
     if {~ $hit true} { status-pass } { status-fail }
 }
 
-fn-all? = @ predicate list-values {
+fn all? predicate list-values {
     fail = ()
     for (item = $list-values) {
-        if <={ $predicate $item } { } { fail = true }
+        if { $predicate $item } { } { fail = true }
     }
     if {~ $fail true} { status-fail } { status-pass }
 }
 
-fn-none? = @ predicate list-values {
-    if <={ any? $predicate $list-values } { status-fail } { status-pass }
+fn none? predicate list-values {
+    if { any? $predicate $list-values } { status-fail } { status-pass }
 }
 
-# Aliases (temporarily commented out due to bootstrap issues)
-fn-exists? = @ predicate list-values { any? $predicate $list-values }
-fn-every? = @ predicate list-values { all? $predicate $list-values }
-fn-not-any? = @ predicate list-values { none? $predicate $list-values }
+# Aliases
+fn exists?  predicate list-values { any?  $predicate $list-values }
+fn every?   predicate list-values { all?  $predicate $list-values }
+fn not-any? predicate list-values { none? $predicate $list-values }
 
 # list-contains?
-fn-list-contains? = @ needle list-values {
+fn list-contains? needle list-values {
     found = ()
     for (item = $list-values) {
         if {~ $item $needle} { found = true }
@@ -982,10 +972,10 @@ fn-list-contains? = @ needle list-values {
 }
 
 # for-each? — success only if all applications succeed (no short-circuit)
-fn-for-each? = @ predicate list-values {
+fn for-each? predicate list-values {
     fail = ()
     for (item = $list-values) {
-        if <={ $predicate $item } { } { fail = true }
+        if { $predicate $item } { } { fail = true }
     }
     if {~ $fail true} { status-fail } { status-pass }
 }
@@ -995,16 +985,16 @@ fn-for-each? = @ predicate list-values {
 #
 
 # Main help function - wrapper around %help primitive
-fn-help = @ topics { %help $topics }
+fn help topics { %help $topics }
 
 # Convenience aliases for help topics
-fn-help-arithmetic = @ { %help arithmetic }
-fn-help-bitwise = @ { %help bitwise }
-fn-help-unary = @ { %help unary }
-fn-help-primitives = @ { %help primitives }
+fn help-arithmetic { %help arithmetic }
+fn help-bitwise { %help bitwise }
+fn help-unary { %help unary }
+fn help-primitives { %help primitives }
 
 # List all available primitives and functions
-fn-builtins = @ {
+fn builtins {
     echo 'ES SHELL BUILT-IN FUNCTIONS:'
     echo ''
     echo 'HELP COMMANDS:'
@@ -1036,3 +1026,12 @@ fn-builtins = @ {
     echo 'For detailed help on math operations: help arithmetic'
 }
 
+#
+# Title
+#
+
+#    This is silly and useless, but whatever value is returned here
+#    is printed in the header comment in initial.c;  nobody really
+#    wants to look at initial.c anyway.
+
+result es initial state built in `/bin/pwd on `/bin/date for <=$&version

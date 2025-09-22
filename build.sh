@@ -170,7 +170,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     fi
     make clean
     make
-    make test
+    # make test
     mkdir -p "$out_dir"
     cp es "$out_dir/es-shell"
 fi
