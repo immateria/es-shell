@@ -39,7 +39,15 @@ static char *sstrv(char *(*seal)(Buffer *), const char *format_string, va_list a
     
     format_state.u.p       = string_buffer;
 #if NO_VA_LIST_ASSIGN
-    memcpy(format_state.args, argument_list, sizeof(va_list));
+    /* Use va_copy if available, otherwise fall back to memcpy with proper handling */
+    #ifdef va_copy
+        va_copy(format_state.args, argument_list);
+    #elif defined(__va_copy)
+        __va_copy(format_state.args, argument_list);
+    #else
+        /* Use direct byte copy for systems without va_copy */
+        memcpy(&(format_state.args), &argument_list, sizeof(va_list));
+    #endif
 #else
     format_state.args      = argument_list;
 #endif

@@ -272,7 +272,15 @@ extern int fmtprint VARARGS2(Format *, format, const char *, fmt) {
 #if NO_VA_LIST_ASSIGN
 	va_list saveargs;
 
-	memcpy(saveargs, format->args, sizeof(va_list));
+	/* Use va_copy if available, otherwise fall back to memcpy with proper handling */
+	#ifdef va_copy
+		va_copy(saveargs, format->args);
+	#elif defined(__va_copy)
+		__va_copy(saveargs, format->args);
+	#else
+		/* Use direct byte copy for systems without va_copy */
+		memcpy(&saveargs, &(format->args), sizeof(va_list));
+	#endif
 #else
 	va_list saveargs = format->args;
 #endif
