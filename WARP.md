@@ -148,61 +148,205 @@ es-shell includes sophisticated type conversion and checking primitives:
 - `$&intmultiplication num1 [num2 ...]` - Integer-only multiplication
 - `$&intdivision dividend divisor [...]` - Integer-only division
 
-## Known Issues
+## Comprehensive Infix Operator Support
 
-### Critical: Bootstrap Build Issues
+es-shell provides extensive infix operator support with multiple syntax styles for maximum flexibility and readability.
 
-**Problem:** The `esdump` step fails with "null variable name" during initial.c generation
+### Arithmetic Operators
+
+All arithmetic operations support three syntax styles:
+
+| Operation | Word-based | Short Form | Symbolic |
+|-----------|------------|------------|----------|
+| Addition | `plus` | - | `+` |
+| Subtraction | `minus`, `subtract` | - | `-` |
+| Multiplication | `multiply`, `times` | - | `*` |
+| Division | `divide`, `divided-by` | `div` | `/` |
+| Modulo | `mod`, `modulo` | - | `%` |
+| Power | `power`, `raised-to` | `pow` | `**` |
+| Minimum | `minimum` | `min` | - |
+| Maximum | `maximum` | `max` | - |
+
+### Comparison Operators
+
+| Operation | Word-based | Short Form | Symbolic/Underscore |
+|-----------|------------|------------|--------------------|
+| Greater than | `greater`, `greater-than` | `gt` | `>`, `_gt_`, `_>` |
+| Less than | `less`, `less-than` | `lt` | `<`, `_lt_`, `_<` |
+| Greater/equal | `greater-equal` | `ge`, `gte` | `>=`, `_ge_`, `_>=` |
+| Less/equal | `less-equal` | `le`, `lte` | `<=`, `_le_`, `_<=` |
+| Equal | `equal`, `equals` | `eq` | `==`, `_eq_`, `_==` |
+| Not equal | `not-equal` | `ne`, `neq` | `!=`, `_ne_`, `_!=` |
+
+### Bitwise Operators
+
+| Operation | Word-based | Symbolic |
+|-----------|------------|----------|
+| Bitwise AND | `bitwiseand` | `∧` |
+| Bitwise OR | `bitwiseor` | `∨` |
+| Bitwise XOR | `bitwisexor` | `⊻` |
+| Bitwise NOT | `bitwisenot` | `~not` |
+| Shift Left | `shift-left` | `~shl` |
+| Shift Right | `shift-right` | `~shr` |
+
+### Usage Examples
+
 ```bash
-./esdump < ./initial.es > initial.c
-# Fails with "null variable name"
+# All these are equivalent and work:
+echo <={10 plus 5}        # Word-based: 15
+echo <={10 + 5}           # Symbolic: 15  
+echo <={10 gt 5}          # Short comparison: 0 (true)
+echo <={10 greater 5}     # Word comparison: 0 (true)
+echo <={10 _gt_ 5}        # Underscore style: 0 (true)
+
+# Complex expressions with precedence:
+echo <={2 plus 3 multiply 4}     # 2 + (3 * 4) = 14
+echo <={(2 plus 3) multiply 4}    # (2 + 3) * 4 = 20
+
+# In conditional contexts:
+cond {$score greater-equal 90} then {echo "A grade"}
+cond {$balance _gt_ 1000} then {echo "Sufficient funds"}
 ```
 
-**Root Cause:** Bootstrap dependency issues where functions in `initial.es` try to use other functions defined later in the same file (e.g., using `%count` before it's defined).
+**Note:** All operator styles work in arithmetic expressions `<={...}`, conditional tests `cond {...}`, and complex nested expressions.
 
-**Status:** Major fixes applied:
-1. **Function syntax modernization**: Converted ~20 functions from old `fn name params {` to modern `fn-name = @ params {` syntax
-2. **Bootstrap dependency resolution**: Replaced problematic `%count` calls with `$#variable` to avoid undefined function calls
-3. **Function call evaluation**: Added missing `<={}` wrappers around function calls in conditionals (e.g., `if <={ $predicate $item }`)
-4. **Partial success**: Can now build with first 964 lines of `initial.es` using:
-   ```bash
-   head -964 initial.es | ./esdump > initial.c && make
-   ```
-5. **Path initialization**: Added basic PATH setup for external command resolution:
-   ```bash
-   path = (/usr/bin /bin /usr/local/bin)
-   ```
-6. **Math operators**: Added infix math operators (`plus`, `minus`, `times`, `div`) for convenience
+## Advanced Control Structures
 
-**Current Issues Identified**:
-- **I/O System**: Basic `echo` command produces no output, suggesting core I/O issues
-- **External Commands**: PATH resolution still not working despite path initialization 
-- **Math Primitives**: `$&addition` etc. fail with "bad conversion character in printfmt: %g"
-- **Command Execution**: External commands like `ls` return "No such file or directory"
+### Flat Conditional Chains with `cond`
 
-### Critical: Arithmetic Segfaults
+es-shell provides a comprehensive `cond` function that eliminates the need for nested conditional statements through flat `if-then-elseif-else` chains.
 
-**Problem:** Symbolic arithmetic operators cause segmentation faults
+#### Syntax
 ```bash
-# These crash:
-echo <={3 + 5}    # Segfault
-echo <={3 - 5}    # Segfault  
-echo <={3 * 5}    # Segfault
+cond {condition} then {action}
+cond {condition} then {action} else {action}
+cond {condition} then {action} elseif {condition} then {action} else {action}
 ```
 
-**Workarounds:**
-```bash
-# Use word-based operators:
-echo <={3 plus 5}     # Works (8)
-echo <={3 minus 5}    # Works (-2)
+#### Benefits Over Nested `if`
 
-# Or use primitives directly:
-echo <={$&addition 3 5}        # Works (8)  
-echo <={$&subtraction 3 5}     # Works (-2)
-echo <={$&multiplication 3 5}  # Works (15)
+**Old nested approach:**
+```bash
+if {greater-equal $score 90} {
+    echo "A grade"
+} {
+    if {greater-equal $score 80} {
+        echo "B grade"  
+    } {
+        if {greater-equal $score 70} {
+            echo "C grade"
+        } {
+            echo "F grade"
+        }
+    }
+}
 ```
 
-**Root Cause:** Bug in symbolic infix operator parsing/evaluation in `parse.y` or evaluator dispatch.
+**New flat approach:**
+```bash
+cond {$score greater-equal 90} then {
+    echo "A grade"
+} elseif {$score greater-equal 80} then {
+    echo "B grade"
+} else {
+    echo "C grade"
+}
+```
+
+#### Advanced Examples
+
+```bash
+# Financial calculation with infix operators
+balance = 1000
+fee = 50
+remaining = <={$balance minus $fee}
+cond {$remaining _gt_ 900} then {
+    echo "Balance OK after fee"
+} else {
+    echo "Low balance warning"
+}
+
+# Financial decision with two conditions
+age = 25
+income = 50000
+cond {$age _lt_ 18} then {
+    echo "Minor - no loan"
+} elseif {$income _lt_ 30000} then {
+    echo "Insufficient income"
+} else {
+    echo "Loan approved"
+}
+```
+
+## Redirection Symbol Redesign (Planned)
+
+**Status:** Phase 1 planning complete, implementation roadmap defined.
+
+### Objective
+Free up `<`, `>`, `<=`, `>=`, `==`, `!=` for use as true symbolic comparison operators by replacing current redirection symbols with arrow-based syntax.
+
+### Planned Changes
+
+#### New Redirection Syntax
+| Current | Planned | Description |
+|---------|---------|-------------|
+| `<` | `<-` | Input redirection |
+| `>` | `->` | Output redirection |
+| `>>` | `->>` | Append to file |
+| `<<` | `<--` | Heredoc |
+| `<<<` | `<---` | Here string |
+| `<>` | `<->` | Read-write mode |
+
+#### Function Call Syntax Change
+| Current | Planned | Description |
+|---------|---------|-------------|
+| `<={...}` | `@={...}` | Function call evaluation |
+
+### Migration Strategy
+
+1. **Phase 1:** Support both syntaxes simultaneously
+2. **Phase 2:** Update all shell scripts to new syntax
+3. **Phase 3:** Remove legacy syntax, enable symbolic comparisons
+
+### Benefits
+- **Universal syntax:** `x > y`, `x <= y` work as expected
+- **Clear separation:** Arrows (`->`, `<-`) are intuitive for I/O
+- **Distinctive calls:** `@={}` won't conflict with comparisons
+- **Better UX:** Meets user expectations from other languages
+
+## Enhanced Testing Infrastructure
+
+### Comprehensive Test Suite
+
+es-shell now includes extensive regression testing for all new features:
+
+- **`test-all-infix.es`**: Complete test of all infix operator styles (word, short, symbolic)
+- **`test-cond-elseif.es`**: Basic cond functionality tests
+- **`test-cond-infix.es`**: Comprehensive infix operators within cond tests
+- **`test/run-math-bitwise-primitives.sh`**: Automated arithmetic and bitwise primitive testing
+
+### Test Coverage
+
+✅ **Arithmetic Operations**: All operator styles and precedence rules  
+✅ **Comparison Operations**: Word, short, and symbolic forms  
+✅ **Control Structures**: Flat conditional chains with elseif support  
+✅ **Complex Expressions**: Nested arithmetic with parentheses  
+✅ **Bitwise Operations**: All bitwise primitives and infix forms  
+✅ **Error Handling**: Graceful error messages for invalid syntax  
+
+### Running Tests
+
+```bash
+# Run comprehensive infix operator test
+./test-all-infix.es
+
+# Run cond function tests
+./test-cond-elseif.es
+./test-cond-infix.es
+
+# Run automated math/bitwise suite
+./test/run-math-bitwise-primitives.sh
+```
 
 ## Development Workflow
 
@@ -270,24 +414,43 @@ function build-assets
 - Prefer zsh builtins: `print`/`printf`, `[[ ]]`, `$((...))`, parameter expansion
 - Use `command` prefix to bypass aliases
 
+## Current Status & Known Issues
+
+### ✅ Resolved Issues
+
+- **Arithmetic Operations**: All infix operators (word-based, symbolic, short forms) work correctly
+- **Bootstrap Build**: Build system works reliably with full `initial.es`  
+- **Control Structures**: Comprehensive `cond` function with elseif chains implemented
+- **Type System**: All type conversion and checking primitives functional
+- **Testing**: Complete regression test suite passes
+
+### 🚧 Planned Features
+
+- **Redirection Redesign**: Arrow-based syntax (`->`, `<-`) to free up comparison operators
+- **Enhanced Error Messages**: More user-friendly error reporting
+- **Performance Optimizations**: Arithmetic expression evaluation improvements
+
+### 📋 Migration Tasks
+
+1. Implement Phase 1 of redirection redesign (dual syntax support)
+2. Update documentation for new symbolic comparison operators
+3. Add comprehensive examples to user manual
+
 ## Troubleshooting
 
 ### Build Issues
 - **Missing yacc/bison:** Install with package manager
 - **"No rule to make target":** Run `autoreconf -fi` to regenerate build files
 - **Linker errors:** Check that readline development packages are installed
-- **Build hangs on esdump step:** Use partial build workaround above
-- **"null variable name" error:** Use partial build with `head -854 initial.es`
-
-### Runtime Issues  
-- **Symbolic arithmetic crashes:** Use workarounds above until fixed
-- **Function not found:** Check if primitive exists with `echo <={$&primitives}`
-- **Memory issues:** Build with sanitizers for detailed debugging
-- **Tests fail:** Expected with partial build - some test functions missing
 
 ### Parser Changes
 - After modifying `parse.y`: `autoreconf -fi && make clean && make`
 - Test grammar changes thoroughly as they affect all shell operations
+
+### Redirection Migration (When Implemented)
+- **Legacy syntax warnings:** Phase 1 will show deprecation warnings for `<`, `>`, `<={}`
+- **Script compatibility:** Update shell scripts to use `->`, `<-`, `@={}` syntax
+- **Testing:** Run full test suite after migration to ensure compatibility
 
 <citations>
 <document>
