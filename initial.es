@@ -1,0 +1,1111 @@
+# initial.es -- set up initial interpreter state ($Revision: 1.1.1.1 $)
+
+
+#
+# Introduction
+#
+
+#    Initial.es contains a series of definitions used to set up the
+#    initial state of the es virtual machine.  In early versions of es
+#    (those before version 0.8), initial.es was turned into a string
+#    which was evaluated when the program started.  This unfortunately
+#    took a lot of time on startup and, worse, created a lot of garbage
+#    collectible memory which persisted for the life of the shell,
+#    causing a lot of extra scanning.
+#
+#    Since version 0.8, building es is a two-stage process.  First a
+#    version of the shell called esdump is built.  Esdump reads and
+#    executes commands from standard input, similar to a normal interpreter,
+#    but when it is finished, it prints on standard ouput C code for
+#    recreating the current state of interpreter memory.  (The code for
+#    producing the C code is in dump.c.)  Esdump starts up with no
+#    variables defined.  This file (initial.es) is run through esdump
+#    to produce a C file, initial.c, which is linked with the rest of
+#    the interpreter, replacing dump.c, to produce the actual es
+#    interpreter.
+#
+#    Because the shell's memory state is empty when initial.es is run,
+#    you must be very careful in what instructions you put in this file.
+#    For example, until the definition of fn-%pathsearch, you cannot
+#    run external programs other than those named by absolute path names.
+#    An error encountered while running esdump is fatal.
+#
+#    The bulk of initial.es consists of assignments of primitives to
+#    functions.  A primitive in es is an executable object that jumps
+#    directly into some C code compiled into the interpreter.  Primitives
+#    are referred to with the syntactic construct $&name;  by convention,
+#    the C function implementing the primitive is prim_name.  The list
+#    of primitives is available as the return value (exit status) of
+#    the primitive $&primitives.  Primitives may not be reassigned.
+#
+#    Functions in es are simply variables named fn-name.  When es
+#    evaluates a command, if the first word is a string, es checks if
+#    an appropriately named fn- variable exists.  If it does, then the
+#    value of that variable is substituted for the function name and
+#    evaluation starts over again.  Thus, for example, the assignment
+#        fn-echo = $&echo
+#    means that the command
+#        echo foo bar
+#    is internally translated to
+#        $&echo foo bar
+#    This mechanism is used pervasively.
+#
+#    Note that definitions provided in initial.es can be overriden (aka,
+#    spoofed) without changing this file at all, just by redefining the
+#    variables.  The only purpose of this file is to provide initial
+#    values.
+
+
+#
+# Builtin functions
+#
+
+#    These builtin functions are straightforward calls to primitives.
+#    See the manual page for details on what they do.
+
+fn-.           = $&dot
+fn-access      = $&access
+fn-break       = $&break
+fn-catch       = $&catch
+fn-echo        = $&echo
+fn-exec        = $&exec
+fn-forever     = $&forever
+fn-fork        = $&fork
+fn-if          = $&if
+fn-newpgrp     = $&newpgrp
+fn-result      = $&result
+fn-throw       = $&throw
+fn-umask       = $&umask
+fn-wait        = $&wait
+fn-%read       = $&read
+
+#    eval runs its arguments by turning them into a code fragment
+#    (in string form) and running that fragment.
+
+fn-eval = $&noreturn @ { '{' ^ $^* ^ '}' }
+
+#    Through version 0.84 of es, true and false were primitives,
+#    but, as many pointed out, they don't need to be.  These
+#    values are not very clear, but unix demands them.
+
+fn-true        = { result 0 }
+fn-false       = { result 1 }
+
+# Enhanced control structures for better syntax
+# Provides if-else that works with both () and {} for predicates
+
+# Enhanced if-else function that handles parentheses for predicates
+fn-if-else = $&noreturn @ condition then-action else-action {
+    # If condition is a list (from parentheses), evaluate its first element
+    # If condition is a thunk (from braces), execute it directly
+    let (result = ) {
+        # Try to execute the condition and capture its result
+        catch @ e {
+            # If there's an error, treat as false condition
+            result = 1
+        } {
+            result = <={$condition}
+        }
+        
+        # Execute appropriate action based on result
+        if {~ $result 0} {
+            $then-action
+        } {
+            $else-action
+        }
+    }
+}
+
+# Simple if function that also handles both syntaxes
+fn-simple-if = $&noreturn @ condition then-action else-action {
+    if-else $condition $then-action $else-action
+}
+
+# Advanced if-then-elseif-else control structure - flat conditional chains
+# Usage: 
+#   cond {condition} then {action} else {action}
+#   cond {condition} then {action} elseif {condition} then {action} else {action}
+#   cond {condition} then {action} elseif {condition} then {action} elseif {condition} then {action} else {action}
+# Examples:
+#   cond {greater $score 90} then {echo A} elseif {greater $score 80} then {echo B} else {echo C}
+# This eliminates the need for nested if statements!
+# Robust cond with elseif support
+fn-cond = $&noreturn @ {
+    # Handle 9 arguments: {c1} then {a1} elseif {c2} then {a2} else {a3}
+    if {~ $#* 9 && ~ $2 then && ~ $4 elseif && ~ $6 then && ~ $8 else} {
+        $&if $1 $3 {$&if $5 $7 $9}
+    } {
+        # Handle 7 arguments: {c1} then {a1} elseif {c2} then {a2}  
+        if {~ $#* 7 && ~ $2 then && ~ $4 elseif && ~ $6 then} {
+            $&if $1 $3 {$&if $5 $7}
+        } {
+            # Handle 5 arguments: {condition} then {action} else {action}
+            if {~ $#* 5 && ~ $2 then && ~ $4 else} {
+                $&if $1 $3 $5
+            } {
+                # Handle 3 arguments: {condition} then {action}
+                if {~ $#* 3 && ~ $2 then} {
+                    $&if $1 $3
+                } {
+                    throw error cond 'usage: cond {condition} then {action} [elseif {condition} then {action}] [else {action}]'
+                }
+            }
+        }
+    }
+}
+
+#    These functions just generate exceptions for control-flow
+#    constructions.  The for command and the while builtin both
+#    catch the break exception, and lambda-invocation catches
+#    return.  The interpreter main() routine (and nothing else)
+#    catches the exit exception.
+
+fn-break    = throw break
+fn-exit        = throw exit
+fn-return    = throw return
+
+#    unwind-protect is a simple wrapper around catch that is used
+#    to ensure that some cleanup code is run after running a code
+#    fragment.  This function must be written with care to make
+#    sure that the return value is correct.
+
+fn-unwind-protect = $&noreturn @ body cleanup {
+    if {!~ $#cleanup 1} {
+        throw error unwind-protect 'unwind-protect body cleanup'
+    }
+    let (exception = ) {
+        let (
+            result = <={
+                catch @ e {
+                    exception = caught $e
+                } {
+                    $body
+                }
+            }
+        ) {
+            $cleanup
+            if {~ $exception(1) caught} {
+                throw $exception(2 ...)
+            }
+            result $result
+        }
+    }
+}
+
+#    These builtins are not provided on all systems, so we check
+#    if the accompanying primitives are defined and, if so, define
+#    the builtins.  Otherwise, we'll just not have a limit command
+#    and get time from /bin or wherever.
+
+if {~ <=$&primitives limit} {fn-limit = $&limit}
+if {~ <=$&primitives time}  {fn-time  = $&time}
+
+#    These builtins are mainly useful for internal functions, but
+#    they're there to be called if you want to use them.
+
+fn-%apids      = $&apids
+fn-%fsplit     = $&fsplit
+fn-%newfd      = $&newfd
+fn-%run        = $&run
+fn-%split      = $&split
+fn-%var        = $&var
+fn-%whatis     = $&whatis
+
+#    These builtins are only around as a matter of convenience, so
+#    users don't have to type the infamous <= (nee <>) operator.
+#    Whatis also protects the used from exceptions raised by %whatis.
+
+fn-var = @ { for (i = $*) echo <={%var $i} }
+
+fn-whatis = @ {
+    let (result = ) {
+        for (i = $*) {
+            catch @ e from message {
+                if {!~ $e error} {
+                    throw $e $from $message
+                }
+                echo >[1=2] $message
+                result = $result 1
+            } {
+                echo <={%whatis $i}
+                result = $result 0
+            }
+        }
+        result $result
+    }
+}
+
+#    The while function is implemented with the forever looping primitive.
+#    While uses $&noreturn to indicate that, while it is a lambda, it
+#    does not catch the return exception.  It does, however, catch break.
+
+fn-while = $&noreturn @ condition body {
+    catch @ e value {
+        if {!~ $e break} {
+            throw $e $value
+        }
+        result $value
+    } {
+        let (result = <=true)
+            forever {
+                if {!$condition} {
+                    throw break $result
+                } {
+                    result = <=$body
+                }
+            }
+    }
+}
+
+#    The cd builtin provides a friendlier veneer over the cd primitive:
+#    it knows about no arguments meaning ``cd $home'' and has friendlier
+#    error messages than the raw $&cd.  (It also used to search $cdpath,
+#    but that's been moved out of the shell.)
+
+fn-cd = @ dir {
+    if {~ $#dir 1} {
+        $&cd $dir
+    } {~ $#dir 0} {
+        if {!~ $#home 1} {
+            throw error cd <={
+                if {~ $#home 0} {
+                    result 'cd: no home directory'
+                } {
+                    result 'cd: home directory must be one word'
+                }
+            }
+        }
+        $&cd $home
+    } {
+        throw error cd 'usage: cd [directory]'
+    }
+}
+
+#    The vars function is provided for cultural compatibility with
+#    rc's whatis when used without arguments.
+#
+#    The options to vars can be partitioned into two categories:
+#    those which pick variables based on their source (-e for
+#    exported variables, -p for unexported, and -i for internal)
+#    and their type (-f for functions, -s for settor functions,
+#    and -v for all others).
+#
+#    Internal variables are those defined in initial.es (along
+#    with pid and path), and behave like unexported variables,
+#    except that they are known to have an initial value.
+#    When an internal variable is modified, it becomes exportable,
+#    unless it is on the noexport list.
+
+fn-vars = @ {
+    # check args
+    for (i = $*)
+        if {!~ $i -*} {
+            throw error vars illegal option: $i -- usage: vars -[vfsepia]
+        }
+    let (
+        vars      = false
+        fns       = false
+        sets      = false
+        export    = false
+        priv      = false
+        intern    = false
+        all       = false
+    ) {
+        for (a = $*)
+        for (i = <={%fsplit '' <={~~ $a -*}})
+        if (
+            {~ $i v}    {vars      = true}
+            {~ $i f}    {fns       = true}
+            {~ $i s}    {sets      = true}
+            {~ $i e}    {export    = true}
+            {~ $i p}    {priv      = true}
+            {~ $i i}    {intern    = true}
+            {~ $i a}    {all       = true}
+            {throw error vars vars: bad option: $i}
+        )
+        if {!{$vars || $fns || $sets}} {
+            vars = true
+        }
+        if {!{$export || $priv || $intern}} {
+            export = true
+        }
+        let (
+            fn-dovar = @ var {
+                # print functions and/or settor vars
+                if {$all || if {~ $var fn-*} $fns {~ $var set-*} $sets $vars} {
+                    echo <={%var $var}
+                }
+            }
+        ) {
+            if {$all || $export || $priv} {
+                for (var = <=$&vars)
+                    # if not exported but in priv
+                    if {$all || if {~ $var $noexport} $priv $export} {
+                        dovar $var
+                    }
+            }
+            if {$all || $intern} {
+                for (var = <=$&internals)
+                    dovar $var
+            }
+        }
+    }
+}
+
+
+#
+# Syntactic sugar
+#
+
+#    Much of the flexibility in es comes from its use of syntactic rewriting.
+#    Traditional shell syntax is rewritten as it is parsed into calls
+#    to ``hook'' functions.  Hook functions are special only in that
+#    they are the result of the rewriting that goes on.  By convention,
+#    hook function names begin with a percent (%) character.
+
+#    One piece of syntax rewriting invokes no hook functions:
+#
+#        fn name args { cmd }    fn-^name=@ args{cmd}
+
+#    The following expressions are rewritten:
+#
+#        $#var                  <={%count       $var}
+#        $^var                  <={%flatten ' ' $var}
+#        `{cmd args}            <={%backquote   <={%flatten '' $ifs} {cmd args}}
+#        `^{cmd args}           <={%flatten ' ' <={backquote <={%flatten '' $ifs} {cmd args}}}
+#        ``ifs {cmd args}       <={%backquote   <={%flatten '' ifs} {cmd args}}
+#        ``^ifs {cmd args}      <={%flatten ' ' <={backquote <={%flatten '' ifs} {cmd args}}}
+
+fn-%count      = $&count
+fn-%flatten    = $&flatten
+fn-%addition           = $&addition
+fn-%subtraction        = $&subtraction
+fn-%multiplication     = $&multiplication
+fn-%division           = $&division
+fn-%modulo             = $&modulo
+fn-%pow                = $&pow
+fn-%abs                = $&abs
+fn-%min                = $&min
+fn-%max                = $&max
+fn-%count       = $&count
+
+# Infix math operators for convenience
+fn-plus         = $&addition
+fn-minus        = $&subtraction
+fn-times        = $&multiplication
+fn-div          = $&division
+
+
+# Comparison functions that return true/false status (0=true, 1=false)
+fn-greater = @ a b { ~ <={%greater $a $b} 0 }
+fn-less = @ a b { ~ <={%less $a $b} 0 }
+fn-greater-equal = @ a b { ~ <={%greaterequal $a $b} 0 }
+fn-less-equal = @ a b { ~ <={%lessequal $a $b} 0 }
+fn-equal = @ a b { ~ <={%equal $a $b} 0 }
+fn-not-equal = @ a b { ~ <={%notequal $a $b} 0 }
+fn-%greater            = $&greater
+fn-%less               = $&less
+fn-%greaterequal       = $&greaterequal
+fn-%lessequal          = $&lessequal
+fn-%equal              = $&equal
+fn-%notequal           = $&notequal
+fn-%bitwiseshiftleft   = $&bitwiseshiftleft
+fn-%bitwiseshiftright  = $&bitwiseshiftright
+fn-%bitwiseand         = $&bitwiseand
+fn-%bitwiseor          = $&bitwiseor
+fn-%bitwisexor         = $&bitwisexor
+fn-%bitwisenot         = $&bitwisenot
+
+#    Note that $&backquote returns the status of the child process
+#    as the first value of its result list.  The default %backquote
+#    puts that value in $bqstatus.
+
+fn-%backquote = @ {
+    let ((status output) = <={ $&backquote $* }) {
+        bqstatus = $status
+        result $output
+    }
+}
+
+#    The following syntax for control flow operations are rewritten
+#    using hook functions:
+#
+#        ! cmd           %not {cmd}
+#        cmd1; cmd2      %seq {cmd1} {cmd2}
+#        cmd1 && cmd2    %and {cmd1} {cmd2}
+#        cmd1 || cmd2    %or  {cmd1} {cmd2}
+#
+#    Note that %seq is also used for newline-separated commands within
+#    braces.  The logical operators are implemented in terms of if.
+#
+#    %and and %or are recursive, which is slightly inefficient given
+#    the current implementation of es -- it is not properly tail recursive
+#    -- but that can be fixed and it's still better to write more of
+#    the shell in es itself.
+
+fn-%seq        = $&seq
+
+fn-%not = $&noreturn @ cmd {
+    if {$cmd} {false} {true}
+}
+
+fn-%and = $&noreturn @ first rest {
+    let (result = <={$first}) {
+        if {~ $#rest 0} {
+            result $result
+        } {result $result} {
+            %and $rest
+        } {
+            result $result
+        }
+    }
+}
+
+fn-%or = $&noreturn @ first rest {
+    if {~ $#first 0} {
+        false
+    } {
+        let (result = <={$first}) {
+            if {~ $#rest 0} {
+                result $result
+            } {!result $result} {
+                %or $rest
+            } {
+                result $result
+            }
+        }
+    }
+}
+
+#    Background commands could use the $&background primitive directly,
+#    but some of the user-friendly semantics ($apid, printing of the
+#    child process id) were easier to write in es.
+#
+#        cmd &            %background {cmd}
+
+fn-%background = @ cmd {
+    let (pid = <={$&background $cmd}) {
+        apid = $pid
+        if {%is-interactive} {
+            echo >[1=2] $pid
+        }
+    }
+}
+
+#    These redirections are rewritten:
+#
+#        cmd <    file      %open        0 file {cmd}
+#        cmd >    file      %create      1 file {cmd}
+#        cmd >[n] file      %create      n file {cmd}
+#        cmd >>   file      %append      1 file {cmd}
+#        cmd <>   file      %open-write  0 file {cmd}
+#        cmd <>>  file      %open-append 0 file {cmd}
+#        cmd ><   file      %open-create 1 file {cmd}
+#        cmd >><  file      %open-append 1 file {cmd}
+#
+#    All the redirection hooks reduce to calls on the %openfile hook
+#    function, which interprets an fopen(3)-style mode argument as its
+#    first parameter.  The other redirection hooks (e.g., %open and
+#    %create) exist so that they can be spoofed independently of %openfile.
+#
+#    The %one function is used to make sure that exactly one file is
+#    used as the argument of a redirection.
+
+fn-%openfile       = $&openfile
+fn-%open           = %openfile r        # <   file
+fn-%create         = %openfile w        # >   file
+fn-%append         = %openfile a        # >>  file
+fn-%open-write     = %openfile r+       # <>  file
+fn-%open-create    = %openfile w+       # ><  file
+fn-%open-append    = %openfile a+       # >>< file, <>> file
+
+fn-%one = @ {
+    if {!~ $#* 1} {
+        if {~ $#* 0} {
+            echo 'null filename in redirection' >[1=2]
+        } {
+            echo 'too many files in redirection: ' $* >[1=2]
+        }
+        return 1
+    }
+    result $*
+}
+
+#    Here documents and here strings are internally rewritten to the
+#    same form, the %here hook function.
+#
+#        cmd << tag input tag    %here 0 input  {cmd}
+#        cmd <<< string          %here 0 string {cmd}
+
+fn-%here    = $&here
+
+#    These operations are like redirections, except they don't include
+#    explicitly named files.  They do not reduce to the %openfile hook.
+#
+#        cmd >[n=]           %close n {cmd}
+#        cmd >[m=n]          %dup m n {cmd}
+#        cmd1 | cmd2         %pipe {cmd1} 1 0 {cmd2}
+#        cmd1 |[m=n] cmd2    %pipe {cmd1} m n {cmd2}
+
+fn-%close    = $&close
+fn-%dup      = $&dup
+fn-%pipe     = $&pipe
+
+#    Input/Output substitution (i.e., the >{} and <{} forms) provide an
+#    interesting case.  If es is compiled for use with /dev/fd, these
+#    functions will be built in.  Otherwise, versions of the hooks are
+#    provided here which use files in /tmp.
+#
+#    The /tmp versions of the functions are straightforward es code,
+#    and should be easy to follow if you understand the rewriting that
+#    goes on.  First, an example.  The pipe
+#        ls | wc
+#    can be simulated with the input/output substitutions
+#        cp <{ls} >{wc}
+#    which gets rewritten as (formatting added):
+#        %readfrom _devfd0 {ls} {
+#            %writeto _devfd1 {wc} {
+#                cp $_devfd0 $_devfd1
+#            }
+#        }
+#    What this means is, run the command {ls} with the output of that
+#    command available to the {%writeto ....} command as a file named
+#    by the variable _devfd0.  Similarly, the %writeto command means
+#    that the input to the command {wc} is taken from the contents of
+#    the file $_devfd1, which is assumed to be written by the command
+#    {cp $_devfd0 $_devfd1}.
+#
+#    All that, for example, the /tmp version of %readfrom does is bind
+#    the named variable (which is the first argument, var) to the name
+#    of a (hopefully unique) file in /tmp.  Next, it runs its second
+#    argument, input, with standard output redirected to the temporary
+#    file, and then runs the final argument, cmd.  The unwind-protect
+#    command is used to guarantee that the temporary file is removed
+#    even if an error (exception) occurs.  (Note that the return value
+#    of an unwind-protect call is the return value of its first argument.)
+#
+#    By the way, creative use of %newfd and %pipe would probably be
+#    sufficient for writing the /dev/fd version of these functions,
+#    eliminating the need for any builtins.  For now, this works.
+#
+#        cmd <{input}        %readfrom var {input} {cmd $var}
+#        cmd >{output}        %writeto var {output} {cmd $var}
+
+if {~ <=$&primitives readfrom} {
+    fn-%readfrom = $&readfrom
+} {
+    fn-%readfrom = $&noreturn @ var input cmd {
+        local ($var = /tmp/es.$var.$pid) {
+            unwind-protect {
+                $input > $$var
+                # text of $cmd is   command file
+                $cmd
+            } {
+                rm -f $$var
+            }
+        }
+    }
+}
+
+if {~ <=$&primitives writeto} {
+    fn-%writeto = $&writeto
+} {
+    fn-%writeto = $&noreturn @ var output cmd {
+        local ($var = /tmp/es.$var.$pid) {
+            unwind-protect {
+                > $$var
+                $cmd
+                $output < $$var
+            } {
+                rm -f $$var
+            }
+        }
+    }
+}
+
+#    These versions of %readfrom and %writeto (contributed by Pete Ho)
+#    support the use of System V FIFO files (aka, named pipes) on systems
+#    that have them.  They seem to work pretty well.  The authors still
+#    recommend using files in /tmp rather than named pipes.
+
+#fn %readfrom var cmd body {
+#    local ($var = /tmp/es.$var.$pid) {
+#        unwind-protect {
+#            /etc/mknod $$var p
+#            $&background {$cmd > $$var; exit}
+#            $body
+#        } {
+#            rm -f $$var
+#        }
+#    }
+#}
+
+#fn %writeto var cmd body {
+#    local ($var = /tmp/es.$var.$pid) {
+#        unwind-protect {
+#            /etc/mknod $$var p
+#            $&background {$cmd < $$var; exit}
+#            $body
+#        } {
+#            rm -f $$var
+#        }
+#    }
+#}
+
+
+#
+# Hook functions
+#
+
+#    These hook functions aren't produced by any syntax rewriting, but
+#    are still useful to override.  Again, see the manual for details.
+
+#    %home, which is used for ~expansion.  ~ and ~/path generate calls
+#    to %home without arguments;  ~user and ~user/path generate calls
+#    to %home with one argument, the user name.
+
+fn-%home    = $&home
+
+#    Path searching used to be a primitive, but the access function
+#    means that it can be written easier in es.  Is is not called for
+#    absolute path names or for functions.
+
+fn-%pathsearch = @ name { access -n $name -1e -xf $path }
+
+# Initialize basic path for command resolution
+path = (/usr/bin /bin /usr/local/bin)
+
+#    The exec-failure hook is called in the child if an exec() fails.
+#    A default version is provided (under conditional compilation) for
+#    systems that don't do #! interpretation themselves.
+
+if {~ <=$&primitives execfailure} {fn-%exec-failure = $&execfailure}
+
+#    The %write-history hook is used in interactive contexts to write
+#    command input to the history file (and/or readline's in-memory
+#    history log).  By default, $&writehistory (which is available if
+#    readline is compiled in) will write to readline's history log if
+#    $max-history-length allows, and will write to the file designated
+#    by $history if that variable is set and the file it points to
+#    exists and is writeable.
+
+if {~ <=$&primitives writehistory} {
+    fn-%write-history = $&writehistory
+} {
+    fn-%write-history = @ input {
+        if {!~ $history ()} {
+            if {access -w $history} {
+                echo $input >> $history
+            } {
+                history = ()
+            }
+        }
+    }
+}
+
+
+#
+# Read-eval-print loops
+#
+
+#    In es, the main read-eval-print loop (REPL) can lie outside the
+#    shell itself.  Es can be run in one of two modes, interactive or
+#    batch, and there is a hook function for each form.  It is the
+#    responsibility of the REPL to call the parser for reading commands,
+#    hand those commands to an appropriate dispatch function, and handle
+#    any exceptions that may be raised.  The function %is-interactive
+#    can be used to determine whether the most closely binding REPL is
+#    interactive or batch.
+#
+#    The REPLs are invoked by the shell's main() routine or the . or
+#    eval builtins.  If the -i flag is used or the shell determines that
+#    it's input is interactive, %interactive-loop is invoked; otherwise
+#    %batch-loop is used.
+#
+#    The function %parse can be used to call the parser, which returns
+#    an es command.  %parse takes two arguments, which are used as the main
+#    and secondary prompts, respectively.  %parse typically returns one line
+#    of input, but es allows commands (notably those with braces or backslash
+#    continuations) to continue across multiple lines; in that case, the
+#    complete command and not just one physical line is returned.
+#
+#    By convention, the REPL must pass commands to the fn %dispatch,
+#    which has the actual responsibility for executing the command.
+#    Whatever routine invokes the REPL (internal, for now) has
+#    the responsibility of setting up fn %dispatch appropriately;
+#    it is used for implementing the -e, -n, and -x options.
+#    Typically, fn %dispatch is locally bound.
+#
+#    The %parse function raises the eof exception when it encounters
+#    an end-of-file on input.  You can probably simulate the C shell's
+#    ignoreeof by restarting appropriately in this circumstance.
+#    Other than eof, %interactive-loop does not exit on exceptions,
+#    where %batch-loop does.
+#
+#    The looping construct forever is used rather than while, because
+#    while catches the break exception, which would make it difficult
+#    to print ``break outside of loop'' errors.
+#
+#    The parsed code is executed only if it is non-empty, because otherwise
+#    result gets set to zero when it should not be.
+
+fn-%parse             = $&parse
+fn-%batch-loop        = $&batchloop
+fn-%is-interactive    = $&isinteractive
+
+fn-%interactive-loop = @ {
+    let (result = <=true) {
+        catch @ e type msg {
+            if {~ $e eof} {
+                return $result
+            } {~ $e exit} {
+                throw $e $type $msg
+            } {~ $e error} {
+                echo >[1=2] $msg
+                $fn-%dispatch false
+            } {~ $e signal} {
+                if {!~ $type sigint sigterm sigquit} {
+                    echo >[1=2] caught unexpected signal: $type
+                }
+            } {
+                echo >[1=2] uncaught exception: $e $type $msg
+            }
+            throw retry # restart forever loop
+        } {
+            forever {
+                if {!~ $#fn-%prompt 0} {
+                    %prompt
+                }
+                let (code = <={%parse $prompt}) {
+                    if {!~ $#code 0} {
+                        result = <={$fn-%dispatch $code}
+                    }
+                }
+            }
+        }
+    }
+}
+
+#    These functions are potentially passed to a REPL as the %dispatch
+#    function.  (For %eval-noprint, note that an empty list prepended
+#    to a command just causes the command to be executed.)
+
+fn-%eval-noprint      =                                     # <default>
+fn-%eval-print        = $&noreturn @ { echo $* >[1=2]; $* } # -x
+fn-%noeval-noprint    = { }                                 # -n
+fn-%noeval-print      = @ { echo $* >[1=2] }                # -n -x
+fn-%exit-on-false     = $&exitonfalse                       # -e
+
+
+#
+# Settor functions
+#
+
+#    Settor functions are called when the appropriately named variable
+#    is set, either with assignment or local binding.  The argument to
+#    the settor function is the assigned value, and $0 is the name of
+#    the variable.  The return value of a settor function is used as
+#    the new value of the variable.  (Most settor functions just return
+#    their arguments, but it is always possible for them to modify the
+#    value.)
+
+#    These functions are used to alias the standard unix environment
+#    variables HOME and PATH with their es equivalents, home and path.
+#    With path aliasing, colon separated strings are split into lists
+#    for their es form (using the %fsplit builtin) and are flattened
+#    with colon separators when going to the standard unix form.
+#
+#    These functions are pretty idiomatic.  set-home disables the set-HOME
+#    settor function for the duration of the actual assignment to HOME,
+#    because otherwise there would be an infinite recursion.  So too for
+#    all the other shadowing variables.
+
+set-home = @ { local (set-HOME = ) HOME = $*; result $* }
+set-HOME = @ { local (set-home = ) home = $*; result $* }
+
+set-path = @ { local (set-PATH = ) PATH = <={%flatten : $*}; result $* }
+set-PATH = @ { local (set-path = ) path = <={%fsplit  : $*}; result $* }
+
+#    These settor functions call primitives to set data structures used
+#    inside of es.
+
+set-signals        = $&setsignals
+set-noexport        = $&setnoexport
+set-max-eval-depth    = $&setmaxevaldepth
+
+#    If the primitives $&sethistory or $&resetterminal are defined (meaning
+#    that readline or editline is being used), setting the variables $TERM,
+#    $TERMCAP, or $history should notify the line editor library.
+
+if {~ <=$&primitives sethistory} {
+    set-history = $&sethistory
+}
+
+if {~ <=$&primitives resetterminal} {
+    set-TERM    = @ { $&resetterminal; result $* }
+    set-TERMCAP    = @ { $&resetterminal; result $* }
+}
+
+#    The primitive $&setmaxhistorylength is another readline-only primitive
+#    which limits the length of the in-memory history list, to reduce memory
+#    size implications of a large history file.  Setting max-history-length
+#    to 0 clears the history list and disables adding anything more to it.
+#    Unsetting max-history-length allows the history list to grow unbounded.
+
+if {~ <=$&primitives setmaxhistorylength} {
+    set-max-history-length = $&setmaxhistorylength
+    max-history-length = 5000
+}
+
+
+#
+# Variables
+#
+
+#    These variables are given predefined values so that the interpreter
+#    can run without problems even if the environment is not set up
+#    correctly.
+
+home              = /
+ifs               = ' ' \t \n
+prompt            = '; ' ''
+max-eval-depth    = 640
+
+#    noexport lists the variables that are not exported.  It is not
+#    exported, because none of the variables that it refers to are
+#    exported. (Obviously.)  apid is not exported because the apid value
+#    is for the parent process.  pid is not exported so that even if it
+#    is set explicitly, the one for a child shell will be correct.
+#    Signals are not exported, but are inherited, so $signals will be
+#    initialized properly in child shells.  bqstatus is not exported
+#    because it's almost certainly unrelated to what a child process
+#    is does.  fn-%dispatch is really only important to the current
+#    interpreter loop.
+
+noexport = noexport pid signals apid bqstatus fn-%dispatch path home matchexpr
+
+
+
+
+fn-status-pass = @ { ~ 1 1 }
+fn-status-fail = @ { !{ ~ 1 1 } }
+
+# predicate combinators for tests
+fn-fail-on = @ target word { if {~ $word $target} { status-fail } { status-pass } }
+fn-record = @ word { TRACE = $TRACE $word ; status-pass }
+fn-record-fail-on = @ target word { TRACE = $TRACE $word ; if {~ $word $target} { status-fail } { status-pass } }
+
+# ---------- helpers --------------------------------------------------
+fn-nonempty? = @ list-values {
+    if {!~ <={ %count $list-values } 0} { status-pass } { status-fail }
+}
+
+# ---------- Data-returning HOFs -------------------------------------
+fn-map = @ function list-values {
+    out = ()
+    for (item = $list-values) {
+        out = $out <={ $function $item }
+    }
+    result $out
+}
+
+fn-filter = @ predicate list-values {
+    out = ()
+    for (item = $list-values) {
+        if { $predicate $item } { out = $out $item }
+    }
+    result $out
+}
+
+fn-reduce = @ function accumulator list-values {
+    for (item = $list-values) {
+        accumulator = <={ $function $accumulator $item }
+    }
+    result $accumulator
+}
+
+fn-reduce-one = @ function list-values {
+    if {~ $#list-values 0} { result () }
+    accumulator = $list-values(1)
+    rest = $list-values(2 ...)
+    for (item = $rest) {
+        accumulator = <={ $function $accumulator $item }
+    }
+    result $accumulator
+}
+
+fn-enumerate = @ list-values {
+    counter = ()
+    out     = ()
+    for (item   = $list-values) {
+        index   = $#counter
+        out     = $out ($index $item)
+        counter = $counter _
+    }
+    result $out
+}
+
+fn-take = @ number list-values {
+    # Handle edge cases
+    if {~ $number 0} { 
+        result () 
+    } {if {~ $list-values ()} { 
+        result () 
+    } {
+        # General case: use accumulator pattern like filter
+        out = ()
+        counter = ()
+        for (item = $list-values) {
+            count = $#counter
+            # Only add items if we haven't reached the limit
+            if {!~ $count $number} {
+                out = $out $item
+                counter = $counter _
+            }
+        }
+        result $out
+    }}
+}
+
+fn-drop = @ number list-values {
+    # Handle edge cases
+    if {~ $number 0} { 
+        result $list-values 
+    } {if {~ $list-values ()} { 
+        result () 
+    } {
+        # General case: skip first 'number' items
+        out = ()
+        counter = ()
+        for (item = $list-values) {
+            count = $#counter
+            # Only add items after we've skipped enough
+            if {~ $count $number} {
+                out = $out $item
+            } {
+                counter = $counter _
+            }
+        }
+        result $out
+    }}
+}
+
+fn-join-list = @ separator list-values {
+    out = ()
+    first = ()
+    for (item = $list-values) {
+        if {~ $first ()} { out = $out $item ; first = true } { out = $out $separator $item }
+    }
+    result $out
+}
+
+# global var lookup (used by zip-by-names)
+fn-get-value-by-name = @ variable-name {
+    code = '{' ^ ' result ' ^ '$' ^ $variable-name ^ ' }'
+    result <={ eval $code }
+}
+
+fn-zip-by-names = @ left-name right-name {
+    left  = <={ get-value-by-name $left-name  }
+    right = <={ get-value-by-name $right-name }
+    out   = ()
+    
+    while  { !~ $#left 0 } {
+        if { ~ $#right 0 } { break }
+        out   = $out ($left(1) $right(1))
+        left  = $left(2  ...)
+        right = $right(2 ...)
+    }
+    result $out
+}
+
+# ---------- Status-returning HOFs -----------------------------------
+fn-any? = @ predicate list-values {
+    hit = ()
+    for (item = $list-values) {
+        if <={ $predicate $item } { hit = true }
+    }
+    if {~ $hit true} { status-pass } { status-fail }
+}
+
+fn-all? = @ predicate list-values {
+    fail = ()
+    for (item = $list-values) {
+        if <={ $predicate $item } { } { fail = true }
+    }
+    if {~ $fail true} { status-fail } { status-pass }
+}
+
+fn-none? = @ predicate list-values {
+    if <={ any? $predicate $list-values } { status-fail } { status-pass }
+}
+
+# Aliases (temporarily commented out due to bootstrap issues)
+fn-exists? = @ predicate list-values { any? $predicate $list-values }
+fn-every? = @ predicate list-values { all? $predicate $list-values }
+fn-not-any? = @ predicate list-values { none? $predicate $list-values }
+
+# list-contains?
+fn-list-contains? = @ needle list-values {
+    found = ()
+    for (item = $list-values) {
+        if {~ $item $needle} { found = true }
+    }
+    if {~ $found true} { status-pass } { status-fail }
+}
+
+# for-each? — success only if all applications succeed (no short-circuit)
+fn-for-each? = @ predicate list-values {
+    fail = ()
+    for (item = $list-values) {
+        if <={ $predicate $item } { } { fail = true }
+    }
+    if {~ $fail true} { status-fail } { status-pass }
+}
+
+#
+# Help and documentation functions
+#
+
+# Main help function - wrapper around %help primitive
+fn-help = @ topics { %help $topics }
+
+# Convenience aliases for help topics
+fn-help-arithmetic = @ { %help arithmetic }
+fn-help-bitwise = @ { %help bitwise }
+fn-help-unary = @ { %help unary }
+fn-help-primitives = @ { %help primitives }
+
+# List all available primitives and functions
+fn-builtins = @ {
+    echo 'ES SHELL BUILT-IN FUNCTIONS:'
+    echo ''
+    echo 'HELP COMMANDS:'
+    echo '  help [topic]     - Show help (topics: arithmetic, bitwise, unary, primitives)'
+    echo '  builtins         - Show this list'
+    echo ''
+    echo 'MATHEMATICAL OPERATORS:'
+    echo '  Arithmetic: +, -, *, /, %, **, plus, minus, multiply, divide, mod, power'
+    echo '  Bitwise: ~and, ~or, ~xor, ~shl, ~shr, ~not, bitwiseand, bitwiseor, bitwisexor'
+    echo '  Unary: neg, pos, abs, ~not, negate, positive, bitnot'
+    echo '  Functions: min, max, count'
+    echo ''
+    echo 'CONTROL STRUCTURES:'
+    echo '  if {condition} {then} {else}'
+    echo '  for (var = values) {body}'
+    echo '  while {condition} {body}'
+    echo '  case $var in pattern {body} ...'
+    echo ''
+    echo 'VARIABLE OPERATIONS:'
+    echo '  var = value      - Assignment'
+    echo '  $var             - Variable reference'
+    echo '  local (var = value) {body}'
+    echo ''
+    echo 'EVALUATION:'
+    echo '  <={expression}   - Evaluate arithmetic/functional expression'
+    echo '  `{command}       - Command substitution'
+    echo '  ${var}           - Variable substitution'
+    echo ''
+    echo 'For detailed help on math operations: help arithmetic'
+}
+
