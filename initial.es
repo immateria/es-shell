@@ -121,6 +121,32 @@ fn-simple-if = $&noreturn @ condition then-action else-action {
     if-else $condition $then-action $else-action
 }
 
+# Simple if-then-else control structure
+# Usage: if-then condition then action else action
+# Example: if-then {> $x 5} then {echo 'big'} else {echo 'small'}
+fn-if-then = $&noreturn @ condition then_kw then_action else_kw else_action {
+    if {~ $then_kw then} {
+        if {~ $else_kw else} {
+            # Standard if-then-else pattern
+            if {$condition} {
+                $then_action
+            } {
+                $else_action
+            }
+        } {
+            # Only if-then (no else clause)
+            if {$condition} {
+                $then_action
+            }
+        }
+    } {
+        # Just if condition action (backward compatibility)
+        if {$condition} {
+            $then_kw  # This is actually the action
+        }
+    }
+}
+
 #    These functions just generate exceptions for control-flow
 #    constructions.  The for command and the while builtin both
 #    catch the break exception, and lambda-invocation catches
@@ -361,6 +387,15 @@ fn-plus         = $&addition
 fn-minus        = $&subtraction
 fn-times        = $&multiplication
 fn-div          = $&division
+
+# Comparison functions that return true/false status (0=true, 1=false)
+fn-greater = @ a b { ~ <={%greater $a $b} 0 }
+fn-less = @ a b { ~ <={%less $a $b} 0 }
+fn-greater-equal = @ a b { ~ <={%greaterequal $a $b} 0 }
+fn-less-equal = @ a b { ~ <={%lessequal $a $b} 0 }
+fn-equal = @ a b { ~ <={%equal $a $b} 0 }
+fn-not-equal = @ a b { ~ <={%notequal $a $b} 0 }
+fn-%greater            = $&greater
 fn-%less               = $&less
 fn-%greaterequal       = $&greaterequal
 fn-%lessequal          = $&lessequal
