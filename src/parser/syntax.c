@@ -234,10 +234,22 @@ static Tree *normalizeinfix(Tree *operand) {
 	return operand;
 }
 
+
 static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
         const char *prim;
-        lhs = normalizeinfix(lhs);
-        rhs = normalizeinfix(rhs);
+        /* For infix operations, convert non-numeric words to variables */
+        if (lhs != NULL && lhs->kind == nWord) {
+                char *end;
+                strtol(lhs->u[0].s, &end, 10);
+                if (*end != '\0')
+                        lhs = mk(nVar, lhs);
+        }
+        if (rhs != NULL && rhs->kind == nWord) {
+                char *end;
+                strtol(rhs->u[0].s, &end, 10);
+                if (*end != '\0')
+                        rhs = mk(nVar, rhs);
+        }
         switch (op) {
         case infixAdd:
                 prim = "%addition";
