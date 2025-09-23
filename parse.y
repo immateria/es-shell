@@ -10,14 +10,18 @@ static Tree *arithword(Tree *t) {
        if (t != NULL && t->kind == nWord) {
                char *end;
                strtol(t->u[0].s, &end, 10);
-               /* Only convert to variable if it starts with $ or is in arithmetic context */
-               /* For now, just return literal words as-is to fix echo */
+               
+               /* If it's a pure number, return as-is for arithmetic use */
                if (*end == '\0') {
-                       /* It's a pure number - leave it as nWord */
                        return t;
                }
-               /* For non-numeric strings, keep as literal word unless explicitly marked as variable */
-               return t;
+               
+               /* CONSERVATIVE APPROACH: Don't auto-convert words to variables */
+               /* This fixes the echo problem. If arithmetic contexts need */
+               /* variable expansion, they should use explicit $var syntax */
+               /* or we need a more sophisticated context-aware approach */
+               
+               return t;  /* Keep all non-numeric words as literals */
        }
        return t;
 }

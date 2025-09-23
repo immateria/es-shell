@@ -199,6 +199,72 @@ Functions like `treecons` and `treeappend` construct and extend abstract syntax 
 
 ### [2025-09-13] Core Module – util.c
 
+## Critical Bug Fixes
+
+### [2025-09-23] Critical Bug Fix – Echo/Argument Processing Failure
+
+**Discovery:** `arithword` function in `parse.y` was breaking basic command argument processing
+
+**Problem:** 
+- Commands like `echo hello world` produced no output
+- Literal string arguments to all primitives were being lost
+- Variables and quoted strings also failed: `echo $var` and `echo "hello"` produced nothing
+- Only evaluated expressions worked: `echo <={3 + 5}` worked but `echo hello` didn't
+
+**Root Cause Analysis:**
+- The `arithword()` function in `parse.y` (lines 9-17) was converting ALL non-numeric literal words to variable references
+- Example: `echo hello world` became `echo $hello $world` internally
+- Since variables `$hello` and `$world` were undefined, they evaluated to empty strings
+- This caused echo primitive to receive an empty argument list
+
+**Original arithword logic:**
+```c
+static Tree *arithword(Tree *t) {
+    if (t != NULL && t->kind == nWord) {
+        char *end;
+        strtol(t->u[0].s, &end, 10);
+        if (*end != '\0')                    // If not pure numeric
+            return mk(nVar, t);              // Convert to variable!
+    }
+    return t;
+}
+```
+
+**Testing Process:**
+1. **Symptom identified:** `echo hello` → no output, `echo <={3 + 5}` → "5"
+2. **Initial theories:** Print function broken, echo primitive broken, I/O system broken
+3. **Debug echo primitive:** Added debug output, confirmed primitive was called but received empty argument list
+4. **Suspected arithword:** Disabled by making it return `t` unchanged
+5. **Result:** `echo hello world` immediately worked → confirmed arithword was the culprit
+
+**Fix Applied:**
+Modified `arithword` to preserve literal words instead of auto-converting to variables:
+```c
+static Tree *arithword(Tree *t) {
+    if (t != NULL && t->kind == nWord) {
+        char *end;
+        strtol(t->u[0].s, &end, 10);
+        if (*end == '\0') {
+            // Pure number - keep as nWord
+            return t;
+        }
+        // Non-numeric strings - keep as literal word, don't convert to variable
+        return t;
+    }
+    return t;
+}
+```
+
+**Status:** 
+- ✅ Fixed: `echo hello world` now works
+- ✅ Fixed: Variable expansion works: `x = test; echo $x` 
+- ✅ Fixed: Quoted strings work: `echo "Hello World!"`
+- ❌ Side effect: Symbolic arithmetic `<={3 + 5}` may need adjustment (primitive arithmetic still works)
+
+**Impact:** This was blocking all basic shell interaction and command argument processing. Essential for shell usability.
+
+**Next Steps:** Need to investigate how to properly handle arithmetic contexts while preserving literal word processing for commands.
+
 **Discovery:** Miscellaneous helpers and safe allocation
 
 **Details:** Wraps `strerror`, implements path utilities like `isabsolute`, and provides checked `ealloc`/`erealloc` memory routines.【F:util.c†L17-L54】【F:util.c†L61-L83】
