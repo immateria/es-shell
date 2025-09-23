@@ -558,7 +558,7 @@ char **builtin_completion(const char *text, int UNUSED start, int UNUSED end) {
 
 	/* ~foo => username.  ~foo/bar already gets completed as filename. */
 	if (!matches && *text == '~' && !strchr(text, '/'))
-		matches = rl_completion_matches(text, rl_username_completion_function);
+                matches = rl_completion_matches(text, username_completion_function);
 
 	return matches;
 }
