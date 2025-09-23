@@ -21,7 +21,7 @@ INSTALL_DATA    = $(INSTALL) -m 644
 MKDIR_P         = @MKDIR_P@
 
 # Include paths for new structure
-CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -Iinclude -I$(srcdir)/include \
+CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -Iinclude -I$(srcdir)/include -Igenerated \
                   -W -Wall @READLINE_CFLAGS@ @CFLAGS@ $(ADDCFLAGS)
 LDFLAGS         = @LDFLAGS@ $(ADDLDFLAGS)
 LIBS            = @READLINE_LIBS@ @LIBS@ $(ADDLIBS)
@@ -52,31 +52,43 @@ BUILD_CFILES    = src/build/dump.c src/build/version.c
 # All source files
 CFILES          = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
                   $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES) \
-                  $(SYSTEM_CFILES) $(BUILD_CFILES) y.tab.c sigmsgs.c
+                  $(SYSTEM_CFILES) $(BUILD_CFILES) generated/y.tab.c generated/sigmsgs.c
 
 # Object files (remove y.tab.c and sigmsgs.c, add y.tab.o and sigmsgs.o separately)
 MAIN_CFILES     = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
                   $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES) $(SYSTEM_CFILES)
-OFILES          = $(MAIN_CFILES:.c=.o) y.tab.o sigmsgs.o src/build/version.o
+OFILES          = $(MAIN_CFILES:.c=.o) generated/y.tab.o generated/sigmsgs.o src/build/version.o
 
 # Generated files
-GEN             = esdump y.tab.c y.tab.h y.output token.h sigmsgs.c initial.c
+GEN             = esdump generated/y.tab.c generated/y.tab.h generated/y.output generated/token.h generated/sigmsgs.c generated/initial.c
 
 SIGFILES        = @SIGFILES@
 
-es              : $(OFILES) initial.o
-	$(CC) -o es $(LDFLAGS) $(OFILES) initial.o $(LIBS)
+# Default target
+all: es
+
+# Directory creation rules
+build:
+	mkdir -p build
+
+generated:
+	mkdir -p generated
+
+es              : $(OFILES) generated/initial.o
+	$(CC) -o es $(LDFLAGS) $(OFILES) generated/initial.o $(LIBS)
 
 esdump          : $(OFILES) src/build/dump.o
 	$(CC) -o esdump $(LDFLAGS) $(OFILES) src/build/dump.o $(LIBS)
 
 clean           :
-	rm -f es $(OFILES) $(GEN) src/build/dump.o initial.o
+	rm -f es $(OFILES) $(GEN) src/build/dump.o generated/initial.o
 	find src -name "*.o" -delete
+	find generated -name "*.o" -delete 2>/dev/null || true
 
 distclean       : clean testclean
 	rm -f config.cache config.log include/config.h Makefile cscope.out tags TAGS core cs.out config.status ltmain.sh
-	rm -rf autom4te.cache
+	rm -f build/config.status build/config.log build-aux/aclocal.m4
+	rm -rf autom4te.cache build-aux/autom4te.cache
 
 MANIFEST        :
 	find . -type f | sed s/..// > MANIFEST
@@ -89,33 +101,35 @@ install         : es
 	$(MKDIR_P) $(DESTDIR)$(datadir)/es
 	$(INSTALL_DATA) $(srcdir)/share/* $(DESTDIR)$(datadir)/es
 
-testrun         : $(testdir)/testrun.c
-	$(CC) -o testrun $(testdir)/testrun.c
+build/testrun   : $(testdir)/testrun.c | build
+	$(CC) -o build/testrun $(testdir)/testrun.c
 
-test            : es testrun $(testdir)/test.es
+test            : es build/testrun $(testdir)/test.es
 	./es -ps < $(testdir)/test.es $(testdir)/tests/*
 
 testclean       :
-	rm -f testrun
+	rm -f build/testrun
 
 src             :
 	@echo parse.y $(CFILES) $(HFILES)
 
-y.tab.h         : src/parser/parse.y
+generated/y.tab.h         : src/parser/parse.y | generated
 	$(YACC) -vd $(srcdir)/src/parser/parse.y
+	mv y.tab.h y.tab.c generated/
+	mv y.output generated/ 2>/dev/null || true
 
-y.tab.c         : y.tab.h
+generated/y.tab.c         : generated/y.tab.h
 
-token.h         : y.tab.h
-	-cmp -s y.tab.h token.h || cp y.tab.h token.h
+generated/token.h         : generated/y.tab.h
+	-cmp -s generated/y.tab.h generated/token.h || cp generated/y.tab.h generated/token.h
 
-initial.c       : esdump $(srcdir)/initial.es
-	./esdump < $(srcdir)/initial.es > initial.c
+generated/initial.c       : esdump $(srcdir)/initial.es
+	./esdump < $(srcdir)/initial.es > generated/initial.c
 
-sigmsgs.c       : mksignal $(SIGFILES)
-	sh $(srcdir)/mksignal $(SIGFILES) > sigmsgs.c
+generated/sigmsgs.c       : mksignal $(SIGFILES)
+	sh $(srcdir)/mksignal $(SIGFILES) > generated/sigmsgs.c
 
-include/config.h : config.h.in
+include/config.h : include/config.h.in
 	./configure
 
 # Update dependencies for new structure
@@ -130,8 +144,8 @@ src/primitives/prim-io.o  : src/primitives/prim-io.c include/es.h include/config
 src/primitives/prim-math.o : src/primitives/prim-math.c include/es.h include/config.h include/stdenv.h include/prim.h
 src/primitives/prim-sys.o : src/primitives/prim-sys.c include/es.h include/config.h include/stdenv.h include/prim.h
 
-src/parser/syntax.o    : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h token.h
-src/parser/token.o     : src/parser/token.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h token.h
+src/parser/syntax.o    : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
+src/parser/token.o     : src/parser/token.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
 
 src/io/input.o         : src/io/input.c include/es.h include/config.h include/stdenv.h include/input.h
 src/io/heredoc.o       : src/io/heredoc.c include/es.h include/config.h include/stdenv.h include/gc.h include/input.h include/syntax.h
@@ -167,5 +181,5 @@ src/system/closure.o   : src/system/closure.c include/es.h include/config.h incl
 src/build/dump.o       : src/build/dump.c include/es.h include/config.h include/stdenv.h
 src/build/version.o    : src/build/version.c include/es.h include/config.h include/stdenv.h
 
-y.tab.o         : y.tab.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h
-sigmsgs.o       : sigmsgs.c include/es.h include/config.h include/stdenv.h include/sigmsgs.h
+generated/y.tab.o         : generated/y.tab.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h
+generated/sigmsgs.o       : generated/sigmsgs.c include/es.h include/config.h include/stdenv.h include/sigmsgs.h

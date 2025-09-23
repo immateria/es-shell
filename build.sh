@@ -162,12 +162,31 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         libtoolize -qi
     fi
     
-    autoreconf -i
+    # Configure autotools to use proper directories
+    mkdir -p build-aux build
+    
+    # Run aclocal with output to build-aux, including local m4 macros
+    aclocal --output=build-aux/aclocal.m4 -I m4
+    
+    # Run autoconf with cache in build-aux
+    autom4te --cache=build-aux/autom4te.cache --language=autoconf --include=build-aux configure.ac > configure
+    chmod +x configure
+    
+    # Generate config.h template with cache in build-aux
+    AUTOM4TE_CACHE=build-aux/autom4te.cache autoheader
+    
+    # Clean up any stray autom4te.cache that might get created in root
+    [[ -d autom4te.cache ]] && rm -rf autom4te.cache
+    
     if [[ $static -eq 1 ]]; then
         ./configure LDFLAGS="-static"
     else
         ./configure
     fi
+    
+    # Clean up any autom4te.cache created by configure
+    [[ -d autom4te.cache ]] && rm -rf autom4te.cache
+    
     make clean
     make
     # make test

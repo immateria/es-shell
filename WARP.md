@@ -427,8 +427,8 @@ gdb --args ./es -c 'echo <={3 + 5}'
 - **esdump.c** / **dump.c** - Utility for serializing shell state to C code
 - **prim-math.c** - Arithmetic and type conversion primitives
 - **test/test.es** - Test harness with assert-based testing framework
-- **PRIORITIES.md** - Development priorities and known issues
-- **TYPE_SYSTEM.md** - Detailed type system documentation
+- **design/PRIORITIES.md** - Development priorities and known issues
+- **design/TYPE_SYSTEM.md** - Detailed type system documentation
 
 ## Zsh Coding Conventions
 

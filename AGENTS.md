@@ -1,6 +1,6 @@
 # Purpose
 Agents are responsible for exploring this repository’s codebase and recording their findings.  
-All observations, connections, and insights must be written to `DISCOVERIES.md`.
+All observations, connections, and insights must be written to `design/DISCOVERIES.md`.
 
 ## Resources
 - build.sh will get you the dependencies needed to build es, configure, and make es.
@@ -15,7 +15,7 @@ All observations, connections, and insights must be written to `DISCOVERIES.md`.
 - Pay attention to naming conventions, coding patterns, and unusual design choices.
 
 ## Logging Guidelines
-- All findings must be appended to `DISCOVERIES.md`.
+- All findings must be appended to `design/DISCOVERIES.md`.
 - Use a clear, chronological log format:
   - **Date/Time**
   - **File/Component**
@@ -26,7 +26,7 @@ All observations, connections, and insights must be written to `DISCOVERIES.md`.
 
 ## Workflow
 1. Explore a part of the repository.
-2. Write a log entry in `DISCOVERIES.md` following the format above.
+2. Write a log entry in `design/DISCOVERIES.md` following the format above.
 3. Cross-reference prior discoveries where relevant.
 4. Continue until the entire repository has been mapped.
 

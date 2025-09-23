@@ -8,18 +8,6 @@ The es-shell codebase has been organized into a logical directory structure to i
 
 ```
 es-shell/
-├── include/               # Header files
-│   ├── config.h          # Build configuration
-│   ├── es.h              # Main shell header
-│   ├── gc.h              # Garbage collector
-│   ├── input.h           # Input handling
-│   ├── prim.h            # Primitives system
-│   ├── print.h           # Output formatting
-│   ├── sigmsgs.h         # Signal messages
-│   ├── stdenv.h          # Standard environment
-│   ├── syntax.h          # Parser definitions
-│   └── debug.h           # Debug utilities
-│
 ├── src/                   # Source code
 │   ├── core/             # Core shell engine
 │   │   ├── main.c        # Entry point
@@ -90,10 +78,56 @@ es-shell/
 │       ├── eval_wrong.c
 │       └── glom_original.c
 │
+├── include/               # Header files
+│   ├── config.h          # Build configuration (generated)
+│   ├── config.h.in       # Build configuration template
+│   ├── es.h              # Main shell header
+│   ├── gc.h              # Garbage collector
+│   ├── input.h           # Input handling
+│   ├── prim.h            # Primitives system
+│   ├── print.h           # Output formatting
+│   ├── sigmsgs.h         # Signal messages
+│   ├── stdenv.h          # Standard environment
+│   ├── syntax.h          # Parser definitions
+│   └── debug.h           # Debug utilities
+│
+├── generated/             # Generated files during build
+│   ├── y.tab.c           # Generated parser (from parse.y)
+│   ├── y.tab.h           # Parser header
+│   ├── token.h           # Token definitions
+│   ├── initial.c         # Serialized initial state (from initial.es)
+│   └── sigmsgs.c         # Signal message definitions
+│
+├── build/                 # Build artifacts
+│   ├── config.status     # Configure script output
+│   ├── config.log        # Configuration log
+│   └── testrun           # Test runner executable
+│
+├── build-aux/             # Autotools auxiliary files
+│   ├── aclocal.m4        # Autotools macro definitions
+│   ├── autom4te.cache/   # Autotools cache directory
+│   ├── config.guess      # Platform detection (symlink)
+│   ├── config.sub        # Platform detection (symlink)
+│   ├── install-sh        # Install script (symlink)
+│   └── ltmain.sh         # Libtool main script (symlink)
+│
+├── design/                # Design documents and planning
+│   ├── DISCOVERIES.md    # Development findings and insights
+│   ├── PRIORITIES.md     # Development priorities
+│   ├── TYPE_SYSTEM.md    # Type system documentation
+│   ├── REDIRECTION_REDESIGN.md  # Operator redesign plans
+│   ├── OPERATOR_IMPLEMENTATION.md  # Implementation details
+│   └── UX_IMPROVEMENTS.md  # User experience enhancements
+│
+├── bin/                   # Final executables (from build.sh)
+│   └── es-shell          # Built shell executable
+│
 ├── test/                  # Test suite
-├── doc/                   # Documentation
+├── doc/                   # Original documentation
 ├── examples/              # Example scripts
-└── share/                 # Shared resources
+├── share/                 # Shared resources
+├── m4/                    # Autotools M4 macros
+└── temp_files/            # Temporary and legacy files
 ```
 
 ## Benefits of This Structure

@@ -3,6 +3,7 @@ AC_PREREQ([2.64])
 AC_INIT
 AC_CONFIG_SRCDIR([src/system/access.c])
 AC_CONFIG_HEADERS([include/config.h])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl AC_CMDSTDOUT_CPP(variable, command, headers)
