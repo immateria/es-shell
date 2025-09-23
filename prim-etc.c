@@ -18,7 +18,25 @@ PRIM(echo) {
 		} else if (termeq(list->term, "--"))
 			list = list->next;
 	}
-	print("%L%s", list, " ", eol);
+	
+	/* Handle empty list case */
+	if (list == NULL) {
+		write(1, eol, strlen(eol));
+		return ltrue;
+	}
+	
+	/* Print each list item directly */
+	List *lp = list;
+	while (lp != NULL) {
+		char *str = getstr(lp->term);
+		if (str != NULL) {
+			write(1, str, strlen(str));
+		}
+		if (lp->next != NULL)
+			write(1, " ", 1);
+		lp = lp->next;
+	}
+	write(1, eol, strlen(eol));
 	return ltrue;
 }
 
