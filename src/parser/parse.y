@@ -31,6 +31,7 @@ static Tree *arithword(Tree *t) {
 %token		LOCAL LET FOR CLOSURE FN
 %token <tree>	REDIR DUP
 %token          ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
+%token          LT GT LE GE EQ NE  /* Comparison operators */
 %token		NL ENDFILE ERROR
 %token		MATCH
 
@@ -38,6 +39,7 @@ static Tree *arithword(Tree *t) {
 %left		MATCH LOCAL LET FOR CLOSURE ')'
 %left		ANDAND OROR NL
 %left		'!'
+%left		LT GT LE GE EQ NE  /* Comparison operators */
 %left <tree>	PIPE
 %right		'$'
 %left		SUB

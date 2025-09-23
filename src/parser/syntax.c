@@ -133,12 +133,12 @@ static InfixOp classifyinfix(Tree *t) {
         static const char *const bxorwords[] = { "bitwise-xor", "bitwisexor", "⊻" };
         static const char *const shlwords[] = { "bitwise-shift-left", "shift-left", "shift-left-by" };
         static const char *const shrwords[] = { "bitwise-shift-right", "shift-right", "shift-right-by" };
-        static const char *const gtwords[] = { "greater", "greater-than", "gt", ">" };
-        static const char *const ltwords[] = { "less", "less-than", "lt", "<" };
-        static const char *const gewords[] = { "greater-equal", "greater-than-or-equal", "ge", "gte", ">=", "=>" };
-        static const char *const lewords[] = { "less-equal", "less-than-or-equal", "le", "lte", "<=", "=<" };
-        static const char *const eqwords[] = { "equal", "equals", "eq", "==", "===" };
-        static const char *const newords[] = { "not-equal", "not-equals", "ne", "neq", "!=", "=/=" };
+        static const char *const gtwords[] = { "greater", "greater-than", "gt", ">", "_gt_", "_>", "_greater" };
+        static const char *const ltwords[] = { "less", "less-than", "lt", "<", "_lt_", "_<", "_less" };
+        static const char *const gewords[] = { "greater-equal", "greater-than-or-equal", "ge", "gte", ">=", "=>", "_ge_", "_>=" };
+        static const char *const lewords[] = { "less-equal", "less-than-or-equal", "le", "lte", "<=", "=<", "_le_", "_<=" };
+        static const char *const eqwords[] = { "equal", "equals", "eq", "==", "===", "_eq_", "_==" };
+        static const char *const newords[] = { "not-equal", "not-equals", "ne", "neq", "!=", "=/=", "_ne_", "_!=" };
 
         if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
                 return infixNone;

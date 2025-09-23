@@ -1,30 +1,5 @@
-# Makefile for es ($Revision: 1.4 $)
-
-# Some of the advice here is rather old and out of date.  The
-# configuration of es will be improved by 0.9beta, but I didn't
-# want to hunt out machines from now til eternity.
-
-# comment out the CFLAGS -Wall if you're not using gcc,
-# but i'd encourage you to compile with full warnings on.
-# let us know what warnings you get, though we don't promise
-# to shut them all up.  if you're using sun's SPARCcompiler
-# we recommend -Xa mode.  if you're using the native alpha
-# compile, we recommend -g3 -O -Olimit 1000.  on recent
-# SGI Irix releases using the native compiler, you will
-# probably need -xansi.
-
-# see config.h for command-line -D flags you may want to use.
-# if you're using SunOS 5 (Solaris 2), be sure to include
-# -DSOLARIS in the CFLAGS, since sun made it difficult to
-# detect which system you're running.  also, since sun really
-# seems to have screwed up and removed both getrusage() and
-# wait3() in Solaris 2, you should probably add -DBUILTIN_TIME=0
-# to the cflags.  if you're running an OSF1 derivative, try -DOSF1.
-# if you're using HP/UX do a -DHPUX.
-
-# also, please use whatever -D flags you need to in order
-# to get definitions of all signals from <sys/signal.h>.
-# _POSIX_SOURCE, _XOPEN_SOURCE are the obvious ones.
+# Makefile for es with organized directory structure
+# Based on original Makefile ($Revision: 1.4 $)
 
 prefix          = @prefix@
 datarootdir     = @datarootdir@
@@ -45,27 +20,46 @@ INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA    = $(INSTALL) -m 644
 MKDIR_P         = @MKDIR_P@
 
-CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -W -Wall @READLINE_CFLAGS@ @CFLAGS@ $(ADDCFLAGS)
+# Include paths for new structure
+CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -Iinclude -I$(srcdir)/include \
+                  -W -Wall @READLINE_CFLAGS@ @CFLAGS@ $(ADDCFLAGS)
 LDFLAGS         = @LDFLAGS@ $(ADDLDFLAGS)
 LIBS            = @READLINE_LIBS@ @LIBS@ $(ADDLIBS)
 
-HFILES          = config.h es.h gc.h input.h prim.h print.h sigmsgs.h \
-                  stdenv.h syntax.h term.h var.h
+# Header files (now in include/)
+HFILES          = include/config.h include/es.h include/gc.h include/input.h \
+                  include/prim.h include/print.h include/sigmsgs.h \
+                  include/stdenv.h include/syntax.h include/debug.h
 
-CFILES          = access.c closure.c conv.c dict.c eval.c except.c fd.c gc.c glob.c \
-                  glom.c input.c heredoc.c history.c list.c main.c match.c open.c opt.c \
-                  prim-ctl.c prim-etc.c prim-io.c prim-math.c prim-sys.c prim.c print.c proc.c \
-                  sigmsgs.c signal.c split.c status.c str.c syntax.c term.c token.c \
-                  tree.c util.c var.c vec.c version.c y.tab.c dump.c
+# Source files by category
+CORE_CFILES     = src/core/eval.c src/core/gc.c src/core/main.c
+PRIMITIVE_CFILES = src/primitives/prim.c src/primitives/prim-ctl.c \
+                  src/primitives/prim-etc.c src/primitives/prim-io.c \
+                  src/primitives/prim-math.c src/primitives/prim-sys.c
+PARSER_CFILES   = src/parser/syntax.c src/parser/token.c
+IO_CFILES       = src/io/input.c src/io/heredoc.c src/io/fd.c src/io/open.c \
+                  src/io/proc.c src/io/term.c
+DATA_CFILES     = src/data/str.c src/data/list.c src/data/split.c \
+                  src/data/glom.c src/data/conv.c src/data/dict.c \
+                  src/data/tree.c src/data/vec.c
+UTILS_CFILES    = src/utils/debug.c src/utils/print.c src/utils/match.c \
+                  src/utils/glob.c src/utils/util.c src/utils/var.c
+SYSTEM_CFILES   = src/system/access.c src/system/signal.c src/system/status.c \
+                  src/system/history.c src/system/opt.c src/system/except.c \
+                  src/system/closure.c
+BUILD_CFILES    = src/build/dump.c src/build/version.c
 
-OFILES          = access.o closure.o conv.o dict.o eval.o except.o fd.o gc.o glob.o \
-                  glom.o input.o heredoc.o history.o list.o main.o match.o open.o opt.o \
-                  prim-ctl.o prim-etc.o prim-io.o prim-math.o prim-sys.o prim.o print.o proc.o \
-                  sigmsgs.o signal.o split.o status.o str.o syntax.o term.o token.o \
-                  tree.o util.o var.o vec.o version.o y.tab.o
+# All source files
+CFILES          = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
+                  $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES) \
+                  $(SYSTEM_CFILES) $(BUILD_CFILES) y.tab.c sigmsgs.c
 
-OTHER           = Makefile parse.y mksignal
+# Object files (remove y.tab.c and sigmsgs.c, add y.tab.o and sigmsgs.o separately)
+MAIN_CFILES     = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
+                  $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES) $(SYSTEM_CFILES)
+OFILES          = $(MAIN_CFILES:.c=.o) y.tab.o sigmsgs.o src/build/version.o
 
+# Generated files
 GEN             = esdump y.tab.c y.tab.h y.output token.h sigmsgs.c initial.c
 
 SIGFILES        = @SIGFILES@
@@ -73,14 +67,15 @@ SIGFILES        = @SIGFILES@
 es              : $(OFILES) initial.o
 	$(CC) -o es $(LDFLAGS) $(OFILES) initial.o $(LIBS)
 
-esdump          : $(OFILES) dump.o
-	$(CC) -o esdump $(LDFLAGS) $(OFILES) dump.o $(LIBS)
+esdump          : $(OFILES) src/build/dump.o
+	$(CC) -o esdump $(LDFLAGS) $(OFILES) src/build/dump.o $(LIBS)
 
 clean           :
-	rm -f es $(OFILES) $(GEN) dump.o initial.o
+	rm -f es $(OFILES) $(GEN) src/build/dump.o initial.o
+	find src -name "*.o" -delete
 
 distclean       : clean testclean
-	rm -f config.cache config.log config.h Makefile cscope.out tags TAGS core cs.out config.status ltmain.sh
+	rm -f config.cache config.log include/config.h Makefile cscope.out tags TAGS core cs.out config.status ltmain.sh
 	rm -rf autom4te.cache
 
 MANIFEST        :
@@ -104,10 +99,10 @@ testclean       :
 	rm -f testrun
 
 src             :
-	@echo $(OTHER) $(CFILES) $(HFILES)
+	@echo parse.y $(CFILES) $(HFILES)
 
-y.tab.h         : parse.y
-	$(YACC) -vd $(srcdir)/parse.y
+y.tab.h         : src/parser/parse.y
+	$(YACC) -vd $(srcdir)/src/parser/parse.y
 
 y.tab.c         : y.tab.h
 
@@ -120,46 +115,57 @@ initial.c       : esdump $(srcdir)/initial.es
 sigmsgs.c       : mksignal $(SIGFILES)
 	sh $(srcdir)/mksignal $(SIGFILES) > sigmsgs.c
 
-config.h        : config.h.in
+include/config.h : config.h.in
 	./configure
 
-# --- dependencies ---
+# Update dependencies for new structure
+src/core/main.o        : src/core/main.c include/es.h include/config.h include/stdenv.h
+src/core/eval.o        : src/core/eval.c include/es.h include/config.h include/stdenv.h
+src/core/gc.o          : src/core/gc.c include/es.h include/config.h include/stdenv.h include/gc.h
 
-access.o        : access.c es.h config.h stdenv.h prim.h
-closure.o       : closure.c es.h config.h stdenv.h gc.h
-conv.o          : conv.c es.h config.h stdenv.h print.h
-dict.o          : dict.c es.h config.h stdenv.h gc.h
-eval.o          : eval.c es.h config.h stdenv.h
-except.o        : except.c es.h config.h stdenv.h print.h
-fd.o            : fd.c es.h config.h stdenv.h
-gc.o            : gc.c es.h config.h stdenv.h gc.h
-glob.o          : glob.c es.h config.h stdenv.h gc.h
-glom.o          : glom.c es.h config.h stdenv.h gc.h
-input.o         : input.c es.h config.h stdenv.h input.h
-heredoc.o       : heredoc.c es.h config.h stdenv.h gc.h input.h syntax.h
-history.o       : history.c es.h config.h stdenv.h gc.h input.h
-list.o          : list.c es.h config.h stdenv.h gc.h
-main.o          : main.c es.h config.h stdenv.h
-match.o         : match.c es.h config.h stdenv.h
-open.o          : open.c es.h config.h stdenv.h
-opt.o           : opt.c es.h config.h stdenv.h
-prim.o          : prim.c es.h config.h stdenv.h prim.h
-prim-ctl.o      : prim-ctl.c es.h config.h stdenv.h prim.h
-prim-etc.o      : prim-etc.c es.h config.h stdenv.h prim.h
-prim-io.o       : prim-io.c es.h config.h stdenv.h gc.h prim.h
-prim-math.o     : prim-math.c es.h config.h stdenv.h prim.h
-prim-sys.o      : prim-sys.c es.h config.h stdenv.h prim.h
-print.o         : print.c es.h config.h stdenv.h print.h
-proc.o          : proc.c es.h config.h stdenv.h prim.h
-signal.o        : signal.c es.h config.h stdenv.h sigmsgs.h
-split.o         : split.c es.h config.h stdenv.h gc.h
-status.o        : status.c es.h config.h stdenv.h term.h
-str.o           : str.c es.h config.h stdenv.h gc.h print.h
-syntax.o        : syntax.c es.h config.h stdenv.h input.h syntax.h token.h
-term.o          : term.c es.h config.h stdenv.h gc.h term.h
-token.o         : token.c es.h config.h stdenv.h input.h syntax.h token.h
-tree.o          : tree.c es.h config.h stdenv.h gc.h
-util.o          : util.c es.h config.h stdenv.h
-var.o           : var.c es.h config.h stdenv.h gc.h var.h term.h
-vec.o           : vec.c es.h config.h stdenv.h gc.h
-version.o       : version.c es.h config.h stdenv.h
+src/primitives/prim.o     : src/primitives/prim.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-ctl.o : src/primitives/prim-ctl.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-etc.o : src/primitives/prim-etc.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-io.o  : src/primitives/prim-io.c include/es.h include/config.h include/stdenv.h include/gc.h include/prim.h
+src/primitives/prim-math.o : src/primitives/prim-math.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-sys.o : src/primitives/prim-sys.c include/es.h include/config.h include/stdenv.h include/prim.h
+
+src/parser/syntax.o    : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h token.h
+src/parser/token.o     : src/parser/token.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h token.h
+
+src/io/input.o         : src/io/input.c include/es.h include/config.h include/stdenv.h include/input.h
+src/io/heredoc.o       : src/io/heredoc.c include/es.h include/config.h include/stdenv.h include/gc.h include/input.h include/syntax.h
+src/io/fd.o            : src/io/fd.c include/es.h include/config.h include/stdenv.h
+src/io/open.o          : src/io/open.c include/es.h include/config.h include/stdenv.h
+src/io/proc.o          : src/io/proc.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/io/term.o          : src/io/term.c include/es.h include/config.h include/stdenv.h include/gc.h
+
+src/data/str.o         : src/data/str.c include/es.h include/config.h include/stdenv.h include/gc.h include/print.h
+src/data/list.o        : src/data/list.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/data/split.o       : src/data/split.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/data/glom.o        : src/data/glom.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/data/conv.o        : src/data/conv.c include/es.h include/config.h include/stdenv.h include/print.h
+src/data/dict.o        : src/data/dict.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/data/tree.o        : src/data/tree.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/data/vec.o         : src/data/vec.c include/es.h include/config.h include/stdenv.h include/gc.h
+
+src/utils/debug.o      : src/utils/debug.c include/es.h include/config.h include/stdenv.h include/debug.h
+src/utils/print.o      : src/utils/print.c include/es.h include/config.h include/stdenv.h include/print.h
+src/utils/match.o      : src/utils/match.c include/es.h include/config.h include/stdenv.h
+src/utils/glob.o       : src/utils/glob.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/utils/util.o       : src/utils/util.c include/es.h include/config.h include/stdenv.h
+src/utils/var.o        : src/utils/var.c include/es.h include/config.h include/stdenv.h include/gc.h
+
+src/system/access.o    : src/system/access.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/system/signal.o    : src/system/signal.c include/es.h include/config.h include/stdenv.h include/sigmsgs.h
+src/system/status.o    : src/system/status.c include/es.h include/config.h include/stdenv.h
+src/system/history.o   : src/system/history.c include/es.h include/config.h include/stdenv.h include/gc.h include/input.h
+src/system/opt.o       : src/system/opt.c include/es.h include/config.h include/stdenv.h
+src/system/except.o    : src/system/except.c include/es.h include/config.h include/stdenv.h include/print.h
+src/system/closure.o   : src/system/closure.c include/es.h include/config.h include/stdenv.h include/gc.h
+
+src/build/dump.o       : src/build/dump.c include/es.h include/config.h include/stdenv.h
+src/build/version.o    : src/build/version.c include/es.h include/config.h include/stdenv.h
+
+y.tab.o         : y.tab.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h
+sigmsgs.o       : sigmsgs.c include/es.h include/config.h include/stdenv.h include/sigmsgs.h

@@ -1281,3 +1281,71 @@ if-then {greater-equal $score 90} then {
 - Created comprehensive demo scripts and documentation
 
 **Next Goal:** Implement proper `if-then-elseif-else` structure to eliminate nested control statement requirement and provide flat conditional chains.
+
+### [2024-12-23] Control Structures – Complete if-then-elseif-else Implementation
+
+**COMMIT: 783c73d**
+
+**Discovery:** Successfully implemented comprehensive `if-then-elseif-else` control structure with full infix operator support, eliminating the need for nested conditional statements
+
+**Details:**  
+Completed the user's request for flat conditional chains that avoid "nested control statement requirement sucks" by implementing a robust `cond` function with elseif support.
+
+**Major Features Implemented:**
+- Complete if-then-elseif-else control structure eliminating nested conditionals
+- Full word-based infix operator support in all conditional patterns  
+- Flat conditional chains with natural syntax
+
+**Syntax Patterns Supported:**
+```bash
+cond {condition} then {action}
+cond {condition} then {action} else {action}
+cond {condition} then {action} elseif {condition} then {action}
+cond {condition} then {action} elseif {condition} then {action} else {action}
+```
+
+**Infix Operators Working:**
+- **Comparison**: `greater`, `less`, `equal`, `not-equal`, `greater-equal`, `less-equal`
+- **Arithmetic**: `plus`, `minus`, `multiply`, `divide`, `mod`
+- **Variables**: `$x greater $y`, `$a plus $b equal 10`
+- **Complex expressions**: `<={$balance minus $fee} greater $threshold`
+
+**Working Examples:**
+```bash
+# Grade calculator with flat elseif chain
+score = 85
+cond {$score greater-equal 90} then {
+    echo 'A grade'
+} elseif {$score greater-equal 80} then {
+    echo 'B grade - using infix!'
+} else {
+    echo 'Lower grade'
+}
+
+# Financial calculation with arithmetic
+balance = 1000
+fee = 50
+remaining = <={$balance minus $fee}
+cond {$remaining greater 900} then {
+    echo 'Balance OK after fee'
+} else {
+    echo 'Low balance warning'
+}
+```
+
+**Technical Implementation:**
+- Built using ES shell's native function system with `$&noreturn`
+- Pattern matching dispatch based on argument count and keywords (3, 5, 7, 9 args)
+- Uses built-in `$&if` primitive for proper thunk handling
+- Fixed parameter name conflict in `while` function (renamed `cond` to `condition`)
+- Maintains full backward compatibility
+
+**Comprehensive Testing:**
+- `test-cond-elseif.es` - Basic functionality tests
+- `test-cond-infix.es` - Comprehensive infix operator tests
+- `cond-elseif-demo.es` - Full demonstration with examples
+- All tests passing, functionality verified
+
+**Status:** ✅ **COMPLETE** - User's primary goal achieved: "eliminate nested control statement requirement" with flat conditional chains
+
+**Next Goal:** Implement symbolic infix operators (`>`, `<`, `==`, `!=`, `>=`, `<=`) to complement existing word-based operators.
