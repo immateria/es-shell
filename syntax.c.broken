@@ -65,18 +65,11 @@ typedef enum {
         infixPow,
         infixMin,
         infixMax,
-        /* Integer-specific arithmetic */
-        infixIntAdd,
-        infixIntSub,
-        infixIntMul,
-        infixIntDiv,
-        /* Bitwise operations */
         infixBitAnd,
         infixBitOr,
         infixBitXor,
         infixShiftLeft,
         infixShiftRight,
-        /* Comparison operations */
         infixGreater,
         infixLess,
         infixGreaterEqual,
@@ -111,34 +104,25 @@ static Boolean matchany(const char *word, const char *const *choices, size_t cou
 }
 
 static InfixOp classifyinfix(Tree *t) {
-        static const char *const addwords[] = { "plus", "+" };
-        static const char *const subwords[] = { "minus", "subtract", "-", "−" };
-        static const char *const mulwords[] = { "multiply", "multiplied-by", "*", "×", "times" };
-        static const char *const divwords[] = { "divide", "divided-by", "/", "÷", "div" };
-        static const char *const modwords[] = { "mod", "modulo", "modulus", "%" };
-        static const char *const powwords[] = { "power", "pow", "raised-to", "to-the-power-of", "**" };
+        static const char *const addwords[] = { "plus" };
+        static const char *const subwords[] = { "minus", "subtract" };
+        static const char *const mulwords[] = { "multiply", "multiplied-by" };
+        static const char *const divwords[] = { "divide", "divided-by" };
+        static const char *const modwords[] = { "mod", "modulo", "modulus" };
+        static const char *const powwords[] = { "power", "pow", "raised-to", "to-the-power-of" };
         static const char *const minwords[] = { "min", "minimum" };
         static const char *const maxwords[] = { "max", "maximum" };
-        
-        /* Integer-specific arithmetic operators */
-        static const char *const intaddwords[] = { "int-plus", "int-add", "intplus", "intadd" };
-        static const char *const intsubwords[] = { "int-minus", "int-subtract", "intminus", "intsubtract" };
-        static const char *const intmulwords[] = { "int-multiply", "int-times", "intmultiply", "inttimes" };
-        static const char *const intdivwords[] = { "int-divide", "int-div", "intdivide", "intdiv" };
-        
-        
-        /* Bitwise operators with explicit names */
-        static const char *const bandwords[] = { "bitwise-and", "bitwiseand", "∧" };
-        static const char *const borwords[] = { "bitwise-or", "bitwiseor", "∨" };
-        static const char *const bxorwords[] = { "bitwise-xor", "bitwisexor", "⊻" };
-        static const char *const shlwords[] = { "bitwise-shift-left", "shift-left", "shift-left-by" };
-        static const char *const shrwords[] = { "bitwise-shift-right", "shift-right", "shift-right-by" };
-        static const char *const gtwords[] = { "greater", "greater-than", "gt", ">" };
-        static const char *const ltwords[] = { "less", "less-than", "lt", "<" };
-        static const char *const gewords[] = { "greater-equal", "greater-than-or-equal", "ge", "gte", ">=", "=>" };
-        static const char *const lewords[] = { "less-equal", "less-than-or-equal", "le", "lte", "<=", "=<" };
-        static const char *const eqwords[] = { "equal", "equals", "eq", "==", "===" };
-        static const char *const newords[] = { "not-equal", "not-equals", "ne", "neq", "!=", "=/=" };
+        static const char *const bandwords[] = { "~and", "bitwise-and", "bitwiseand" };
+        static const char *const borwords[] = { "~or", "bitwise-or", "bitwiseor" };
+        static const char *const bxorwords[] = { "~xor", "bitwise-xor", "bitwisexor" };
+        static const char *const shlwords[] = { "~shl", "shift-left", "shift-left-by", "bitwise-shift-left" };
+        static const char *const shrwords[] = { "~shr", "shift-right", "shift-right-by", "bitwise-shift-right" };
+        static const char *const gtwords[] = { "greater", "greater-than", "gt" };
+        static const char *const ltwords[] = { "less", "less-than", "lt" };
+        static const char *const gewords[] = { "greater-equal", "greater-than-or-equal", "ge", "gte" };
+        static const char *const lewords[] = { "less-equal", "less-than-or-equal", "le", "lte" };
+        static const char *const eqwords[] = { "equal", "equals", "eq" };
+        static const char *const newords[] = { "not-equal", "not-equals", "ne", "neq" };
 
         if (t == NULL || t->kind != nWord || t->u[0].s == NULL)
                 return infixNone;
@@ -159,16 +143,6 @@ static InfixOp classifyinfix(Tree *t) {
                 return infixMin;
         if (matchany(s, maxwords, sizeof maxwords / sizeof maxwords[0]))
                 return infixMax;
-        /* Integer-specific arithmetic */
-        if (matchany(s, intaddwords, sizeof intaddwords / sizeof intaddwords[0]))
-                return infixIntAdd;
-        if (matchany(s, intsubwords, sizeof intsubwords / sizeof intsubwords[0]))
-                return infixIntSub;
-        if (matchany(s, intmulwords, sizeof intmulwords / sizeof intmulwords[0]))
-                return infixIntMul;
-        if (matchany(s, intdivwords, sizeof intdivwords / sizeof intdivwords[0]))
-                return infixIntDiv;
-        /* (Type conversion operators are unary, not infix) */
         if (matchany(s, bandwords, sizeof bandwords / sizeof bandwords[0]))
                 return infixBitAnd;
         if (matchany(s, borwords, sizeof borwords / sizeof borwords[0]))
@@ -227,9 +201,8 @@ static Tree *normalizeinfix(Tree *operand) {
 	if (operand != NULL && operand->kind == nWord) {
 	        char *end;
 	        strtol(operand->u[0].s, &end, 10);
-	        /* Keep numbers as words, and keep other literals as words too */
-	        /* Don't auto-convert to variables - this caused the same issue as arithword */
-	        return operand;
+	        if (*end != '\0')
+	                return mk(nVar, operand);
 	}
 	return operand;
 }
@@ -263,20 +236,6 @@ static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
         case infixMax:
                 prim = "%max";
                 break;
-        /* Integer-specific arithmetic */
-        case infixIntAdd:
-                prim = "%intaddition";
-                break;
-        case infixIntSub:
-                prim = "%intsubtraction";
-                break;
-        case infixIntMul:
-                prim = "%intmultiplication";
-                break;
-        case infixIntDiv:
-                prim = "%intdivision";
-                break;
-        /* (Type conversion cases removed - they are unary operators) */
         case infixBitAnd:
                 prim = "%bitwiseand";
                 break;
@@ -357,7 +316,6 @@ static Tree *parseproduct(Tree *lhs, Tree **restp, Boolean *sawop) {
                 InfixOp op = classifyinfix(node->CAR);
                 if (op != infixMul && op != infixDiv && op != infixMod &&
                                 op != infixPow &&
-                                op != infixIntMul && op != infixIntDiv &&
                                 op != infixShiftLeft && op != infixShiftRight)
                         break;
                 if (sawop != NULL)
@@ -393,7 +351,6 @@ static Tree *parsesum(Tree *lhs, Tree **restp, Boolean *sawop) {
 	                return NULL;
                 op = classifyinfix(node->CAR);
                 if (op != infixAdd && op != infixSub &&
-                                op != infixIntAdd && op != infixIntSub &&
                                 op != infixMin && op != infixMax)
                         break;
                 if (sawop != NULL)

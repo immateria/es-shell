@@ -126,6 +126,11 @@ static InfixOp classifyinfix(Tree *t) {
         static const char *const intmulwords[] = { "int-multiply", "int-times", "intmultiply", "inttimes" };
         static const char *const intdivwords[] = { "int-divide", "int-div", "intdivide", "intdiv" };
         
+        /* Type conversion and checking operators */
+        static const char *const tointwords[] = { "to-int", "toint", "int" };
+        static const char *const tofloatwords[] = { "to-float", "tofloat", "float" };
+        static const char *const isintwords[] = { "is-int", "isint", "int?" };
+        static const char *const isfloatwords[] = { "is-float", "isfloat", "float?" };
         
         /* Bitwise operators with explicit names */
         static const char *const bandwords[] = { "bitwise-and", "bitwiseand", "∧" };
@@ -168,7 +173,15 @@ static InfixOp classifyinfix(Tree *t) {
                 return infixIntMul;
         if (matchany(s, intdivwords, sizeof intdivwords / sizeof intdivwords[0]))
                 return infixIntDiv;
-        /* (Type conversion operators are unary, not infix) */
+        /* Type conversion and checking */
+        if (matchany(s, tointwords, sizeof tointwords / sizeof tointwords[0]))
+                return infixToInt;
+        if (matchany(s, tofloatwords, sizeof tofloatwords / sizeof tofloatwords[0]))
+                return infixToFloat;
+        if (matchany(s, isintwords, sizeof isintwords / sizeof isintwords[0]))
+                return infixIsInt;
+        if (matchany(s, isfloatwords, sizeof isfloatwords / sizeof isfloatwords[0]))
+                return infixIsFloat;
         if (matchany(s, bandwords, sizeof bandwords / sizeof bandwords[0]))
                 return infixBitAnd;
         if (matchany(s, borwords, sizeof borwords / sizeof borwords[0]))
@@ -227,9 +240,8 @@ static Tree *normalizeinfix(Tree *operand) {
 	if (operand != NULL && operand->kind == nWord) {
 	        char *end;
 	        strtol(operand->u[0].s, &end, 10);
-	        /* Keep numbers as words, and keep other literals as words too */
-	        /* Don't auto-convert to variables - this caused the same issue as arithword */
-	        return operand;
+	        if (*end != '\0')
+	                return mk(nVar, operand);
 	}
 	return operand;
 }
@@ -276,7 +288,19 @@ static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
         case infixIntDiv:
                 prim = "%intdivision";
                 break;
-        /* (Type conversion cases removed - they are unary operators) */
+        /* Type conversion and checking */
+        case infixToInt:
+                prim = "%toint";
+                break;
+        case infixToFloat:
+                prim = "%tofloat";
+                break;
+        case infixIsInt:
+                prim = "%isint";
+                break;
+        case infixIsFloat:
+                prim = "%isfloat";
+                break;
         case infixBitAnd:
                 prim = "%bitwiseand";
                 break;
