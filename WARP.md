@@ -192,20 +192,31 @@ All arithmetic operations support three syntax styles:
 ### Usage Examples
 
 ```bash
-# All these are equivalent and work:
+# Current syntax (still works)
 echo <={10 plus 5}        # Word-based: 15
 echo <={10 + 5}           # Symbolic: 15  
 echo <={10 gt 5}          # Short comparison: 0 (true)
 echo <={10 greater 5}     # Word comparison: 0 (true)
 echo <={10 _gt_ 5}        # Underscore style: 0 (true)
 
-# Complex expressions with precedence:
-echo <={2 plus 3 multiply 4}     # 2 + (3 * 4) = 14
-echo <={(2 plus 3) multiply 4}    # (2 + 3) * 4 = 20
+# NEW modern syntax (when implemented)
+echo ${10 + 5}            # Clean expression evaluation: 15
+echo ${10 > 5}            # True comparison operators: 0 (true)
+echo ${10 ≥ 5}            # Unicode operators: 0 (true)
 
-# In conditional contexts:
-cond {$score greater-equal 90} then {echo "A grade"}
-cond {$balance _gt_ 1000} then {echo "Sufficient funds"}
+# Complex expressions with precedence:
+echo ${2 + 3 * 4}         # Natural precedence: 14
+echo ${(2 + 3) * 4}       # Grouped: 20
+
+# Modern conditional syntax (planned)
+cond {$score >= 90} then {echo "A grade"}
+cond {$balance > 1000} then {echo "Sufficient funds"}
+cond {$value ≈ 3.14} then {echo "Close to pi"}
+
+# Advanced operators (planned)
+config ??= load_defaults()        # Nullish coalescing
+PATH =+ "/usr/local/bin:"         # Prepend operator
+find . -name "*.tmp" |? rm -f     # Conditional pipe
 ```
 
 **Note:** All operator styles work in arithmetic expressions `<={...}`, conditional tests `cond {...}`, and complex nested expressions.
@@ -278,41 +289,80 @@ cond {$age _lt_ 18} then {
 }
 ```
 
-## Redirection Symbol Redesign (Planned)
+## Comprehensive Operator Redesign (In Development)
 
-**Status:** Phase 1 planning complete, implementation roadmap defined.
+**Status:** Design finalized, implementation roadmap defined.
 
 ### Objective
-Free up `<`, `>`, `<=`, `>=`, `==`, `!=` for use as true symbolic comparison operators by replacing current redirection symbols with arrow-based syntax.
+Transform es-shell into a modern, expressive shell by:
+1. Freeing up `<`, `>`, `<=`, `>=`, `==`, `!=` for use as comparison operators
+2. Implementing intuitive arrow-based redirection syntax
+3. Introducing `${...}` for function evaluation (replacing `<={...}`)
+4. Adding Unicode operator alternatives for mathematical clarity
+5. Enhancing assignment and pipeline operators
 
-### Planned Changes
+### Core Changes
 
-#### New Redirection Syntax
-| Current | Planned | Description |
-|---------|---------|-------------|
-| `<` | `<-` | Input redirection |
-| `>` | `->` | Output redirection |
+#### Function Evaluation
+| Current | New | Description |
+|---------|-----|-------------|
+| `<={...}` | `${...}` | Function/expression evaluation |
+
+**Rationale:** `${...}` mirrors variable expansion patterns and is familiar to modern developers.
+
+#### Redirection Operators
+| Current | New | Description |
+|---------|-----|-------------|
+| `<` | `<-` | Input from file |
+| `>` | `->` | Output to file |
 | `>>` | `->>` | Append to file |
-| `<<` | `<--` | Heredoc |
-| `<<<` | `<---` | Here string |
+| `2>` | `!->` | Stderr to file |
+| `&>` | `&->` | Both stdout and stderr |
+| `<<EOF` | `<--<EOF` | Heredoc |
+| `<<'EOF'` | `<--<'EOF'` | Quoted heredoc (no expansion) |
+| `<<<` | `<=` | Here string |
 | `<>` | `<->` | Read-write mode |
 
-#### Function Call Syntax Change
-| Current | Planned | Description |
-|---------|---------|-------------|
-| `<={...}` | `@={...}` | Function call evaluation |
+#### Comparison Operators with Unicode
+| ASCII | Unicode | Description |
+|-------|---------|-------------|
+| `<` | - | Less than |
+| `>` | - | Greater than |
+| `<=` | `≤` | Less than or equal |
+| `>=` | `≥` | Greater than or equal |
+| `==` | `≡` | Equal |
+| `!=` | `≠` | Not equal |
+| `===` | `≣` | Strict equality (type-aware) |
+| `≈` | - | Approximately equal |
+
+#### Enhanced Assignment Operators
+| Operator | Description | Example |
+|----------|-------------|----------|
+| `??=` | Assign if null/unset | `config ??= "default"` |
+| `\|\|=` | Assign if falsy | `verbose \|\|= false` |
+| `=+` | Prepend | `PATH =+ "/usr/local/bin:"` |
+| `.=` | String concatenation | `msg .= " done"` |
+
+#### Advanced Pipeline Operators
+| Operator | Description | Example |
+|----------|-------------|----------|
+| `\|?` | Conditional pipe | `find . \|? xargs rm` |
+| `\|\|>` | Parallel pipe | `data \|\|> proc1 \|\|> proc2` |
+| `=->` | Tee operation | `download =-> file.bin` |
 
 ### Migration Strategy
 
-1. **Phase 1:** Support both syntaxes simultaneously
-2. **Phase 2:** Update all shell scripts to new syntax
-3. **Phase 3:** Remove legacy syntax, enable symbolic comparisons
+**Phase 1:** Dual syntax support with compatibility mode
+**Phase 2:** Transition with automated migration tools
+**Phase 3:** Modern syntax as default
+**Phase 4:** Optional legacy removal in v2.0
 
 ### Benefits
-- **Universal syntax:** `x > y`, `x <= y` work as expected
-- **Clear separation:** Arrows (`->`, `<-`) are intuitive for I/O
-- **Distinctive calls:** `@={}` won't conflict with comparisons
-- **Better UX:** Meets user expectations from other languages
+- **Modern & Intuitive:** Aligns with JavaScript, Python, and other contemporary languages
+- **Clear Semantics:** Arrow operators visually indicate data flow direction
+- **Familiar Syntax:** `${...}` mirrors shell variable expansion patterns
+- **Unicode Support:** Mathematical operators improve readability
+- **Powerful Features:** Nullish coalescing, prepend, conditional pipes
 
 ## Enhanced Testing Infrastructure
 
@@ -426,9 +476,13 @@ function build-assets
 
 ### 🚧 Planned Features
 
-- **Redirection Redesign**: Arrow-based syntax (`->`, `<-`) to free up comparison operators
-- **Enhanced Error Messages**: More user-friendly error reporting
-- **Performance Optimizations**: Arithmetic expression evaluation improvements
+- **Operator Redesign**: Complete overhaul with `${...}` evaluation, arrow-based I/O, Unicode operators
+- **Enhanced Assignment**: Nullish coalescing (`??=`), prepend (`=+`), logical assignments
+- **Advanced Pipelines**: Conditional (`|?`), parallel (`||>`), tee (`=->`) operations
+- **Strict Typing**: Type-aware equality (`===`) and comparison operators
+- **Pattern Matching**: Built-in regex (`=~`) and glob (`~=`) operators
+- **Enhanced Error Messages**: Context-aware, helpful error reporting
+- **Performance Optimizations**: Optimized operator dispatch and expression evaluation
 
 ### 📋 Migration Tasks
 
@@ -447,10 +501,13 @@ function build-assets
 - After modifying `parse.y`: `autoreconf -fi && make clean && make`
 - Test grammar changes thoroughly as they affect all shell operations
 
-### Redirection Migration (When Implemented)
-- **Legacy syntax warnings:** Phase 1 will show deprecation warnings for `<`, `>`, `<={}`
-- **Script compatibility:** Update shell scripts to use `->`, `<-`, `@={}` syntax
-- **Testing:** Run full test suite after migration to ensure compatibility
+### Operator Migration (When Implemented)
+- **Compatibility Mode:** Use `--classic-operators` flag for legacy syntax
+- **Deprecation Warnings:** Configurable warnings for old `<`, `>`, `<={...}` syntax
+- **Migration Tool:** `es-migrate --convert-operators` for automatic conversion
+- **Dual Support:** Both syntaxes work during transition period
+- **Unicode Detection:** Automatic fallback to ASCII when UTF-8 unavailable
+- **Testing:** Comprehensive test suite for all operator combinations
 
 <citations>
 <document>
