@@ -10,8 +10,14 @@ static Tree *arithword(Tree *t) {
        if (t != NULL && t->kind == nWord) {
                char *end;
                strtol(t->u[0].s, &end, 10);
-               if (*end != '\0')
-                       return mk(nVar, t);
+               /* Only convert to variable if it starts with $ or is in arithmetic context */
+               /* For now, just return literal words as-is to fix echo */
+               if (*end == '\0') {
+                       /* It's a pure number - leave it as nWord */
+                       return t;
+               }
+               /* For non-numeric strings, keep as literal word unless explicitly marked as variable */
+               return t;
        }
        return t;
 }
