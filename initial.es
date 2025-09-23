@@ -91,6 +91,36 @@ fn-eval = $&noreturn @ { '{' ^ $^* ^ '}' }
 fn-true        = { result 0 }
 fn-false       = { result 1 }
 
+# Enhanced control structures for better syntax
+# Provides if-else that works with both () and {} for predicates
+
+# Enhanced if-else function that handles parentheses for predicates
+fn-if-else = $&noreturn @ condition then-action else-action {
+    # If condition is a list (from parentheses), evaluate its first element
+    # If condition is a thunk (from braces), execute it directly
+    let (result = ) {
+        # Try to execute the condition and capture its result
+        catch @ e {
+            # If there's an error, treat as false condition
+            result = 1
+        } {
+            result = <={$condition}
+        }
+        
+        # Execute appropriate action based on result
+        if {~ $result 0} {
+            $then-action
+        } {
+            $else-action
+        }
+    }
+}
+
+# Simple if function that also handles both syntaxes
+fn-simple-if = $&noreturn @ condition then-action else-action {
+    if-else $condition $then-action $else-action
+}
+
 #    These functions just generate exceptions for control-flow
 #    constructions.  The for command and the while builtin both
 #    catch the break exception, and lambda-invocation catches
