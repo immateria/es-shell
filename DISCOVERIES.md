@@ -1227,3 +1227,57 @@ Successfully fulfilled user requirements: "make sure all of the operators are ea
 
 **Build Status Note:**
 Implementation complete and tested. Help system implemented but requires rebuild for full functionality. All mathematical enhancements verified working. Source code modifications preserve existing functionality while adding requested features.
+
+### [2024-12-23] Control Structures – Traditional if-then-else Implementation
+
+**CHECKPOINT COMMIT: 7650544**
+
+**Discovery:** Successfully implemented traditional `if-then-else` control structure with complete comparison operator suite
+
+**Details:**  
+Added familiar conditional syntax to ES shell while maintaining functional programming capabilities:
+
+**New Control Structure:**
+- `if-then condition then action else action` - Full if-then-else
+- `if-then condition then action` - Simple if-then (no else)
+- Supports nested structures for complex logic
+
+**Complete Comparison Operators:**
+- `greater a b` (a > b) - Numeric greater than
+- `less a b` (a < b) - Numeric less than  
+- `greater-equal a b` (a >= b) - Greater than or equal
+- `less-equal a b` (a <= b) - Less than or equal
+- `equal a b` (a == b) - Equality with epsilon for floats
+- `not-equal a b` (a != b) - Inequality comparison
+
+**Integration Features:**
+- All comparisons return Unix exit status (0=true, 1=false)
+- Works with arithmetic expressions: `if-then {greater <={$a plus $b} 10}`
+- Added missing `%greater` primitive wrapper
+- C primitives (`$&greater`, `$&less`, etc.) for performance
+- Epsilon-based floating-point equality testing
+
+**Working Examples:**
+```bash
+# Basic usage
+if-then {greater $x 5} then {echo 'big'} else {echo 'small'}
+
+# Grade calculator with nesting  
+if-then {greater-equal $score 90} then {
+    echo 'Grade: A'
+} else {
+    if-then {greater-equal $score 80} then {
+        echo 'Grade: B' 
+    } else {
+        echo 'Grade: C or below'
+    }
+}
+```
+
+**Technical Implementation:**
+- Built using ES shell's native function system in `initial.es`
+- Leverages existing `if` primitive and pattern matching
+- Maintains full backward compatibility
+- Created comprehensive demo scripts and documentation
+
+**Next Goal:** Implement proper `if-then-elseif-else` structure to eliminate nested control statement requirement and provide flat conditional chains.

@@ -121,28 +121,35 @@ fn-simple-if = $&noreturn @ condition then-action else-action {
     if-else $condition $then-action $else-action
 }
 
-# Simple if-then-else control structure
-# Usage: if-then condition then action else action
-# Example: if-then {> $x 5} then {echo 'big'} else {echo 'small'}
-fn-if-then = $&noreturn @ condition then_kw then_action else_kw else_action {
-    if {~ $then_kw then} {
-        if {~ $else_kw else} {
-            # Standard if-then-else pattern
-            if {$condition} {
-                $then_action
-            } {
-                $else_action
-            }
-        } {
-            # Only if-then (no else clause)
-            if {$condition} {
-                $then_action
-            }
-        }
+# Advanced if-then-elseif-else control structure - flat conditional chains
+# Usage: 
+#   cond {condition} then {action} else {action}
+#   cond {condition} then {action} elseif {condition} then {action} else {action}
+#   cond {condition} then {action} elseif {condition} then {action} elseif {condition} then {action} else {action}
+# Examples:
+#   cond {greater $score 90} then {echo A} elseif {greater $score 80} then {echo B} else {echo C}
+# This eliminates the need for nested if statements!
+# Robust cond with elseif support
+fn-cond = $&noreturn @ {
+    # Handle 9 arguments: {c1} then {a1} elseif {c2} then {a2} else {a3}
+    if {~ $#* 9 && ~ $2 then && ~ $4 elseif && ~ $6 then && ~ $8 else} {
+        $&if $1 $3 {$&if $5 $7 $9}
     } {
-        # Just if condition action (backward compatibility)
-        if {$condition} {
-            $then_kw  # This is actually the action
+        # Handle 7 arguments: {c1} then {a1} elseif {c2} then {a2}  
+        if {~ $#* 7 && ~ $2 then && ~ $4 elseif && ~ $6 then} {
+            $&if $1 $3 {$&if $5 $7}
+        } {
+            # Handle 5 arguments: {condition} then {action} else {action}
+            if {~ $#* 5 && ~ $2 then && ~ $4 else} {
+                $&if $1 $3 $5
+            } {
+                # Handle 3 arguments: {condition} then {action}
+                if {~ $#* 3 && ~ $2 then} {
+                    $&if $1 $3
+                } {
+                    throw error cond 'usage: cond {condition} then {action} [elseif {condition} then {action}] [else {action}]'
+                }
+            }
         }
     }
 }
@@ -232,7 +239,7 @@ fn-whatis = @ {
 #    While uses $&noreturn to indicate that, while it is a lambda, it
 #    does not catch the return exception.  It does, however, catch break.
 
-fn-while = $&noreturn @ cond body {
+fn-while = $&noreturn @ condition body {
     catch @ e value {
         if {!~ $e break} {
             throw $e $value
@@ -241,7 +248,7 @@ fn-while = $&noreturn @ cond body {
     } {
         let (result = <=true)
             forever {
-                if {!$cond} {
+                if {!$condition} {
                     throw break $result
                 } {
                     result = <=$body
@@ -387,6 +394,7 @@ fn-plus         = $&addition
 fn-minus        = $&subtraction
 fn-times        = $&multiplication
 fn-div          = $&division
+
 
 # Comparison functions that return true/false status (0=true, 1=false)
 fn-greater = @ a b { ~ <={%greater $a $b} 0 }
