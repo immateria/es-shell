@@ -1,0 +1,14 @@
+--- a/prim-etc.c
++++ b/prim-etc.c
+@@ -19,7 +19,14 @@ PRIM(echo) {
+                        list = list->next;
+        }
++       // Debug: check if list is NULL or empty
++       if (list == NULL) {
++               print("DEBUG: list is NULL%s", eol);
++       } else {
++               print("DEBUG: list is not NULL, printing: %L%s", list, " ", eol);
++       }
+        print("%L%s", list, " ", eol);
+        return ltrue;
+ }

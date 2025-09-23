@@ -1,0 +1,94 @@
+[GLOM] Accumulation: list=0x122811fa0 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){local(set-PATH=)PATH=<={%flatten $: $*}}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x122812058 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){result $*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x122812110 result=0x0
+[GLOM] List contains: 'set-PATH'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x122812160 result=0x0
+[GLOM] List contains: 'PATH'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x1228121a8 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){%flatten $: $*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x122812278 result=0x0
+[GLOM] List contains: ':'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x1228122a8 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x1228122c0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x1228123f0 result=0x0
+[GLOM] List contains: '/usr/bin/usr/ucb/bin/usr/ucb'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x1228124b8 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x1228124d0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12281d028 result=0x0
+[GLOM] List contains: '%closure(*=/Users/immateria){local(set-home=)home=$*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12281d0c8 result=0x0
+[GLOM] List contains: '%closure(*=/Users/immateria){result $*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800dfb8 result=0x0
+[GLOM] List contains: 'set-home'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800e008 result=0x0
+[GLOM] List contains: 'home'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800e038 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x12800e050
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12800e118 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x12800e130
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12800e290 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){local(set-path=)path=<={%fsplit $: $*}}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800e898 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){result $*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800eea0 result=0x0
+[GLOM] List contains: 'set-path'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800eef0 result=0x0
+[GLOM] List contains: 'path'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800ef38 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){%fsplit $: $*}'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x12800f558 result=0x0
+[GLOM] List contains: ':'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12800f588 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x12800f5a0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12800f660 result=0x0
+[GLOM] List contains: '*'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x12800f678
+[GLOM] No list to accumulate
+[GLOM] Accumulation: list=0x12800f8c8 result=0x0
+[GLOM] List contains: 'hello'
+[GLOM] Started new result list
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[ECHO] primitive called with list=0x0
+[ECHO] list is NULL - no arguments

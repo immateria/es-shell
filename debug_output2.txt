@@ -1,0 +1,210 @@
+[GLOM] Accumulation: list=0x149011fa0 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){local(set-PATH=)PATH=<={%flatten $: $*}}'
+[GLOM] BEFORE assignment: list=0x149011fa0
+[GLOM] AFTER assignment: list=0x149011fa0 result=0x149011fa0 tail=0x149011fa0
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x149011fa0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x149012058 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){result $*}'
+[GLOM] BEFORE assignment: list=0x149012058
+[GLOM] AFTER assignment: list=0x149012058 result=0x149012058 tail=0x149012058
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x149012058
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x149012110 result=0x0
+[GLOM] List contains: 'set-PATH'
+[GLOM] BEFORE assignment: list=0x149012110
+[GLOM] AFTER assignment: list=0x149012110 result=0x149012110 tail=0x149012110
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x149012110
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x149012160 result=0x0
+[GLOM] List contains: 'PATH'
+[GLOM] BEFORE assignment: list=0x149012160
+[GLOM] AFTER assignment: list=0x149012160 result=0x149012160 tail=0x149012160
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x149012160
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x1490121a8 result=0x0
+[GLOM] List contains: '%closure(*=/usr/ucb /usr/bin /bin ''){%flatten $: $*}'
+[GLOM] BEFORE assignment: list=0x1490121a8
+[GLOM] AFTER assignment: list=0x1490121a8 result=0x1490121a8 tail=0x1490121a8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x1490121a8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x149012278 result=0x0
+[GLOM] List contains: ':'
+[GLOM] BEFORE assignment: list=0x149012278
+[GLOM] AFTER assignment: list=0x149012278 result=0x149012278 tail=0x149012278
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x149012278
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x1490122a8 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x1490122a8
+[GLOM] AFTER assignment: list=0x1490122a8 result=0x1490122a8 tail=0x1490122a8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x1490122a8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x1490122c0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x1490123f0 result=0x0
+[GLOM] List contains: '/usr/bin/usr/ucb/bin/usr/ucb'
+[GLOM] BEFORE assignment: list=0x1490123f0
+[GLOM] AFTER assignment: list=0x1490123f0 result=0x1490123f0 tail=0x1490123f0
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x1490123f0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x1490124b8 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x1490124b8
+[GLOM] AFTER assignment: list=0x1490124b8 result=0x1490124b8 tail=0x1490124b8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x1490124b8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x1490124d0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x14901d028 result=0x0
+[GLOM] List contains: '%closure(*=/Users/immateria){local(set-home=)home=$*}'
+[GLOM] BEFORE assignment: list=0x14901d028
+[GLOM] AFTER assignment: list=0x14901d028 result=0x14901d028 tail=0x14901d028
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x14901d028
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x14901d0c8 result=0x0
+[GLOM] List contains: '%closure(*=/Users/immateria){result $*}'
+[GLOM] BEFORE assignment: list=0x14901d0c8
+[GLOM] AFTER assignment: list=0x14901d0c8 result=0x14901d0c8 tail=0x14901d0c8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x14901d0c8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000dfb8 result=0x0
+[GLOM] List contains: 'set-home'
+[GLOM] BEFORE assignment: list=0x15000dfb8
+[GLOM] AFTER assignment: list=0x15000dfb8 result=0x15000dfb8 tail=0x15000dfb8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000dfb8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000e008 result=0x0
+[GLOM] List contains: 'home'
+[GLOM] BEFORE assignment: list=0x15000e008
+[GLOM] AFTER assignment: list=0x15000e008 result=0x15000e008 tail=0x15000e008
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000e008
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000e038 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x15000e038
+[GLOM] AFTER assignment: list=0x15000e038 result=0x15000e038 tail=0x15000e038
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000e038
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x15000e050
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000e118 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x15000e118
+[GLOM] AFTER assignment: list=0x15000e118 result=0x15000e118 tail=0x15000e118
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000e118
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x15000e130
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000e290 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){local(set-path=)path=<={%fsplit $: $*}}'
+[GLOM] BEFORE assignment: list=0x15000e290
+[GLOM] AFTER assignment: list=0x15000e290 result=0x15000e290 tail=0x15000e290
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000e290
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000e898 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){result $*}'
+[GLOM] BEFORE assignment: list=0x15000e898
+[GLOM] AFTER assignment: list=0x15000e898 result=0x15000e898 tail=0x15000e898
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000e898
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000eea0 result=0x0
+[GLOM] List contains: 'set-path'
+[GLOM] BEFORE assignment: list=0x15000eea0
+[GLOM] AFTER assignment: list=0x15000eea0 result=0x15000eea0 tail=0x15000eea0
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000eea0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000eef0 result=0x0
+[GLOM] List contains: 'path'
+[GLOM] BEFORE assignment: list=0x15000eef0
+[GLOM] AFTER assignment: list=0x15000eef0 result=0x15000eef0 tail=0x15000eef0
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000eef0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000ef38 result=0x0
+[GLOM] List contains: '%closure(*='/opt/homebrew/opt/mysql-client/bin:/Users/immateria/.console-ninja/.bin:/Users/immateria/.pyenv/shims:/Users/immateria/.nvm/versions/node/v22.13.1/bin:~/.console-ninja/.bin:/Users/immateria/.pyenv/bin:/usr/local/opt/icu4c@76/sbin:/usr/local/opt/icu4c@76/bin:/usr/local/opt/ruby/bin:/usr/local/opt/libpq/bin:/usr/local/opt/node@14/bin:/opt/homebrew/bin:/Users/immateria/bin/path:/Library/Frameworks/Python.framework/Versions/3.12/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/opt/local/bin:/opt/local/sbin:/Users/immateria/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Wireshark.app/Contents/MacOS:/Applications/Little Snitch.app/Contents/Components:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Applications/quarto/bin:/Users/immateria/.dotnet/tools:/Users/immateria/.orbstack/bin:/Applications/ShellHistory.app/Contents/Helpers'){%fsplit $: $*}'
+[GLOM] BEFORE assignment: list=0x15000ef38
+[GLOM] AFTER assignment: list=0x15000ef38 result=0x15000ef38 tail=0x15000ef38
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000ef38
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000f558 result=0x0
+[GLOM] List contains: ':'
+[GLOM] BEFORE assignment: list=0x15000f558
+[GLOM] AFTER assignment: list=0x15000f558 result=0x15000f558 tail=0x15000f558
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000f558
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000f588 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x15000f588
+[GLOM] AFTER assignment: list=0x15000f588 result=0x15000f588 tail=0x15000f588
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000f588
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x15000f5a0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000f660 result=0x0
+[GLOM] List contains: '*'
+[GLOM] BEFORE assignment: list=0x15000f660
+[GLOM] AFTER assignment: list=0x15000f660 result=0x15000f660 tail=0x15000f660
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000f660
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x15000f678
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x15000f8c8 result=0x0
+[GLOM] List contains: 'hello'
+[GLOM] BEFORE assignment: list=0x15000f8c8
+[GLOM] AFTER assignment: list=0x15000f8c8 result=0x15000f8c8 tail=0x15000f8c8
+[GLOM] Started new result list
+[GLOM] BEFORE RefEnd: list=0x15000f8c8
+[GLOM] AFTER RefEnd: list should be cleared
+[GLOM] Accumulation: list=0x0 result=0x0
+[GLOM] No list to accumulate
+[GLOM] BEFORE RefEnd: list=0x0
+[GLOM] AFTER RefEnd: list should be cleared
+[ECHO] primitive called with list=0x0
+[ECHO] list is NULL - no arguments
