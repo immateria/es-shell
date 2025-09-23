@@ -21,22 +21,22 @@ PRIM(echo) {
 	
 	/* Handle empty list case */
 	if (list == NULL) {
-		write(1, eol, strlen(eol));
+		print("%s", eol);
 		return ltrue;
 	}
 	
-	/* Print each list item directly */
+	/* Print each list item using print() for proper redirection support */
 	List *lp = list;
 	while (lp != NULL) {
 		char *str = getstr(lp->term);
 		if (str != NULL) {
-			write(1, str, strlen(str));
+			print("%s", str);
 		}
 		if (lp->next != NULL)
-			write(1, " ", 1);
+			print(" ");
 		lp = lp->next;
 	}
-	write(1, eol, strlen(eol));
+	print("%s", eol);
 	return ltrue;
 }
 

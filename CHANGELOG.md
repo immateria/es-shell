@@ -78,6 +78,14 @@ value = ${2 + 3 * 4}  # Results in 14, not 20
 - Edge cases and integration scenarios tested
 - Backward compatibility verified
 
+### Recent Improvements (Post-Release)
+
+- **Fixed Internal Echo**: Internal `echo` command now properly respects redirection operators
+  - Changed from direct `write()` calls to `print()` for proper redirection support
+  - All redirection operators now work: `->`, `->>`, `<-`, etc.
+  - Maintains all existing functionality including `-n` option
+  - 100% compatibility with shell's redirection system
+
 ### Known Limitations
 
 - Variable expansion inside arithmetic expressions requires refinement
