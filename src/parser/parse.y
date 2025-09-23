@@ -32,6 +32,15 @@ static Tree *arithword(Tree *t) {
 %token <tree>	REDIR DUP
 %token          ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
 %token          LT GT LE GE EQ NE  /* Comparison operators */
+%token		EXPR_CALL  /* ${...} expression evaluation */
+%token		LARROW RARROW  /* <- and -> for redirection */
+%token		FLARROW FRARROW  /* <-! and ->! for forced redirection */
+%token		HEREDOC_NEW  /* <--< for new heredoc syntax */
+%token		RW_ARROW  /* <-> for read-write */
+%token		OA_ARROW  /* <->> for open-append */
+%token		OC_ARROW  /* ->-< for open-create */
+%token		APPEND_ARROW  /* ->> for append */
+%token		APPEND_CREATE  /* ->>< for append with create */
 %token		NL ENDFILE ERROR
 %token		MATCH
 
@@ -41,7 +50,7 @@ static Tree *arithword(Tree *t) {
 %left		'!'
 %left		LT GT LE GE EQ NE  /* Comparison operators */
 %left <tree>	PIPE
-%right		'$'
+%right		'$' EXPR_CALL
 %left		SUB
 
 %union {
@@ -109,6 +118,16 @@ args	: word				{ $$ = treecons($1, NULL); }
 
 redir	: DUP				{ $$ = $1; }
 	| REDIR word			{ $$ = mkredir($1, $2); }
+	| LARROW word			{ $$ = mkredir(mkredircmd("%open", 0), $2); }  /* <- input redirection */
+	| RARROW word			{ $$ = mkredir(mkredircmd("%create", 1), $2); }  /* -> output redirection */
+	| FLARROW word			{ $$ = mkredir(mkredircmd("%open-force", 0), $2); }  /* <-! forced input */
+	| FRARROW word			{ $$ = mkredir(mkredircmd("%create-force", 1), $2); }  /* ->! forced output */
+	| HEREDOC_NEW word		{ $$ = mkredir(mkredircmd("%heredoc", 0), $2); }  /* <--< heredoc */
+	| RW_ARROW word			{ $$ = mkredir(mkredircmd("%open-write", 0), $2); }  /* <-> read-write */
+	| OA_ARROW word			{ $$ = mkredir(mkredircmd("%open-append", 0), $2); }  /* <->> open-append */
+	| OC_ARROW word			{ $$ = mkredir(mkredircmd("%open-create", 1), $2); }  /* ->-< open-create */
+	| APPEND_ARROW word		{ $$ = mkredir(mkredircmd("%append", 1), $2); }  /* ->> append */
+	| APPEND_CREATE word		{ $$ = mkredir(mkredircmd("%open-append", 1), $2); }  /* ->>< append with create */
 
 bindings: binding			{ $$ = treecons($1, NULL); }
 	| bindings ';' binding		{ $$ = treeconsend($1, $3); }
@@ -138,6 +157,7 @@ comword : param				{ $$ = $1; }
 	| '@' params '{' body '}'	{ $$ = mklambda($2, $4); }
 	| '$' sword			{ $$ = mk(nVar, $2); }
 	| '$' sword SUB words ')'	{ $$ = mk(nVarsub, $2, $4); }
+	| EXPR_CALL body '}'		{ $$ = mk(nCall, treecons(thunkify($2), NULL)); }  /* ${...} expression evaluation */
 	| CALL sword			{ $$ = mk(nCall, $2); }
 	| COUNT sword			{ $$ = mk(nCall, prefix("%count", treecons(mk(nVar, $2), NULL))); }
 	| FLAT sword			{ $$ = flatten(mk(nVar, $2), " "); }
@@ -181,4 +201,10 @@ keyword	: '!'		{ $$ = "!"; }
 	| FN		{ $$ = "fn"; }
 	| CLOSURE	{ $$ = "%closure"; }
 	| MATCH		{ $$ = "match"; }
+	| LT		{ $$ = "<"; }    /* Less than operator */
+	| GT		{ $$ = ">"; }    /* Greater than operator */
+	| LE		{ $$ = "<="; }   /* Less than or equal operator */
+	| GE		{ $$ = ">="; }   /* Greater than or equal operator */
+	| EQ		{ $$ = "=="; }   /* Equal operator */
+	| NE		{ $$ = "!="; }   /* Not equal operator */
 

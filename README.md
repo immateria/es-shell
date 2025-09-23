@@ -6,6 +6,46 @@ such as Scheme, and the Tcl embeddable programming language. This
 implementation is derived from Byron Rakitzis's public domain
 implementation of rc.
 
+## New Syntax Features (Version 0.9.3)
+
+This version introduces major syntax enhancements that resolve conflicts
+between comparison and redirection operators while adding powerful new
+expression evaluation capabilities.
+
+### Redirection Operators
+
+New arrow-based redirection syntax:
+```bash
+echo "hello" -> output.txt     # Output redirection
+cat <- input.txt               # Input redirection  
+echo "more" ->> log.txt        # Append redirection
+cat <--< EOF                   # Heredoc syntax
+Here is some text
+EOF
+```
+
+### Expression Evaluation
+
+Powerful `${...}` expression evaluation:
+```bash
+x = ${2 + 3}                   # Arithmetic expressions
+result = ${x * 4}              # Variable usage
+if {${x} > 5} {                # Expressions in conditions
+    echo "x is greater than 5"
+}
+```
+
+### Comparison & Arithmetic Operators
+
+Now work exclusively as operators (no redirection conflicts):
+```bash
+if {10 > 5} { echo "greater" }     # Comparison operators
+value = ${2 + 3 * 4}               # Arithmetic with precedence (= 14)
+check = ${name == "test"}          # String comparison
+```
+
+See CHANGELOG.md for complete details.
+
 See the INSTALL file for installation instructions. Once it's running
 have a look at the manual page and the docs and examples directories,
 in particular Haahr & Rakitzis's paper: ``Es: a shell with higher-order

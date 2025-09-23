@@ -169,7 +169,52 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 	}
 	if (c == EOF)
 		return ENDFILE;
-        if (!meta[(unsigned char) c] || c == '-' || c == '*' || c == '+') { /* it's a word or keyword. */
+        /* Special handling for '-' - check if it's part of a redirection operator */
+        if (c == '-') {
+                int lookahead = GETC();
+                if (lookahead == '>') {
+                        /* Could be ->, ->!, ->>, ->-<, or ->>< */
+                        UNGETC(lookahead);
+                        /* Fall through to switch statement to handle these cases */
+                } else {
+                        /* This is a regular minus in a word, treat as word character */
+                        UNGETC(lookahead);
+                        InsertFreeCaret();
+                        w = RW;
+                        qword = FALSE;
+                        i = 0;
+			Boolean numeric = isdigit(c);
+			do {
+				buf[i++] = c;
+				if (i >= bufsize)
+					buf = tokenbuf = erealloc(buf, bufsize *= 2);
+				c = GETC();
+			} while (c != EOF && (!meta[(unsigned char) c] || (!numeric && (c == '-' || c == '*' || c == '+'))));
+			UNGETC(c);
+			buf[i] = '\0';
+			w = KW;
+                        if (buf[1] == '\0') {
+                                int k = *buf;
+                                if (k == '@' || k == '~')
+                                        return k;
+                        } else if (*buf == 'f') {
+                                if (streq(buf + 1, "n"))        return FN;
+                                if (streq(buf + 1, "or"))       return FOR;
+                        } else if (*buf == 'l') {
+                                if (streq(buf + 1, "ocal"))     return LOCAL;
+                                if (streq(buf + 1, "et"))       return LET;
+                        } else if (streq(buf, "~~")) {
+                                return EXTRACT;
+                        } else if (streq(buf, "%closure")) {
+                                return CLOSURE;
+                        } else if (streq(buf, "match")) {
+                                return MATCH;
+                        }
+                        w = RW;
+                        y->str = pdup(buf);
+                        return WORD;
+                }
+        } else if (!meta[(unsigned char) c] || c == '*' || c == '+') { /* it's a word or keyword. */
                 InsertFreeCaret();
                 w = RW;
                 qword = FALSE;
@@ -212,8 +257,23 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 	}
 	switch (c) {
 	case '!':
+		c = GETC();
+		if (c == '=') {
+			/* != not equal */
+			w = NW;
+			return NE;
+		}
+		UNGETC(c);
+		return '!';
 	case '=':
-		return c;
+		c = GETC();
+		if (c == '=') {
+			/* == equal */
+			w = NW;
+			return EQ;
+		}
+		UNGETC(c);
+		return '=';
 	case '`':
 		c = GETC();
 		if (c == '`') {
@@ -232,6 +292,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 		case '#':	return COUNT;
 		case '^':	return FLAT;
                 case '&':       return PRIM;
+		case '{':	return EXPR_CALL;  /* ${...} expression evaluation */
 		default:	UNGETC(c); return '$';
 		}
         case '\'':
@@ -362,42 +423,128 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 	}
 
 	{
-		char *cmd;
-		int fd[2];
+		/* Variables used for old redirection syntax, now unused */
+		/* char *cmd; */
+		/* int fd[2]; */
         case '<':
-                fd[0] = 0;
-                if ((c = GETC()) == '>')
-			if ((c = GETC()) == '>') {
-				c = GETC();
-				cmd = "%open-append";
-			} else
-				cmd = "%open-write";
-		else if (c == '<')
-			if ((c = GETC()) == '<') {
-				c = GETC();
-				cmd = "%here";
-			} else
-				cmd = "%heredoc";
-		else if (c == '=') {
-			w = NW;
-			return CALL;
-		} else
-			cmd = "%open";
-		goto redirection;
-        case '>':
-                fd[0] = 1;
-                if ((c = GETC()) == '>')
-                        if ((c = GETC()) == '<') {
-                                c = GETC();
-                                cmd = "%open-append";
-                        } else
-                                cmd = "%append";
-                else if (c == '<') {
+                /* < is now ONLY a comparison operator */
+                /* Use <- for input redirection */
+                c = GETC();
+                if (c == '-') {
                         c = GETC();
-                        cmd = "%open-create";
-                } else
-                        cmd = "%create";
-                goto redirection;
+                        if (c == '-') {
+                                c = GETC();
+                                if (c == '<') {
+                                        /* <--< heredoc syntax */
+                                        w = NW;
+                                        return HEREDOC_NEW;
+                                }
+                                /* Not heredoc, treat as comparison */
+                                UNGETC(c);
+                                UNGETC('-');
+                                UNGETC('-');
+                                w = NW;
+                                return LT;  /* Less than operator */
+                } else if (c == '!') {
+                                /* <-! forced input redirection */
+                                w = NW;
+                                return FLARROW;
+                        } else if (c == '>') {
+                                c = GETC();
+                                if (c == '>') {
+                                        /* <->> open-append redirection */
+                                        w = NW;
+                                        return OA_ARROW;
+                                } else {
+                                        /* <-> read-write redirection */
+                                        UNGETC(c);
+                                        w = NW;
+                                        return RW_ARROW;
+                                }
+                        } else {
+                                /* <- input redirection */
+                                UNGETC(c);
+                                w = NW;
+                                return LARROW;
+                        }
+                } else if (c == '=') {
+                        /* <= less than or equal */
+                        w = NW;
+                        return LE;
+                } else {
+                        /* < less than comparison */
+                        UNGETC(c);
+                        w = NW;
+                        return LT;
+                }
+        case '>':
+                /* > is now ONLY a comparison operator */
+                /* Use -> for output redirection */
+                c = GETC();
+                if (c == '=') {
+                        /* >= greater than or equal */
+                        w = NW;
+                        return GE;
+                } else {
+                        /* > greater than comparison */
+                        UNGETC(c);
+                        w = NW;
+                        return GT;
+                }
+        
+        case '-':
+                /* Check for -> and ->! output redirection */
+                c = GETC();
+                if (c == '>') {
+                        c = GETC();
+                        if (c == '!') {
+                                /* ->! forced output redirection */
+                                w = NW;
+                                return FRARROW;
+                        } else if (c == '>') {
+                                c = GETC();
+                                if (c == '<') {
+                                        /* ->>< append with create */
+                                        w = NW;
+                                        return APPEND_CREATE;
+                                } else {
+                                        /* ->> append redirection */
+                                        UNGETC(c);
+                                        w = NW;
+                                        return APPEND_ARROW;
+                                }
+                        } else if (c == '-') {
+                                c = GETC();
+                                if (c == '<') {
+                                        /* ->-< open-create redirection */
+                                        w = NW;
+                                        return OC_ARROW;
+                                } else {
+                                        /* Not a valid operator */
+                                        UNGETC(c);
+                                        UNGETC('-');
+                                        /* -> output redirection */
+                                        w = NW;
+                                        return RARROW;
+                                }
+                        } else {
+                                /* -> output redirection */
+                                UNGETC(c);
+                                w = NW;
+                                return RARROW;
+                        }
+                } else {
+                        /* Just a regular minus sign - let it be processed as a word */
+                        UNGETC(c);
+                        UNGETC('-');
+                        c = '-';
+                        goto top;
+                }
+	/* This code block was originally used for old redirection syntax
+	 * but is no longer needed with the new arrow-based syntax.
+	 * Keeping it here commented out for reference.
+	 */
+	#if 0
 	redirection:
 		w = NW;
 		if (!getfds(fd, c, fd[0], DEFAULT))
@@ -410,6 +557,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 		}
 		y->tree = mkredircmd(cmd, fd[0]);
 		return REDIR;
+	#endif
 	}
 
 	default:

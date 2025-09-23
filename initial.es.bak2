@@ -197,8 +197,8 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 #    the builtins.  Otherwise, we'll just not have a limit command
 #    and get time from /bin or wherever.
 
-if {~ ${$&primitives} limit} {fn-limit = $&limit}
-if {~ ${$&primitives} time}  {fn-time  = $&time}
+if {~ <=$&primitives limit} {fn-limit = $&limit}
+if {~ <=$&primitives time}  {fn-time  = $&time}
 
 #    These builtins are mainly useful for internal functions, but
 #    they're there to be called if you want to use them.
@@ -215,7 +215,7 @@ fn-%whatis     = $&whatis
 #    users don't have to type the infamous <= (nee <>) operator.
 #    Whatis also protects the used from exceptions raised by %whatis.
 
-fn-var = @ { for (i = $*) echo ${%var $i} }
+fn-var = @ { for (i = $*) echo <={%var $i} }
 
 fn-whatis = @ {
     let (result = ) {
@@ -224,11 +224,10 @@ fn-whatis = @ {
                 if {!~ $e error} {
                     throw $e $from $message
                 }
-                # TODO: Fix stderr redirection when implementing file descriptors with arrows
-                echo $message
+                echo ->![1=2] $message
                 result = $result 1
             } {
-                echo ${%whatis $i}
+                echo <={%whatis $i}
                 result = $result 0
             }
         }
@@ -247,12 +246,12 @@ fn-while = $&noreturn @ condition body {
         }
         result $value
     } {
-        let (result = true)
+        let (result = <=true)
             forever {
                 if {!$condition} {
                     throw break $result
                 } {
-                    result = ${$body}
+                    result = <=$body
                 }
             }
     }
@@ -268,7 +267,7 @@ fn-cd = @ dir {
         $&cd $dir
     } {~ $#dir 0} {
         if {!~ $#home 1} {
-            throw error cd ${
+            throw error cd <={
                 if {~ $#home 0} {
                     result 'cd: no home directory'
                 } {
@@ -313,7 +312,7 @@ fn-vars = @ {
         all       = false
     ) {
         for (a = $*)
-        for (i = ${%fsplit '' ${~~ $a -*}})
+        for (i = <={%fsplit '' <={~~ $a -*}})
         if (
             {~ $i v}    {vars      = true}
             {~ $i f}    {fns       = true}
@@ -334,19 +333,19 @@ fn-vars = @ {
             fn-dovar = @ var {
                 # print functions and/or settor vars
                 if {$all || if {~ $var fn-*} $fns {~ $var set-*} $sets $vars} {
-                    echo ${%var $var}
+                    echo <={%var $var}
                 }
             }
         ) {
             if {$all || $export || $priv} {
-                for (var = ${$&vars})
+                for (var = <=$&vars)
                     # if not exported but in priv
                     if {$all || if {~ $var $noexport} $priv $export} {
                         dovar $var
                     }
             }
             if {$all || $intern} {
-                for (var = ${$&internals})
+                for (var = <=$&internals)
                     dovar $var
             }
         }
@@ -370,12 +369,12 @@ fn-vars = @ {
 
 #    The following expressions are rewritten:
 #
-#        $#var                  ${%count       $var}
-#        $^var                  ${%flatten ' ' $var}
-#        `{cmd args}            ${%backquote   ${%flatten '' $ifs} {cmd args}}
-#        `^{cmd args}           ${%flatten ' ' ${backquote ${%flatten '' $ifs} {cmd args}}}
-#        ``ifs {cmd args}       ${%backquote   ${%flatten '' ifs} {cmd args}}
-#        ``^ifs {cmd args}      ${%flatten ' ' ${backquote ${%flatten '' ifs} {cmd args}}}
+#        $#var                  <={%count       $var}
+#        $^var                  <={%flatten ' ' $var}
+#        `{cmd args}            <={%backquote   <={%flatten '' $ifs} {cmd args}}
+#        `^{cmd args}           <={%flatten ' ' <={backquote <={%flatten '' $ifs} {cmd args}}}
+#        ``ifs {cmd args}       <={%backquote   <={%flatten '' ifs} {cmd args}}
+#        ``^ifs {cmd args}      <={%flatten ' ' <={backquote <={%flatten '' ifs} {cmd args}}}
 
 fn-%count      = $&count
 fn-%flatten    = $&flatten
@@ -398,12 +397,12 @@ fn-div          = $&division
 
 
 # Comparison functions that return true/false status (0=true, 1=false)
-fn-greater = @ a b { ~ ${%greater $a $b} 0 }
-fn-less = @ a b { ~ ${%less $a $b} 0 }
-fn-greater-equal = @ a b { ~ ${%greaterequal $a $b} 0 }
-fn-less-equal = @ a b { ~ ${%lessequal $a $b} 0 }
-fn-equal = @ a b { ~ ${%equal $a $b} 0 }
-fn-not-equal = @ a b { ~ ${%notequal $a $b} 0 }
+fn-greater = @ a b { ~ <={%greater $a $b} 0 }
+fn-less = @ a b { ~ <={%less $a $b} 0 }
+fn-greater-equal = @ a b { ~ <={%greaterequal $a $b} 0 }
+fn-less-equal = @ a b { ~ <={%lessequal $a $b} 0 }
+fn-equal = @ a b { ~ <={%equal $a $b} 0 }
+fn-not-equal = @ a b { ~ <={%notequal $a $b} 0 }
 fn-%greater            = $&greater
 fn-%less               = $&less
 fn-%greaterequal       = $&greaterequal
@@ -422,7 +421,7 @@ fn-%bitwisenot         = $&bitwisenot
 #    puts that value in $bqstatus.
 
 fn-%backquote = @ {
-    let ((status output) = ${ $&backquote $* }) {
+    let ((status output) = <={ $&backquote $* }) {
         bqstatus = $status
         result $output
     }
@@ -451,7 +450,7 @@ fn-%not = $&noreturn @ cmd {
 }
 
 fn-%and = $&noreturn @ first rest {
-    let (result = ${$first}) {
+    let (result = <={$first}) {
         if {~ $#rest 0} {
             result $result
         } {result $result} {
@@ -466,7 +465,7 @@ fn-%or = $&noreturn @ first rest {
     if {~ $#first 0} {
         false
     } {
-        let (result = ${$first}) {
+        let (result = <={$first}) {
             if {~ $#rest 0} {
                 result $result
             } {!result $result} {
@@ -485,10 +484,10 @@ fn-%or = $&noreturn @ first rest {
 #        cmd &            %background {cmd}
 
 fn-%background = @ cmd {
-    let (pid = ${$&background $cmd}) {
+    let (pid = <={$&background $cmd}) {
         apid = $pid
         if {%is-interactive} {
-            echo $pid
+            echo ->![1=2] $pid
         }
     }
 }
@@ -523,9 +522,9 @@ fn-%open-append    = %openfile a+       # ->>< file, <->> file
 fn-%one = @ {
     if {!~ $#* 1} {
         if {~ $#* 0} {
-            echo 'null filename in redirection'
+            echo 'null filename in redirection' ->![1=2]
         } {
-            echo 'too many files in redirection: ' $*
+            echo 'too many files in redirection: ' $* ->![1=2]
         }
         return 1
     }
@@ -562,7 +561,7 @@ fn-%pipe     = $&pipe
 #    goes on.  First, an example.  The pipe
 #        ls | wc
 #    can be simulated with the input/output substitutions
-#        cp <{ls} ->{wc}
+#        cp <{ls} >{wc}
 #    which gets rewritten as (formatting added):
 #        %readfrom _devfd0 {ls} {
 #            %writeto _devfd1 {wc} {
@@ -589,10 +588,10 @@ fn-%pipe     = $&pipe
 #    sufficient for writing the /dev/fd version of these functions,
 #    eliminating the need for any builtins.  For now, this works.
 #
-#        cmd <-{input}        %readfrom var {input} {cmd $var}
-#        cmd ->{output}        %writeto var {output} {cmd $var}
+#        cmd <{input}        %readfrom var {input} {cmd $var}
+#        cmd >{output}        %writeto var {output} {cmd $var}
 
-if {~ ${$&primitives} readfrom} {
+if {~ <=$&primitives readfrom} {
     fn-%readfrom = $&readfrom
 } {
     fn-%readfrom = $&noreturn @ var input cmd {
@@ -608,7 +607,7 @@ if {~ ${$&primitives} readfrom} {
     }
 }
 
-if {~ ${$&primitives} writeto} {
+if {~ <=$&primitives writeto} {
     fn-%writeto = $&writeto
 } {
     fn-%writeto = $&noreturn @ var output cmd {
@@ -633,7 +632,7 @@ if {~ ${$&primitives} writeto} {
 #    local ($var = /tmp/es.$var.$pid) {
 #        unwind-protect {
 #            /etc/mknod $$var p
-#            $&background {$cmd -> $$var; exit}
+#            $&background {$cmd > $$var; exit}
 #            $body
 #        } {
 #            rm -f $$var
@@ -645,7 +644,7 @@ if {~ ${$&primitives} writeto} {
 #    local ($var = /tmp/es.$var.$pid) {
 #        unwind-protect {
 #            /etc/mknod $$var p
-#            $&background {$cmd <- $$var; exit}
+#            $&background {$cmd < $$var; exit}
 #            $body
 #        } {
 #            rm -f $$var
@@ -680,7 +679,7 @@ path = (/usr/bin /bin /usr/local/bin)
 #    A default version is provided (under conditional compilation) for
 #    systems that don't do #! interpretation themselves.
 
-if {~ ${$&primitives} execfailure} {fn-%exec-failure = $&execfailure}
+if {~ <=$&primitives execfailure} {fn-%exec-failure = $&execfailure}
 
 #    The %write-history hook is used in interactive contexts to write
 #    command input to the history file (and/or readline's in-memory
@@ -690,7 +689,7 @@ if {~ ${$&primitives} execfailure} {fn-%exec-failure = $&execfailure}
 #    by $history if that variable is set and the file it points to
 #    exists and is writeable.
 
-if {~ ${$&primitives} writehistory} {
+if {~ <=$&primitives writehistory} {
     fn-%write-history = $&writehistory
 } {
     fn-%write-history = @ input {
@@ -755,21 +754,21 @@ fn-%batch-loop        = $&batchloop
 fn-%is-interactive    = $&isinteractive
 
 fn-%interactive-loop = @ {
-    let (result = true) {
+    let (result = <=true) {
         catch @ e type msg {
             if {~ $e eof} {
                 return $result
             } {~ $e exit} {
                 throw $e $type $msg
             } {~ $e error} {
-                echo $msg
+                echo ->![1=2] $msg
                 $fn-%dispatch false
             } {~ $e signal} {
                 if {!~ $type sigint sigterm sigquit} {
-                    echo caught unexpected signal: $type
+                    echo ->![1=2] caught unexpected signal: $type
                 }
             } {
-                echo uncaught exception: $e $type $msg
+                echo ->![1=2] uncaught exception: $e $type $msg
             }
             throw retry # restart forever loop
         } {
@@ -777,9 +776,9 @@ fn-%interactive-loop = @ {
                 if {!~ $#fn-%prompt 0} {
                     %prompt
                 }
-                let (code = ${%parse $prompt}) {
+                let (code = <={%parse $prompt}) {
                     if {!~ $#code 0} {
-                        result = ${$fn-%dispatch $code}
+                        result = <={$fn-%dispatch $code}
                     }
                 }
             }
@@ -791,11 +790,11 @@ fn-%interactive-loop = @ {
 #    function.  (For %eval-noprint, note that an empty list prepended
 #    to a command just causes the command to be executed.)
 
-fn-%eval-noprint      =                                       # <default>
-fn-%eval-print        = $&noreturn @ { echo $*; $* } # -x
-fn-%noeval-noprint    = { }                                   # -n
-fn-%noeval-print      = @ { echo $* }                # -n -x
-fn-%exit-on-false     = $&exitonfalse                         # -e
+fn-%eval-noprint      =                                     # <default>
+fn-%eval-print        = $&noreturn @ { echo $* ->![1=2]; $* } # -x
+fn-%noeval-noprint    = { }                                 # -n
+fn-%noeval-print      = @ { echo $* ->![1=2] }                # -n -x
+fn-%exit-on-false     = $&exitonfalse                       # -e
 
 
 #
@@ -824,25 +823,25 @@ fn-%exit-on-false     = $&exitonfalse                         # -e
 set-home = @ { local (set-HOME = ) HOME = $*; result $* }
 set-HOME = @ { local (set-home = ) home = $*; result $* }
 
-set-path = @ { local (set-PATH = ) PATH = ${%flatten : $*}; result $* }
-set-PATH = @ { local (set-path = ) path = ${%fsplit  : $*}; result $* }
+set-path = @ { local (set-PATH = ) PATH = <={%flatten : $*}; result $* }
+set-PATH = @ { local (set-path = ) path = <={%fsplit  : $*}; result $* }
 
 #    These settor functions call primitives to set data structures used
 #    inside of es.
 
-set-signals         = $&setsignals
+set-signals        = $&setsignals
 set-noexport        = $&setnoexport
-set-max-eval-depth  = $&setmaxevaldepth
+set-max-eval-depth    = $&setmaxevaldepth
 
 #    If the primitives $&sethistory or $&resetterminal are defined (meaning
 #    that readline or editline is being used), setting the variables $TERM,
 #    $TERMCAP, or $history should notify the line editor library.
 
-if {~ ${$&primitives} sethistory} {
+if {~ <=$&primitives sethistory} {
     set-history = $&sethistory
 }
 
-if {~ ${$&primitives} resetterminal} {
+if {~ <=$&primitives resetterminal} {
     set-TERM    = @ { $&resetterminal; result $* }
     set-TERMCAP    = @ { $&resetterminal; result $* }
 }
@@ -853,7 +852,7 @@ if {~ ${$&primitives} resetterminal} {
 #    to 0 clears the history list and disables adding anything more to it.
 #    Unsetting max-history-length allows the history list to grow unbounded.
 
-if {~ ${$&primitives} setmaxhistorylength} {
+if {~ <=$&primitives setmaxhistorylength} {
     set-max-history-length = $&setmaxhistorylength
     max-history-length = 5000
 }
@@ -898,14 +897,14 @@ fn-record-fail-on = @ target word { TRACE = $TRACE $word ; if {~ $word $target} 
 
 # ---------- helpers --------------------------------------------------
 fn-nonempty? = @ list-values {
-    if {!~ ${ %count $list-values } 0} { status-pass } { status-fail }
+    if {!~ <={ %count $list-values } 0} { status-pass } { status-fail }
 }
 
 # ---------- Data-returning HOFs -------------------------------------
 fn-map = @ function list-values {
     out = ()
     for (item = $list-values) {
-        out = $out ${ $function $item }
+        out = $out <={ $function $item }
     }
     result $out
 }
@@ -920,7 +919,7 @@ fn-filter = @ predicate list-values {
 
 fn-reduce = @ function accumulator list-values {
     for (item = $list-values) {
-        accumulator = ${ $function $accumulator $item }
+        accumulator = <={ $function $accumulator $item }
     }
     result $accumulator
 }
@@ -930,7 +929,7 @@ fn-reduce-one = @ function list-values {
     accumulator = $list-values(1)
     rest = $list-values(2 ...)
     for (item = $rest) {
-        accumulator = ${ $function $accumulator $item }
+        accumulator = <={ $function $accumulator $item }
     }
     result $accumulator
 }
@@ -1003,12 +1002,12 @@ fn-join-list = @ separator list-values {
 # global var lookup (used by zip-by-names)
 fn-get-value-by-name = @ variable-name {
     code = '{' ^ ' result ' ^ '$' ^ $variable-name ^ ' }'
-    result ${ eval $code }
+    result <={ eval $code }
 }
 
 fn-zip-by-names = @ left-name right-name {
-    left  = ${ get-value-by-name $left-name  }
-    right = ${ get-value-by-name $right-name }
+    left  = <={ get-value-by-name $left-name  }
+    right = <={ get-value-by-name $right-name }
     out   = ()
     
     while  { !~ $#left 0 } {
@@ -1024,7 +1023,7 @@ fn-zip-by-names = @ left-name right-name {
 fn-any? = @ predicate list-values {
     hit = ()
     for (item = $list-values) {
-        if ${ $predicate $item } { hit = true }
+        if <={ $predicate $item } { hit = true }
     }
     if {~ $hit true} { status-pass } { status-fail }
 }
@@ -1032,13 +1031,13 @@ fn-any? = @ predicate list-values {
 fn-all? = @ predicate list-values {
     fail = ()
     for (item = $list-values) {
-        if ${ $predicate $item } { } { fail = true }
+        if <={ $predicate $item } { } { fail = true }
     }
     if {~ $fail true} { status-fail } { status-pass }
 }
 
 fn-none? = @ predicate list-values {
-    if ${ any? $predicate $list-values } { status-fail } { status-pass }
+    if <={ any? $predicate $list-values } { status-fail } { status-pass }
 }
 
 # Aliases (temporarily commented out due to bootstrap issues)
@@ -1059,7 +1058,7 @@ fn-list-contains? = @ needle list-values {
 fn-for-each? = @ predicate list-values {
     fail = ()
     for (item = $list-values) {
-        if ${ $predicate $item } { } { fail = true }
+        if <={ $predicate $item } { } { fail = true }
     }
     if {~ $fail true} { status-fail } { status-pass }
 }
@@ -1103,7 +1102,7 @@ fn-builtins = @ {
     echo '  local (var = value) {body}'
     echo ''
     echo 'EVALUATION:'
-    echo '  ${expression}   - Evaluate arithmetic/functional expression'
+    echo '  <={expression}   - Evaluate arithmetic/functional expression'
     echo '  `{command}       - Command substitution'
     echo '  ${var}           - Variable substitution'
     echo ''
