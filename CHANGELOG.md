@@ -86,10 +86,16 @@ value = ${2 + 3 * 4}  # Results in 14, not 20
   - Maintains all existing functionality including `-n` option
   - 100% compatibility with shell's redirection system
 
+- **Fixed Variable Expansion in Infix Expressions**: Variables now work correctly in `${...}` expressions
+  - Fixed "arguments must be numbers" error when using variables in arithmetic
+  - Examples that now work: `${var times 2}`, `${a plus b}`, `${x > y}`
+  - Variables are automatically converted to their values in infix expressions
+  - Preserves correct behavior: `$var` for variable access, `${expr}` for expression evaluation
+
 ### Known Limitations
 
-- Variable expansion inside arithmetic expressions requires refinement
-- Some complex nested variable scenarios need additional work
+- Complex nested variable scenarios may need additional work
+- Single variable expressions like `${a}` execute as commands (use `$a` for variable access)
 
 ### Breaking Changes
 
