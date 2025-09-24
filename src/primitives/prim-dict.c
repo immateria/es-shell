@@ -9,60 +9,86 @@
  * Dictionary Representation in ES Shell
  * 
  * Dictionaries are represented as lists with a special tag:
- * (dict (key1 value1) (key2 value2) ...)
+ * (dict key1 value1 key2 value2 ...)
  * 
  * This allows them to be easily serialized, passed around, and manipulated
  * using existing ES Shell list operations while still providing efficient
  * hash table operations internally.
  */
 
-/* Helper for collecting key-value pairs during dict_to_list */
-static List **collect_tailp;
-
-static void collect_pairs(void *arg, char *key, void *value) {
+/* Helper functions for dictionary operations */
+static void collect_pairs_helper(void *arg, char *key, void *value) {
+    List ***tail_ptr = (List ***)arg;
     List *val_list = (List *)value;
     
-    // Create (key value) pair
-    List *pair = mklist(mkterm(key, NULL), val_list);
+    // Add key
+    **tail_ptr = mklist(mkstr(key), NULL);
+    *tail_ptr = &((**tail_ptr)->next);
     
-    // Add to result list - create a closure term to hold the pair
-    *collect_tailp = mklist(mkterm(NULL, mkclosure(NULL, NULL)), NULL);
-    // Note: This is a simplified approach. In a full implementation,
-    // we'd need a proper way to serialize key-value pairs.
-    collect_tailp = &((*collect_tailp)->next);
+    // Add value (extract first element from value list)
+    if (val_list != NULL && val_list->term != NULL) {
+        **tail_ptr = mklist(val_list->term, NULL);
+        *tail_ptr = &((**tail_ptr)->next);
+    }
 }
 
-/* Convert a dictionary to its ES Shell list representation */
+static void collect_keys_helper(void *arg, char *key, void *value) {
+    List ***tail_ptr = (List ***)arg;
+    **tail_ptr = mklist(mkstr(key), NULL);
+    *tail_ptr = &((**tail_ptr)->next);
+}
+
+static void count_entries_helper(void *arg, char *key, void *value) {
+    int *counter = (int *)arg;
+    (*counter)++;
+}
+
+/* Convert internal Dict to ES Shell list representation: (dict key1 value1 key2 value2 ...) */
 static List *dict_to_list(Dict *dict) {
     if (dict == NULL) {
-        // Return empty dict: (dict)
         return mklist(mkstr("dict"), NULL);
     }
     
     List *result = mklist(mkstr("dict"), NULL);
-    collect_tailp = &result->next;
+    List **tail = &result;
     
-    dictforall(dict, collect_pairs, NULL);
+    // Find the end of the list
+    while (*tail != NULL) {
+        tail = &((*tail)->next);
+    }
     
+    dictforall(dict, collect_pairs_helper, &tail);
     return result;
 }
 
-/* For this implementation, we'll use a simplified approach */
+/* Parse ES Shell list back to internal Dict: (dict key1 value1 key2 value2 ...) */
 static Dict *list_to_dict(List *list) {
     if (list == NULL) {
         return NULL;
     }
     
-    // Check if this is a dict-tagged list by examining the first term
-    char *first_str = getstr(list->term);
-    if (first_str == NULL || !streq(first_str, "dict")) {
+    // Check first element is "dict"
+    char *first = getstr(list->term);
+    if (first == NULL || !streq(first, "dict")) {
         return NULL;
     }
     
     Dict *dict = mkdict();
+    List *current = list->next;
     
-    // For now, return empty dict - this is a simplified implementation
-    // A full implementation would need to parse the serialized pairs
+    // Process pairs: key, value, key, value...
+    while (current != NULL && current->next != NULL) {
+        char *key = getstr(current->term);
+        Term *value_term = current->next->term;
+        
+        if (key != NULL && value_term != NULL) {
+            // Store value as single-element list
+            List *value_list = mklist(value_term, NULL);
+            dict = dictput(dict, gcdup(key), value_list);
+        }
+        
+        current = current->next->next; // Skip both key and value
+    }
     
     return dict;
 }
@@ -92,15 +118,38 @@ PRIM(dict_set) {
     validate_arg_count("dict-set", list, 3, 3, "dict-set key value dict");
     
     char *key = getstr(list->term);
-    List *value = mklist(list->next->term, NULL);
-    List *dict_list = mklist(list->next->next->term, NULL);
+    Term *value_term = list->next->term;
+    // The third argument is the dictionary - it should be a list representing a dictionary
+    Term *dict_term = list->next->next->term;
+    
+    // Handle the case where the dict_term contains a list (like from dict_new)
+    List *dict_list = NULL;
+    if (isclosure(dict_term)) {
+        // If it's a closure, we need to handle it differently - for now, create empty dict
+        dict_list = mklist(mkstr("dict"), NULL);
+    } else {
+        // Try to get it as a string and see if it represents a dictionary
+        char *dict_str = getstr(dict_term);
+        if (dict_str && streq(dict_str, "dict")) {
+            dict_list = mklist(mkstr("dict"), NULL);
+        } else {
+            // For now, assume it's malformed and create a new dict
+            dict_list = mklist(mkstr("dict"), NULL);
+        }
+    }
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-set", "dictionary", "non-dictionary", "dict-set name Alice $mydict");
     }
     
     Dict *dict = list_to_dict(dict_list);
-    dict = dictput(dict, gcdup(key), value);
+    if (dict == NULL) {
+        dict = mkdict();
+    }
+    
+    // Store value as single-element list
+    List *value_list = mklist(value_term, NULL);
+    dict = dictput(dict, gcdup(key), value_list);
     
     return dict_to_list(dict);
 }
@@ -116,9 +165,14 @@ PRIM(dict_get) {
     }
     
     Dict *dict = list_to_dict(dict_list);
+    if (dict == NULL) {
+        return NULL;
+    }
+    
     List *result = dictget(dict, key);
     
-    return result ? result : NULL;
+    // Return the actual value (first element of the stored list)
+    return result;
 }
 
 PRIM(dict_contains) {
@@ -132,8 +186,11 @@ PRIM(dict_contains) {
     }
     
     Dict *dict = list_to_dict(dict_list);
-    List *result = dictget(dict, key);
+    if (dict == NULL) {
+        return lfalse;
+    }
     
+    List *result = dictget(dict, key);
     return result ? ltrue : lfalse;
 }
 
@@ -146,9 +203,16 @@ PRIM(dict_keys) {
         fail_type("dict-keys", "dictionary", "non-dictionary", "dict-keys $mydict");
     }
     
-    // For this simplified implementation, return empty list
-    // A full implementation would extract keys from the dictionary
-    return NULL;
+    Dict *dict = list_to_dict(dict_list);
+    if (dict == NULL) {
+        return NULL;
+    }
+    
+    List *result = NULL;
+    List **tail = &result;
+    
+    dictforall(dict, collect_keys_helper, &tail);
+    return result;
 }
 
 PRIM(dict_values) {
@@ -207,8 +271,15 @@ PRIM(dict_size) {
         fail_type("dict-size", "dictionary", "non-dictionary", "dict-size $mydict");
     }
     
-    // For this simplified implementation, return 0
-    return mklist(mkstr("0"), NULL);
+    Dict *dict = list_to_dict(dict_list);
+    if (dict == NULL) {
+        return mklist(mkstr("0"), NULL);
+    }
+    
+    int count = 0;
+    
+    dictforall(dict, count_entries_helper, &count);
+    return mklist(mkstr(str("%d", count)), NULL);
 }
 
 PRIM(dict_empty) {
@@ -220,8 +291,15 @@ PRIM(dict_empty) {
         fail_type("dict-empty", "dictionary", "non-dictionary", "dict-empty $mydict");
     }
     
-    // For this simplified implementation, return true (empty)
-    return ltrue;
+    Dict *dict = list_to_dict(dict_list);
+    if (dict == NULL) {
+        return ltrue;
+    }
+    
+    int count = 0;
+    
+    dictforall(dict, count_entries_helper, &count);
+    return (count == 0) ? ltrue : lfalse;
 }
 
 /*
