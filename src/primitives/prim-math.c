@@ -22,7 +22,7 @@ PRIM(addition)
     {   double operand = validate_number("addition", getstr(lp->term), "operand");
         result += operand;
     }
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(subtraction)
@@ -45,7 +45,7 @@ PRIM(subtraction)
 
         result -= operand;
     }
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(multiplication)
@@ -63,7 +63,7 @@ PRIM(multiplication)
 
         result *= operand;
     }
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(division)
@@ -78,7 +78,7 @@ PRIM(division)
         validate_not_zero("division", divisor, "division");
         result /= divisor;
     }
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(modulo)
@@ -103,7 +103,7 @@ PRIM(modulo)
     if (divisor == 0.0)
         fail("$&modulo", "division by zero");
 
-    return mklist(mkstr(str("%g", fmod(dividend, divisor))), NULL);
+    return mklist(mkstr(str("%f", fmod(dividend, divisor))), NULL);
 }
 
 PRIM(pow)
@@ -130,7 +130,7 @@ PRIM(pow)
 
     result = pow(base_value, exponent_value);
 
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(abs)
@@ -145,7 +145,7 @@ PRIM(abs)
     if (endptr != NULL && *endptr != '\0')
         fail("$&abs", "argument must be a number");
     
-    return mklist(mkstr(str("%g", fabs(input_value))), NULL);
+    return mklist(mkstr(str("%f", fabs(input_value))), NULL);
 }
 
 PRIM(min)
@@ -169,7 +169,7 @@ PRIM(min)
         if (current_value < minimum_value)
             minimum_value = current_value;
     }
-    return mklist(mkstr(str("%g", minimum_value)), NULL);
+    return mklist(mkstr(str("%f", minimum_value)), NULL);
 }
 
 PRIM(max)
@@ -193,7 +193,7 @@ PRIM(max)
         if (current_value > maximum_value)
             maximum_value = current_value;
     }
-    return mklist(mkstr(str("%g", maximum_value)), NULL);
+    return mklist(mkstr(str("%f", maximum_value)), NULL);
 }
 
 PRIM(count)
@@ -343,11 +343,11 @@ PRIM(greater)
 
     first = strtod(getstr(list->term), &endptr);
     if (endptr != NULL && *endptr != '\0')
-        fail("$&greater", "arguments must be numbers");
+        fail("$&greater", "first argument must be a number");
 
     second = strtod(getstr(list->next->term), &endptr);
     if (endptr != NULL && *endptr != '\0')
-        fail("$&greater", "arguments must be numbers");
+        fail("$&greater", "second argument must be a number");
 
     return first > second ? ltrue : lfalse;
 }
@@ -478,7 +478,7 @@ PRIM(tofloat)
     if (endptr != NULL && *endptr != '\0')
         fail("$&tofloat", "argument must be a number");
 
-    return mklist(mkstr(str("%g", result)), NULL);
+    return mklist(mkstr(str("%f", result)), NULL);
 }
 
 PRIM(isint)

@@ -33,9 +33,10 @@ HFILES          = include/config.h include/es.h include/gc.h include/input.h \
 
 # Source files by category
 CORE_CFILES     = src/core/eval.c src/core/gc.c src/core/main.c
-PRIMITIVE_CFILES = src/primitives/prim.c src/primitives/prim-ctl.c \
-                  src/primitives/prim-etc.c src/primitives/prim-io.c \
-                  src/primitives/prim-math.c src/primitives/prim-sys.c
+PRIMITIVE_CFILES = src/primitives/prim.c src/primitives/prim-ctl.c     \
+                  src/primitives/prim-etc.c src/primitives/prim-io.c   \
+                  src/primitives/prim-math.c src/primitives/prim-sys.c \
+                  src/primitives/prim-dict.c
 PARSER_CFILES   = src/parser/syntax.c src/parser/token.c
 IO_CFILES       = src/io/input.c src/io/heredoc.c src/io/fd.c src/io/open.c \
                   src/io/proc.c src/io/term.c
@@ -45,13 +46,13 @@ DATA_CFILES     = src/data/str.c src/data/list.c src/data/split.c \
 UTILS_CFILES    = src/utils/debug.c src/utils/print.c src/utils/match.c \
                   src/utils/glob.c src/utils/util.c src/utils/var.c
 SYSTEM_CFILES   = src/system/access.c src/system/signal.c src/system/status.c \
-                  src/system/history.c src/system/opt.c src/system/except.c \
-                  src/system/closure.c
+                  src/system/history.c src/system/opt.c src/system/except.c   \
+                  src/system/closure.c src/system/error.c
 BUILD_CFILES    = src/build/dump.c src/build/version.c
 
 # All source files
 CFILES          = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
-                  $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES) \
+                  $(IO_CFILES) $(DATA_CFILES) $(UTILS_CFILES)         \
                   $(SYSTEM_CFILES) $(BUILD_CFILES) generated/y.tab.c generated/sigmsgs.c
 
 # Object files (remove y.tab.c and sigmsgs.c, add y.tab.o and sigmsgs.o separately)
@@ -60,7 +61,12 @@ MAIN_CFILES     = $(CORE_CFILES) $(PRIMITIVE_CFILES) $(PARSER_CFILES) \
 OFILES          = $(MAIN_CFILES:.c=.o) generated/y.tab.o generated/sigmsgs.o src/build/version.o
 
 # Generated files
-GEN             = esdump generated/y.tab.c generated/y.tab.h generated/y.output generated/token.h generated/sigmsgs.c generated/initial.c
+GEN             = esdump generated/y.tab.c   \
+                         generated/y.tab.h   \
+						 generated/y.output  \
+						 generated/token.h   \
+						 generated/sigmsgs.c \
+						 generated/initial.c
 
 SIGFILES        = @SIGFILES@
 
@@ -137,22 +143,23 @@ src/core/main.o        : src/core/main.c include/es.h include/config.h include/s
 src/core/eval.o        : src/core/eval.c include/es.h include/config.h include/stdenv.h
 src/core/gc.o          : src/core/gc.c include/es.h include/config.h include/stdenv.h include/gc.h
 
-src/primitives/prim.o     : src/primitives/prim.c include/es.h include/config.h include/stdenv.h include/prim.h
-src/primitives/prim-ctl.o : src/primitives/prim-ctl.c include/es.h include/config.h include/stdenv.h include/prim.h
-src/primitives/prim-etc.o : src/primitives/prim-etc.c include/es.h include/config.h include/stdenv.h include/prim.h
-src/primitives/prim-io.o  : src/primitives/prim-io.c include/es.h include/config.h include/stdenv.h include/gc.h include/prim.h
+src/primitives/prim.o      : src/primitives/prim.c      include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-ctl.o  : src/primitives/prim-ctl.c  include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-etc.o  : src/primitives/prim-etc.c  include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-io.o   : src/primitives/prim-io.c   include/es.h include/config.h include/stdenv.h include/gc.h   include/prim.h
 src/primitives/prim-math.o : src/primitives/prim-math.c include/es.h include/config.h include/stdenv.h include/prim.h
-src/primitives/prim-sys.o : src/primitives/prim-sys.c include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-sys.o  : src/primitives/prim-sys.c  include/es.h include/config.h include/stdenv.h include/prim.h
+src/primitives/prim-dict.o : src/primitives/prim-dict.c include/es.h include/config.h include/stdenv.h include/prim.h
 
-src/parser/syntax.o    : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
-src/parser/token.o     : src/parser/token.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
+src/parser/syntax.o        : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
+src/parser/token.o         : src/parser/token.c  include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
 
-src/io/input.o         : src/io/input.c include/es.h include/config.h include/stdenv.h include/input.h
-src/io/heredoc.o       : src/io/heredoc.c include/es.h include/config.h include/stdenv.h include/gc.h include/input.h include/syntax.h
-src/io/fd.o            : src/io/fd.c include/es.h include/config.h include/stdenv.h
-src/io/open.o          : src/io/open.c include/es.h include/config.h include/stdenv.h
-src/io/proc.o          : src/io/proc.c include/es.h include/config.h include/stdenv.h include/prim.h
-src/io/term.o          : src/io/term.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/io/input.o             : src/io/input.c   include/es.h include/config.h include/stdenv.h include/input.h
+src/io/heredoc.o           : src/io/heredoc.c include/es.h include/config.h include/stdenv.h include/gc.h include/input.h include/syntax.h
+src/io/fd.o                : src/io/fd.c      include/es.h include/config.h include/stdenv.h
+src/io/open.o              : src/io/open.c    include/es.h include/config.h include/stdenv.h
+src/io/proc.o              : src/io/proc.c    include/es.h include/config.h include/stdenv.h include/prim.h
+src/io/term.o              : src/io/term.c    include/es.h include/config.h include/stdenv.h include/gc.h
 
 src/data/str.o         : src/data/str.c include/es.h include/config.h include/stdenv.h include/gc.h include/print.h
 src/data/list.o        : src/data/list.c include/es.h include/config.h include/stdenv.h include/gc.h
@@ -177,6 +184,7 @@ src/system/history.o   : src/system/history.c include/es.h include/config.h incl
 src/system/opt.o       : src/system/opt.c include/es.h include/config.h include/stdenv.h
 src/system/except.o    : src/system/except.c include/es.h include/config.h include/stdenv.h include/print.h
 src/system/closure.o   : src/system/closure.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/system/error.o     : src/system/error.c include/es.h include/config.h include/stdenv.h include/prim.h
 
 src/build/dump.o       : src/build/dump.c include/es.h include/config.h include/stdenv.h
 src/build/version.o    : src/build/version.c include/es.h include/config.h include/stdenv.h
