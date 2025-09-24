@@ -8,24 +8,46 @@
 /*
  * Dictionary Representation in ES Shell
  * 
- * Dictionaries are represented as lists with a special tag:
- * (dict key1 value1 key2 value2 ...)
+ * Dictionaries use a delimiter-based format for clear structure:
+ * (dict@ key1 => value1 , key2 => value2 , key3 => value3)
  * 
- * This allows them to be easily serialized, passed around, and manipulated
- * using existing ES Shell list operations while still providing efficient
- * hash table operations internally.
+ * Special delimiters:
+ *   dict@  - Dictionary marker
+ *   =>     - Key-value separator  
+ *   ,      - Entry separator
+ * 
+ * This allows multi-word values and nested dictionaries:
+ *   (dict@ name => John Doe , age => 30 , address => dict@ street => 123 Main , city => Boston)
  */
 
 /* Helper functions for dictionary operations */
+typedef struct {
+    List ***tail_ptr;
+    int first_entry;
+} DictIterState;
+
 static void collect_pairs_helper(void *arg, char *key, void *value) {
-    List ***tail_ptr = (List ***)arg;
+    DictIterState *state = (DictIterState *)arg;
+    List ***tail_ptr = state->tail_ptr;
     List *val_list = (List *)value;
+    
+    // Add comma separator if not first entry
+    if (!state->first_entry) {
+        **tail_ptr = mklist(mkstr(","), NULL);
+        *tail_ptr = &((**tail_ptr)->next);
+    } else {
+        state->first_entry = 0;
+    }
     
     // Add key
     **tail_ptr = mklist(mkstr(key), NULL);
     *tail_ptr = &((**tail_ptr)->next);
     
-    // Add all value terms (supports multi-term values like nested dictionaries)
+    // Add arrow separator
+    **tail_ptr = mklist(mkstr("=>"), NULL);
+    *tail_ptr = &((**tail_ptr)->next);
+    
+    // Add all value terms
     List *current_val = val_list;
     while (current_val != NULL) {
         **tail_ptr = mklist(current_val->term, NULL);
@@ -45,93 +67,100 @@ static void count_entries_helper(void *arg, char *key, void *value) {
     (*counter)++;
 }
 
-/* Convert internal Dict to ES Shell list representation: (dict key1 value1 key2 value2 ...) */
+/* Convert internal Dict to ES Shell list representation with delimiters */
 static List *dict_to_list(Dict *dict) {
     if (dict == NULL) {
-        return mklist(mkstr("dict"), NULL);
+        return mklist(mkstr("dict@"), NULL);
     }
     
-    List *result = mklist(mkstr("dict"), NULL);
-    List **tail = &result;
+    List *result = mklist(mkstr("dict@"), NULL);
+    List **tail = &result->next;
     
-    // Find the end of the list
-    while (*tail != NULL) {
-        tail = &((*tail)->next);
-    }
+    // Use helper to add all key-value pairs with delimiters
+    DictIterState state = { .tail_ptr = &tail, .first_entry = 1 };
+    dictforall(dict, collect_pairs_helper, &state);
     
-    dictforall(dict, collect_pairs_helper, &tail);
     return result;
 }
 
-/* Parse ES Shell list back to internal Dict: (dict key1 value1 key2 value2 ...) */
-/* This version handles multi-term values including nested dictionaries */
+/* Parse ES Shell list back to internal Dict using delimiter format */
 static Dict *list_to_dict(List *list) {
     if (list == NULL) {
         return NULL;
     }
     
-    // Check first element is "dict"
+    // Check first element is "dict@"
     char *first = getstr(list->term);
-    if (first == NULL || !streq(first, "dict")) {
+    if (first == NULL || !streq(first, "dict@")) {
         return NULL;
     }
     
     Dict *dict = mkdict();
     List *current = list->next;
     
-    // Parse key-value pairs with support for multi-term values
+    // Parse entries separated by commas
     while (current != NULL) {
+        // Skip comma separator if present
+        char *term_str = getstr(current->term);
+        if (term_str != NULL && streq(term_str, ",")) {
+            current = current->next;
+            if (current == NULL) break;
+        }
+        
         // Get the key
         char *key = getstr(current->term);
-        if (key == NULL) {
+        if (key == NULL) break;
+        
+        // Skip to arrow separator
+        current = current->next;
+        if (current == NULL) break;
+        
+        term_str = getstr(current->term);
+        if (term_str == NULL || !streq(term_str, "=>")) {
+            // Missing arrow separator - malformed dict
             break;
         }
         
+        // Move to value
         current = current->next;
-        if (current == NULL) {
-            break; // Odd number of elements after dict
-        }
+        if (current == NULL) break;
         
-        // Collect value terms until the next key (which doesn't look like a value)
+        // Collect value terms until comma or end
         List *value_list = NULL;
         List **value_tail = &value_list;
         
-        // Heuristic: if the value starts with "dict", collect until we find something 
-        // that looks like a key (not part of a dict structure)
-        char *first_value_str = getstr(current->term);
-        
-        if (first_value_str != NULL && streq(first_value_str, "dict")) {
-            // This is a nested dictionary - collect all its terms
-            int dict_depth = 1;
+        // Check if value is a nested dictionary
+        term_str = getstr(current->term);
+        if (term_str != NULL && streq(term_str, "dict@")) {
+            // Nested dictionary - collect until matching end
+            int depth = 1;
             *value_tail = mklist(current->term, NULL);
             value_tail = &((*value_tail)->next);
             current = current->next;
             
-            // Count terms in the nested dictionary
-            // Simple heuristic: collect pairs until we have a reasonable dict
-            int pair_count = 0;
-            while (current != NULL && pair_count < 10) { // Limit to prevent infinite loops
+            while (current != NULL && depth > 0) {
+                term_str = getstr(current->term);
+                if (term_str != NULL) {
+                    if (streq(term_str, "dict@")) depth++;
+                    else if (streq(term_str, ",") && depth == 1) {
+                        break;  // End of this nested dict
+                    }
+                }
                 *value_tail = mklist(current->term, NULL);
                 value_tail = &((*value_tail)->next);
                 current = current->next;
-                pair_count++;
-                
-                // Look ahead - if next term could be a key for the parent dict, stop
-                if (current != NULL && current->next != NULL) {
-                    char *next_str = getstr(current->term);
-                    char *after_next_str = getstr(current->next->term);
-                    
-                    // If we see a pattern that looks like a new key-value pair, stop
-                    if (next_str != NULL && after_next_str != NULL && 
-                        !streq(next_str, "dict") && pair_count % 2 == 0) {
-                        break;
-                    }
-                }
             }
         } else {
-            // Simple single-term value
-            *value_tail = mklist(current->term, NULL);
-            current = current->next;
+            // Regular value - collect until comma or end
+            while (current != NULL) {
+                term_str = getstr(current->term);
+                if (term_str != NULL && streq(term_str, ",")) {
+                    break;  // End of this value
+                }
+                *value_tail = mklist(current->term, NULL);
+                value_tail = &((*value_tail)->next);
+                current = current->next;
+            }
         }
         
         // Store the key-value pair
@@ -150,7 +179,7 @@ static Boolean is_dict_list(List *list) {
     }
     
     char *first_str = getstr(list->term);
-    return first_str != NULL && streq(first_str, "dict");
+    return first_str != NULL && streq(first_str, "dict@");
 }
 
 /*
@@ -161,35 +190,37 @@ PRIM(dict_new) {
     validate_arg_count("dict-new", list, 0, 0, "dict-new");
     
     // Return empty dictionary representation
-    return mklist(mkstr("dict"), NULL);
+    return mklist(mkstr("dict@"), NULL);
 }
 
 PRIM(dict_set) {
-    validate_arg_count("dict-set", list, 3, -1, "dict-set key value dict");
+    if (list == NULL || list->next == NULL || list->next->next == NULL) {
+        fail_args("dict-set", "dict-set key value dict", "insufficient arguments");
+    }
     
     char *key = getstr(list->term);
     
-    // Find where the target dictionary starts by looking for the LAST "dict" keyword
+    // Find the target dictionary by looking for the last dict@ marker
     List *current = list->next;
     List *value_list = NULL;
     List **value_tail = &value_list;
     List *dict_list = NULL;
     
-    // First pass: find the last "dict" keyword (this is our target dictionary)
-    List *temp = current;
-    while (temp != NULL) {
-        char *term_str = getstr(temp->term);
-        if (term_str != NULL && streq(term_str, "dict")) {
-            dict_list = temp; // Keep updating to find the LAST dict
+    // Find the last dict@ marker (target dictionary)
+    List *scan = current;
+    while (scan != NULL) {
+        char *term_str = getstr(scan->term);
+        if (term_str != NULL && streq(term_str, "dict@")) {
+            dict_list = scan;
         }
-        temp = temp->next;
+        scan = scan->next;
     }
     
     if (dict_list == NULL) {
-        fail_type("dict-set", "dictionary", "no dictionary found in arguments", "dict-set name Alice $mydict");
+        fail_type("dict-set", "dictionary", "no dictionary found", "dict-set key value $mydict");
     }
     
-    // Second pass: collect all terms before the target dictionary as the value
+    // Collect all terms before the target dictionary as the value
     current = list->next;
     while (current != NULL && current != dict_list) {
         *value_tail = mklist(current->term, NULL);
@@ -198,7 +229,7 @@ PRIM(dict_set) {
     }
     
     if (!is_dict_list(dict_list)) {
-        fail_type("dict-set", "dictionary", "non-dictionary", "dict-set name Alice $mydict");
+        fail_type("dict-set", "dictionary", "non-dictionary", "dict-set key value $mydict");
     }
     
     Dict *dict = list_to_dict(dict_list);
@@ -206,7 +237,7 @@ PRIM(dict_set) {
         dict = mkdict();
     }
     
-    // Store the collected value (could be multiple terms for nested dicts)
+    // Store the collected value (can be multiple terms for nested dicts)
     dict = dictput(dict, gcdup(key), value_list);
     
     return dict_to_list(dict);

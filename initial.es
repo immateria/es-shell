@@ -1203,7 +1203,7 @@ fn-dict-print = @ dict {
             value = ${dict-get $key $dict}
             
             # Check if value is itself a dictionary for nested display
-            if {~ $value(1) dict} {
+            if {~ $value(1) dict@} {
                 echo '  ' $key ': (nested dictionary with ' ${dict-size $value} ' items)'
             } {
                 echo '  ' $key ': ' $value
@@ -1267,7 +1267,7 @@ fn-dict-get-nested = @ dict {
         current = ${dict-get $key $current}
         
         # If we got a non-dictionary value but still have more keys, that's an error
-        if {!~ $current(1) dict && !~ $#* 1} {
+        if {!~ $current(1) dict@ && !~ $#* 1} {
             throw error dict-get-nested 'attempted to access non-dictionary value at key: ' $key
         }
     }
@@ -1306,7 +1306,7 @@ fn-dict-set-nested = @ dict value {
             next = ${dict-get $key $current}
             
             # If the next value isn't a dictionary, we can't navigate further
-            if {!~ $next(1) dict} {
+            if {!~ $next(1) dict@} {
                 throw error dict-set-nested 'cannot set nested value: intermediate key "' $key '" contains non-dictionary value'
             }
             
@@ -1331,8 +1331,19 @@ fn-dict-set-nested = @ dict value {
 
 # Dictionary conversion utilities
 fn-dict-to-list = @ dict {
-    # Convert dictionary to flat list: key1 value1 key2 value2 ...
-    result ${drop 1 $dict}  # Remove the 'dict' prefix
+    # Convert dictionary to flat list without delimiters: key1 value1 key2 value2 ...
+    # Remove dict@ prefix and delimiters, keeping just keys and values
+    rest = ${drop 1 $dict}  # Remove the 'dict@' prefix
+    clean = ()
+    
+    # Filter out delimiters (=> and ,)
+    for (item = $rest) {
+        if {!~ $item '=>' && !~ $item ','} {
+            clean = $clean $item
+        }
+    }
+    
+    result $clean
 }
 
 # Convert list back to dictionary  
@@ -1366,7 +1377,7 @@ fn-dict-to-string = @ dict {
         }
         
         # Handle nested dictionaries
-        if {~ $value(1) dict} {
+        if {~ $value(1) dict@} {
             nested-str = ${dict-to-string $value}
             parts = $parts ' "' $key '": ' $nested-str
         } {
