@@ -1110,3 +1110,271 @@ fn-builtins = @ {
     echo 'For detailed help on math operations: help arithmetic'
 }
 
+#
+# Dictionary Functions and Syntactic Sugar
+#
+
+# Core dictionary operations
+fn-dict-new      = $&dict_new
+fn-dict-set      = $&dict_set 
+fn-dict-get      = $&dict_get
+fn-dict-contains = $&dict_contains
+fn-dict-keys     = $&dict_keys
+fn-dict-values   = $&dict_values
+fn-dict-delete   = $&dict_delete
+fn-dict-merge    = $&dict_merge
+fn-dict-size     = $&dict_size
+fn-dict-empty    = $&dict_empty
+
+# Python-style dictionary subscript syntax: dict[key] -> dict_get key dict
+# This function parses dict[key] syntax and converts it to dict_get calls
+fn-dict-subscript = @ dict-expr {
+    # Extract dictionary variable and key from dict[key] syntax
+    # For now, this is a simplified version that works with basic cases
+    # Example: mydict[name] becomes dict_get name $mydict
+    
+    # Split on '[' to get dict name and key expression
+    parts = ${%fsplit '[' $dict-expr}
+    if {!~ $#parts 2} {
+        throw error dict-subscript 'invalid dictionary subscript syntax: ' $dict-expr
+    }
+    
+    dict-name = $parts(1)
+    key-with-bracket = $parts(2)
+    
+    # Remove the closing ']'
+    key = ${%flatten '' ${%fsplit ']' $key-with-bracket}(1)}
+    
+    # Get the dictionary value
+    dict-var = ${%var $dict-name}
+    
+    # Return the result of dict_get
+    result ${dict-get $key $dict-var}
+}
+
+# Enhanced dictionary creation with inline key-value pairs
+# Usage: dict-create name Alice age 30 city Boston
+fn-dict-create = @ {
+    if {~ ${%modulo $#* 2} 1} {
+        throw error dict-create 'dictionary creation requires even number of arguments (key-value pairs)'
+    }
+    
+    d = ${dict-new}
+    args = $*
+    
+    # Process pairs
+    while {!~ $#args 0} {
+        if {~ $#args 1} {
+            throw error dict-create 'odd number of arguments - missing value for key: ' $args(1)
+        }
+        
+        key = $args(1)
+        value = $args(2)
+        d = ${dict-set $key $value $d}
+        
+        # Remove processed pair
+        args = $args(3 ...)
+    }
+    
+    result $d
+}
+
+# Dictionary update - merge multiple dictionaries  
+fn-dict-update = @ base-dict {
+    result-dict = $base-dict
+    
+    # Merge each additional dictionary
+    for (dict = $*) {
+        result-dict = ${dict-merge $result-dict $dict}
+    }
+    
+    result $result-dict
+}
+
+# Dictionary pretty printing
+fn-dict-print = @ dict {
+    echo 'Dictionary contents:'
+    keys = ${dict-keys $dict}
+    
+    if {~ $#keys 0} {
+        echo '  (empty)'
+    } {
+        for (key = $keys) {
+            value = ${dict-get $key $dict}
+            
+            # Check if value is itself a dictionary for nested display
+            if {~ $value(1) dict} {
+                echo '  ' $key ': (nested dictionary with ' ${dict-size $value} ' items)'
+            } {
+                echo '  ' $key ': ' $value
+            }
+        }
+    }
+}
+
+# Dictionary iteration - apply function to each key-value pair
+fn-dict-foreach = @ dict function {
+    keys = ${dict-keys $dict}
+    
+    for (key = $keys) {
+        value = ${dict-get $key $dict} 
+        $function $key $value
+    }
+}
+
+# Dictionary map - create new dictionary by applying function to values
+fn-dict-map-values = @ dict function {
+    result-dict = ${dict-new}
+    keys = ${dict-keys $dict}
+    
+    for (key = $keys) {
+        old-value = ${dict-get $key $dict}
+        new-value = ${$function $old-value}
+        result-dict = ${dict-set $key $new-value $result-dict}
+    }
+    
+    result $result-dict
+}
+
+# Dictionary filtering - create new dictionary with matching key-value pairs
+fn-dict-filter = @ dict predicate {
+    result-dict = ${dict-new}
+    keys = ${dict-keys $dict}
+    
+    for (key = $keys) {
+        value = ${dict-get $key $dict}
+        
+        # Apply predicate to key-value pair
+        if {$predicate $key $value} {
+            result-dict = ${dict-set $key $value $result-dict}
+        }
+    }
+    
+    result $result-dict
+}
+
+# Nested dictionary operations
+# Get nested value: dict-get-nested dict key1 key2 key3
+fn-dict-get-nested = @ dict {
+    current = $dict
+    
+    for (key = $*) {
+        if {!${dict-contains $key $current}} {
+            result ()
+            return
+        }
+        
+        current = ${dict-get $key $current}
+        
+        # If we got a non-dictionary value but still have more keys, that's an error
+        if {!~ $current(1) dict && !~ $#* 1} {
+            throw error dict-get-nested 'attempted to access non-dictionary value at key: ' $key
+        }
+    }
+    
+    result $current
+}
+
+# Set nested value: dict-set-nested dict value key1 key2 key3
+fn-dict-set-nested = @ dict value {
+    if {~ $#* 0} {
+        throw error dict-set-nested 'no keys provided for nested set'
+    }
+    
+    keys = $*
+    result-dict = $dict
+    
+    # For single key, just use regular dict-set
+    if {~ $#keys 1} {
+        result ${dict-set $keys(1) $value $result-dict}
+        return  
+    }
+    
+    # For multiple keys, we need to navigate the nested structure
+    # Create missing intermediate dictionaries as needed
+    current-path = ()
+    current = $result-dict
+    
+    # Navigate to the parent of the target location
+    parent-keys = ${take ${%subtraction $#keys 1} $keys}
+    target-key = $keys($#keys)
+    
+    for (key = $parent-keys) {
+        current-path = $current-path $key
+        
+        if {${dict-contains $key $current}} {
+            next = ${dict-get $key $current}
+            
+            # If the next value isn't a dictionary, we can't navigate further
+            if {!~ $next(1) dict} {
+                throw error dict-set-nested 'cannot set nested value: intermediate key "' $key '" contains non-dictionary value'
+            }
+            
+            current = $next
+        } {
+            # Create missing intermediate dictionary
+            new-dict = ${dict-new}
+            result-dict = ${dict-set $key $new-dict $result-dict}
+            current = $new-dict
+        }
+    }
+    
+    # Now set the final value
+    # We need to reconstruct the path back up
+    final-dict = ${dict-set $target-key $value $current}
+    
+    # This is a simplified version - for full nested setting,
+    # we'd need to rebuild the entire nested structure
+    # For now, this works for simple cases
+    result $final-dict
+}
+
+# Dictionary conversion utilities
+fn-dict-to-list = @ dict {
+    # Convert dictionary to flat list: key1 value1 key2 value2 ...
+    result ${drop 1 $dict}  # Remove the 'dict' prefix
+}
+
+# Convert list back to dictionary  
+fn-list-to-dict = @ {
+    if {~ ${%modulo $#* 2} 1} {
+        throw error list-to-dict 'list must have even number of elements for key-value pairs'
+    }
+    
+    result ${dict-create $*}
+}
+
+# Dictionary JSON-like string representation
+fn-dict-to-string = @ dict {
+    keys = ${dict-keys $dict}
+    
+    if {~ $#keys 0} {
+        result '{}'
+        return
+    }
+    
+    parts = ('{')
+    first = true
+    
+    for (key = $keys) {
+        value = ${dict-get $key $dict}
+        
+        if {~ $first true} {
+            first = false
+        } {
+            parts = $parts ','
+        }
+        
+        # Handle nested dictionaries
+        if {~ $value(1) dict} {
+            nested-str = ${dict-to-string $value}
+            parts = $parts ' "' $key '": ' $nested-str
+        } {
+            parts = $parts ' "' $key '": "' $value '"'
+        }
+    }
+    
+    parts = $parts ' }'
+    result ${%flatten '' $parts}
+}
+

@@ -25,10 +25,12 @@ static void collect_pairs_helper(void *arg, char *key, void *value) {
     **tail_ptr = mklist(mkstr(key), NULL);
     *tail_ptr = &((**tail_ptr)->next);
     
-    // Add value (extract first element from value list)
-    if (val_list != NULL && val_list->term != NULL) {
-        **tail_ptr = mklist(val_list->term, NULL);
+    // Add all value terms (supports multi-term values like nested dictionaries)
+    List *current_val = val_list;
+    while (current_val != NULL) {
+        **tail_ptr = mklist(current_val->term, NULL);
         *tail_ptr = &((**tail_ptr)->next);
+        current_val = current_val->next;
     }
 }
 
@@ -62,6 +64,7 @@ static List *dict_to_list(Dict *dict) {
 }
 
 /* Parse ES Shell list back to internal Dict: (dict key1 value1 key2 value2 ...) */
+/* This version handles multi-term values including nested dictionaries */
 static Dict *list_to_dict(List *list) {
     if (list == NULL) {
         return NULL;
@@ -76,18 +79,65 @@ static Dict *list_to_dict(List *list) {
     Dict *dict = mkdict();
     List *current = list->next;
     
-    // Process pairs: key, value, key, value...
-    while (current != NULL && current->next != NULL) {
+    // Parse key-value pairs with support for multi-term values
+    while (current != NULL) {
+        // Get the key
         char *key = getstr(current->term);
-        Term *value_term = current->next->term;
-        
-        if (key != NULL && value_term != NULL) {
-            // Store value as single-element list
-            List *value_list = mklist(value_term, NULL);
-            dict = dictput(dict, gcdup(key), value_list);
+        if (key == NULL) {
+            break;
         }
         
-        current = current->next->next; // Skip both key and value
+        current = current->next;
+        if (current == NULL) {
+            break; // Odd number of elements after dict
+        }
+        
+        // Collect value terms until the next key (which doesn't look like a value)
+        List *value_list = NULL;
+        List **value_tail = &value_list;
+        
+        // Heuristic: if the value starts with "dict", collect until we find something 
+        // that looks like a key (not part of a dict structure)
+        char *first_value_str = getstr(current->term);
+        
+        if (first_value_str != NULL && streq(first_value_str, "dict")) {
+            // This is a nested dictionary - collect all its terms
+            int dict_depth = 1;
+            *value_tail = mklist(current->term, NULL);
+            value_tail = &((*value_tail)->next);
+            current = current->next;
+            
+            // Count terms in the nested dictionary
+            // Simple heuristic: collect pairs until we have a reasonable dict
+            int pair_count = 0;
+            while (current != NULL && pair_count < 10) { // Limit to prevent infinite loops
+                *value_tail = mklist(current->term, NULL);
+                value_tail = &((*value_tail)->next);
+                current = current->next;
+                pair_count++;
+                
+                // Look ahead - if next term could be a key for the parent dict, stop
+                if (current != NULL && current->next != NULL) {
+                    char *next_str = getstr(current->term);
+                    char *after_next_str = getstr(current->next->term);
+                    
+                    // If we see a pattern that looks like a new key-value pair, stop
+                    if (next_str != NULL && after_next_str != NULL && 
+                        !streq(next_str, "dict") && pair_count % 2 == 0) {
+                        break;
+                    }
+                }
+            }
+        } else {
+            // Simple single-term value
+            *value_tail = mklist(current->term, NULL);
+            current = current->next;
+        }
+        
+        // Store the key-value pair
+        if (key != NULL && value_list != NULL) {
+            dict = dictput(dict, gcdup(key), value_list);
+        }
     }
     
     return dict;
@@ -115,27 +165,36 @@ PRIM(dict_new) {
 }
 
 PRIM(dict_set) {
-    validate_arg_count("dict-set", list, 3, 3, "dict-set key value dict");
+    validate_arg_count("dict-set", list, 3, -1, "dict-set key value dict");
     
     char *key = getstr(list->term);
-    Term *value_term = list->next->term;
-    // The third argument is the dictionary - it should be a list representing a dictionary
-    Term *dict_term = list->next->next->term;
     
-    // Handle the case where the dict_term contains a list (like from dict_new)
+    // Find where the target dictionary starts by looking for the LAST "dict" keyword
+    List *current = list->next;
+    List *value_list = NULL;
+    List **value_tail = &value_list;
     List *dict_list = NULL;
-    if (isclosure(dict_term)) {
-        // If it's a closure, we need to handle it differently - for now, create empty dict
-        dict_list = mklist(mkstr("dict"), NULL);
-    } else {
-        // Try to get it as a string and see if it represents a dictionary
-        char *dict_str = getstr(dict_term);
-        if (dict_str && streq(dict_str, "dict")) {
-            dict_list = mklist(mkstr("dict"), NULL);
-        } else {
-            // For now, assume it's malformed and create a new dict
-            dict_list = mklist(mkstr("dict"), NULL);
+    
+    // First pass: find the last "dict" keyword (this is our target dictionary)
+    List *temp = current;
+    while (temp != NULL) {
+        char *term_str = getstr(temp->term);
+        if (term_str != NULL && streq(term_str, "dict")) {
+            dict_list = temp; // Keep updating to find the LAST dict
         }
+        temp = temp->next;
+    }
+    
+    if (dict_list == NULL) {
+        fail_type("dict-set", "dictionary", "no dictionary found in arguments", "dict-set name Alice $mydict");
+    }
+    
+    // Second pass: collect all terms before the target dictionary as the value
+    current = list->next;
+    while (current != NULL && current != dict_list) {
+        *value_tail = mklist(current->term, NULL);
+        value_tail = &((*value_tail)->next);
+        current = current->next;
     }
     
     if (!is_dict_list(dict_list)) {
@@ -147,18 +206,17 @@ PRIM(dict_set) {
         dict = mkdict();
     }
     
-    // Store value as single-element list
-    List *value_list = mklist(value_term, NULL);
+    // Store the collected value (could be multiple terms for nested dicts)
     dict = dictput(dict, gcdup(key), value_list);
     
     return dict_to_list(dict);
 }
 
 PRIM(dict_get) {
-    validate_arg_count("dict-get", list, 2, 2, "dict-get key dict");
+    validate_arg_count("dict-get", list, 2, -1, "dict-get key dict");
     
     char *key = getstr(list->term);
-    List *dict_list = mklist(list->next->term, NULL);
+    List *dict_list = list->next;
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-get", "dictionary", "non-dictionary", "dict-get name $mydict");
@@ -171,15 +229,15 @@ PRIM(dict_get) {
     
     List *result = dictget(dict, key);
     
-    // Return the actual value (first element of the stored list)
+    // Return the complete stored value list (supports multi-term values like nested dicts)
     return result;
 }
 
 PRIM(dict_contains) {
-    validate_arg_count("dict-contains", list, 2, 2, "dict-contains key dict");
+    validate_arg_count("dict-contains", list, 2, -1, "dict-contains key dict");
     
     char *key = getstr(list->term);
-    List *dict_list = mklist(list->next->term, NULL);
+    List *dict_list = list->next;
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-contains", "dictionary", "non-dictionary", "dict-contains name $mydict");
@@ -195,9 +253,9 @@ PRIM(dict_contains) {
 }
 
 PRIM(dict_keys) {
-    validate_arg_count("dict-keys", list, 1, 1, "dict-keys dict");
+    validate_arg_count("dict-keys", list, 1, -1, "dict-keys dict");
     
-    List *dict_list = mklist(list->term, NULL);
+    List *dict_list = list;
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-keys", "dictionary", "non-dictionary", "dict-keys $mydict");
@@ -263,9 +321,9 @@ PRIM(dict_merge) {
 /* Additional utility primitives */
 
 PRIM(dict_size) {
-    validate_arg_count("dict-size", list, 1, 1, "dict-size dict");
+    validate_arg_count("dict-size", list, 1, -1, "dict-size dict");
     
-    List *dict_list = mklist(list->term, NULL);
+    List *dict_list = list;
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-size", "dictionary", "non-dictionary", "dict-size $mydict");
@@ -283,9 +341,9 @@ PRIM(dict_size) {
 }
 
 PRIM(dict_empty) {
-    validate_arg_count("dict-empty", list, 1, 1, "dict-empty dict");
+    validate_arg_count("dict-empty", list, 1, -1, "dict-empty dict");
     
-    List *dict_list = mklist(list->term, NULL);
+    List *dict_list = list;
     
     if (!is_dict_list(dict_list)) {
         fail_type("dict-empty", "dictionary", "non-dictionary", "dict-empty $mydict");
