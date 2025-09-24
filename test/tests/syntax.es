@@ -24,16 +24,16 @@ test 'syntactic sugar' {
 		# added case for * which is handled separately
 		'fn name { cmd }'	'fn-^name=@ *{cmd}'
 
-		# Input/Output Commands
+		# Input/Output Commands (New Arrow Syntax)
 		# NOTE: the <={%one file} part of these is not mentioned in the man page
-		'cmd < file'		'%open 0 <={%one file} {cmd}'
-		'cmd > file'		'%create 1 <={%one file} {cmd}'
-		'cmd >[6] file'		'%create 6 <={%one file} {cmd}'
-		'cmd >> file'		'%append 1 <={%one file} {cmd}'
-		'cmd <> file'		'%open-write 0 <={%one file} {cmd}'
-		'cmd <>> file'		'%open-append 0 <={%one file} {cmd}'
-		'cmd >< file'		'%open-create 1 <={%one file} {cmd}'
-		'cmd >>< file'		'%open-append 1 <={%one file} {cmd}'
+		'cmd <- file'		'%open 0 <={%one file} {cmd}'
+		'cmd -> file'		'%create 1 <={%one file} {cmd}'
+		'cmd ->[6] file'		'%create 6 <={%one file} {cmd}'
+		'cmd ->> file'		'%append 1 <={%one file} {cmd}'
+		'cmd <-> file'		'%open-write 0 <={%one file} {cmd}'
+		'cmd <->> file'		'%open-append 0 <={%one file} {cmd}'
+		'cmd ->-< file'		'%open-create 1 <={%one file} {cmd}'
+		'cmd ->>< file'		'%open-append 1 <={%one file} {cmd}'
 		'cmd >[7=]'		'%close 7 {cmd}'
 		'cmd >[8=9]'		'%dup 8 9 {cmd}'
 		'cmd <<< string'	'%here 0 string {cmd}'
@@ -67,7 +67,7 @@ test 'readfrom/writeto sugar' {
 test 'heredoc sugar' {
 	let (
 		# NOTE: is it a bug that this only works with the closing newline?
-		have = 'cmd << tag
+		have = 'cmd <--< tag
 input
 tag
 '
@@ -122,9 +122,9 @@ test 'precedence' {
 		'let (a=b) x || y'	'let(a=b)%or {x} {y}'
 		'let (a=b) x & y'	'%seq {%background {let(a=b)x}} {y}'
 		'let (a=b) x | y'	'let(a=b)%pipe {x} 1 0 {y}'
-		'a && b > c'		'%and {a} {%create 1 <={%one c} {b}}'
-		'a | b > c'		'%pipe {a} 1 0 {%create 1 <={%one c} {b}}'
-		'let (a=b) c > d'	'let(a=b)%create 1 <={%one d} {c}'
+		'a && b -> c'		'%and {a} {%create 1 <={%one c} {b}}'
+		'a | b -> c'		'%pipe {a} 1 0 {%create 1 <={%one c} {b}}'
+		'let (a=b) c -> d'	'let(a=b)%create 1 <={%one d} {c}'
 	)) {
 		assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
 	}
