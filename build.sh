@@ -12,15 +12,14 @@ readonly WHITE='\033[1;37m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m' # No Color
 
-# Unicode symbols for better visual appeal
-readonly CHECKMARK="✅"
-readonly CROSS="❌"
-readonly ARROW="➤"
-readonly GEAR="⚙️"
-readonly ROCKET="🚀"
-readonly PACKAGE="📦"
 
-# Global variables for timing and progress
+readonly CHECKMARK="✓"
+readonly CROSS="╳"
+readonly ARROW="➤"
+readonly GEAR="⛭"
+readonly LAMBDA="λ"
+readonly PACKAGE="◊"
+
 start_time=""
 step_count=0
 total_steps=0
@@ -57,7 +56,7 @@ log_step() {
 log_header() {
     echo
     echo -e "${PURPLE}${BOLD}┌───────────────────────────────────────────────────────┐${NC}"
-    echo -e "${PURPLE}${BOLD}│${NC}  ${ROCKET} $*"
+    echo -e "${PURPLE}${BOLD}│${NC}  ${LAMBDA} $*"
     echo -e "${PURPLE}${BOLD}└───────────────────────────────────────────────────────┘${NC}"
     echo
 }
@@ -531,11 +530,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     log_success "ES-Shell build completed successfully!"
     echo
     echo -e "${WHITE}${BOLD}┌─────────────────────────────────────────┐${NC}"
-    echo -e "${WHITE}${BOLD}│${NC} ${CHECKMARK} Binary: ${GREEN}$out_dir/es-shell${NC}"
-    echo -e "${WHITE}${BOLD}│${NC} ${CHECKMARK} Build time: ${CYAN}$elapsed_time${NC}"
-    echo -e "${WHITE}${BOLD}│${NC} ${CHECKMARK} Static linking: $([ $static -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
-    echo -e "${WHITE}${BOLD}│${NC} ${CHECKMARK} Tests: $([ $enable_tests -eq 1 ] && echo "${GREEN}ran${NC}" || echo "${YELLOW}skipped${NC}")"
-    echo -e "${WHITE}${BOLD}│${NC} ${CHECKMARK} Log files: ${CYAN}*.log${NC}"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Binary:         ${GREEN}$out_dir/es-shell${NC}"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Build time:     ${CYAN}$elapsed_time${NC}"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Static linking: $([ $static -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Tests:          $([ $enable_tests -eq 1 ] && echo "${GREEN}ran${NC}" || echo "${YELLOW}skipped${NC}")"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Log files:      ${CYAN}*.log${NC}"
     echo -e "${WHITE}${BOLD}└─────────────────────────────────────────┘${NC}"
     
     if [[ $dry_run -eq 0 ]]; then
@@ -545,5 +544,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     fi
     
     echo
-    echo -e "${ROCKET} ${GREEN}${BOLD}Ready to launch!${NC}"
+    echo -e "${LAMBDA} ${GREEN}${BOLD}Ready to launch!${NC}"
 fi
