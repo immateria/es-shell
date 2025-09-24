@@ -24,7 +24,7 @@ start_time=""
 step_count=0
 total_steps=0
 
-# Enhanced logging functions with better visual appeal
+
 log_info() {
     echo -e "${BLUE}${ARROW}${NC} $*"
 }
@@ -65,7 +65,7 @@ log_package() {
     echo -e "  ${PACKAGE} ${WHITE}$*${NC}"
 }
 
-# Progress spinner for long operations
+# Progress spinner
 show_spinner() {
     local pid=$1
     local message="${2:-Processing}"
