@@ -4,6 +4,7 @@
 #include "input.h"
 #include "syntax.h"
 #include "token.h"
+#include <string.h>
 
 #define	isodigit(c)	('0' <= (c) && (c) < '8')
 
@@ -22,48 +23,71 @@ static char *tokenbuf = NULL;
 #define	InsertFreeCaret()	STMT(if (w != NW) { w = NW; UNGETC(c); return '^'; })
 
 
-/*
- *	Special characters (i.e., "non-word") in es:
- *		\t \n # ; & | ^ $ = ` ' ! { } ( ) < > \
+/* 
+ * Character classification for tokenizing.
+ * 
+ * ES shell syntax special characters that break words in normal context.
+ * These are the core ES shell metacharacters and delimiters.
  */
-
-const char nw[] = {
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,		/*   0 -  15 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16 -  32 */
-	1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,		/* ' ' - '/' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* '0' - '?' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,		/* 'P' - '_' */
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '`' - 'o' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,		/* 'p' - DEL */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 128 - 143 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 144 - 159 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 160 - 175 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 176 - 191 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 192 - 207 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 208 - 223 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 224 - 239 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* 240 - 255 */
+static const unsigned char ES_SPECIAL_CHARS[] = {
+	'\0', '\t', '\n', ' ', '!', '#', '$', '&', '\'', '(', ')', '*', '+', '-', ';', '<', '=', '>', '\\', '^', '`', '{', '|', '}'
 };
+#define ES_SPECIAL_CHARS_COUNT (sizeof(ES_SPECIAL_CHARS))
 
-const char dnw[] = {
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*   0 -  15 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*  16 -  32 */
-	1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,		/* ' ' - '/' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,		/* '0' - '?' */
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* 'P' - '_' */
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '`' - 'o' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,		/* 'p' - DEL */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 128 - 143 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 144 - 159 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 160 - 175 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 176 - 191 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 192 - 207 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 208 - 223 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 224 - 239 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 240 - 255 */
-};
+/*
+ * Characters allowed in variable names within $... expressions.
+ * Much more restrictive than normal context - only alphanumeric, underscore,
+ * and a few special variable characters (%, *, .).
+ */
+static const char DOLLAR_WORD_CHARS[] = 
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_*%.";
+
+/* Lookup tables for fast character classification during tokenization */
+static char nonword_chars[256];
+static char dollar_nonword_chars[256];
+
+/*
+ * Initialize character classification lookup tables.
+ * Called once at startup to build the tables from semantic definitions.
+ */
+static void init_char_tables(void) {
+	static int initialized = 0;
+	if (initialized) return;
+	
+	/* Initialize all characters as word characters (0) */
+	memset(nonword_chars, 0, sizeof(nonword_chars));
+	memset(dollar_nonword_chars, 1, sizeof(dollar_nonword_chars)); /* default non-word for $ context */
+	
+	/* Mark ES special characters as non-word in normal context */
+	for (int i = 0; i < (int)ES_SPECIAL_CHARS_COUNT; i++) {
+		nonword_chars[ES_SPECIAL_CHARS[i]] = 1;
+	}
+	
+	/* Mark allowed characters as word characters in dollar context */
+	for (const char *p = DOLLAR_WORD_CHARS; *p; p++) {
+		dollar_nonword_chars[(unsigned char)*p] = 0;
+	}
+	
+	initialized = 1;
+}
+
+/*
+ * Check if character is a non-word character in normal context.
+ * Used by external modules like conv.c.
+ */
+extern int is_nonword_char(int c) {
+	init_char_tables();  /* Ensure tables are initialized */
+	return (c >= 0 && c < 256) ? nonword_chars[c] : 1;
+}
+
+/*
+ * Check if character is a non-word character in dollar context.
+ * Used by external modules like heredoc.c.
+ */
+extern int is_dollar_nonword_char(int c) {
+	init_char_tables();  /* Ensure tables are initialized */
+	return (c >= 0 && c < 256) ? dollar_nonword_chars[c] : 1;
+}
 
 
 /* print_prompt2 -- called before all continuation lines */
@@ -150,13 +174,16 @@ extern int yylex(void) {
 	char *buf = tokenbuf;		/* values into registers. On a sparc this is a		*/
 	YYSTYPE *y = &yylval;		/* win, in code size *and* execution time		*/
 
+	/* Initialize character classification tables on first call */
+	init_char_tables();
+
 	if (goterror) {
 		goterror = FALSE;
 		return NL;
 	}
 
-	/* rc variable-names may contain only alnum, '*' and '_', so use dnw if we are scanning one. */
-	meta = (dollar ? dnw : nw);
+	/* rc variable-names may contain only alnum, '*' and '_', so use dollar_nonword_chars if we are scanning one. */
+	meta = (dollar ? dollar_nonword_chars : nonword_chars);
 	dollar = FALSE;
 	if (newline) {
 		--input->lineno; /* slight space optimization; print_prompt2() always increments lineno */

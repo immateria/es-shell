@@ -33,10 +33,11 @@ extern void yyerror(const char *s);
 
 /* token.c */
 
-extern const char dnw[];
 extern int yylex(void);
 extern void inityy(void);
 extern void print_prompt2(void);
+extern int is_nonword_char(int c);
+extern int is_dollar_nonword_char(int c);
 
 
 /* parse.y */

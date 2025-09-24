@@ -9,11 +9,17 @@
 static Tree *arithword(Tree *t) {
        if (t != NULL && t->kind == nWord) {
                char *end;
-               strtol(t->u[0].s, &end, 10);
                
-               /* If it's a pure number, return as-is for arithmetic use */
+               /* Check if it's an integer */
+               strtol(t->u[0].s, &end, 10);
                if (*end == '\0') {
-                       return t;
+                       return t;  /* Pure integer - return as literal */
+               }
+               
+               /* Check if it's a floating-point number */
+               strtod(t->u[0].s, &end);
+               if (*end == '\0') {
+                       return t;  /* Pure floating-point number - return as literal */
                }
                
                /* CONSERVATIVE APPROACH: Don't auto-convert words to variables */

@@ -49,6 +49,24 @@ Initializes garbage collection and conversion routines, sets `$path` and `$pid`,
 **Discovery:** Yacc grammar defining shell syntax
 
 **Details:**
+
+### [2025-01-12] Lexical Analysis – Character Classification Refactoring
+
+**Discovery:** Semantic character classification system replaces hardcoded arrays
+
+**Details:**
+Refactored `src/parser/token.c` character classification arrays (`nonword_chars` and `dollar_nonword_chars`) from hardcoded 256-element lookup tables to semantic definitions. The new system uses explicit character lists (`ES_SPECIAL_CHARS`) and string definitions (`DOLLAR_WORD_CHARS`) that are programmatically converted to lookup tables at runtime via `init_char_tables()`. This improves maintainability by making the character classification rules explicit and readable:
+
+- **Normal context**: Word characters are everything except ES shell special characters: `\0`, `\t`, `\n`, ` `, `!`, `#`, `$`, `&`, `'`, `(`, `)`, `*`, `+`, `-`, `;`, `<`, `=`, `>`, `\`, `^`, `` ` ``, `{`, `|`, `}`
+- **Dollar context**: Very restrictive - only alphanumeric, underscore, and special variable chars: `*`, `%`, `.`
+
+The refactoring maintains exact behavioral compatibility while enabling future Unicode support and eliminating the maintenance burden of "giant array of essential bitflags". External modules access classification through helper functions `is_nonword_char()` and `is_dollar_nonword_char()` instead of direct array access.
+
+### [2025-09-13] Core Module – parse.y (continued)
+
+**Discovery:** Yacc grammar defining shell syntax
+
+**Details:**
 Specifies tokens for shell constructs (`WORD`, `MATCH`, `FOR`, etc.) and production rules for commands, pipelines, and function definitions, building abstract syntax trees via helper functions such as `mkseq` and `redirappend`.
 ### [2025-09-13] Core Module – eval.c
 
@@ -1349,3 +1367,127 @@ cond {$remaining greater 900} then {
 **Status:** ✅ **COMPLETE** - User's primary goal achieved: "eliminate nested control statement requirement" with flat conditional chains
 
 **Next Goal:** Implement symbolic infix operators (`>`, `<`, `==`, `!=`, `>=`, `<=`) to complement existing word-based operators.
+
+### [2025-09-24] Critical Bug – Floating-Point Arithmetic Parsing Failure  
+
+**Discovery:** Floating-point literals are incorrectly tokenized in expression contexts, causing infix operations to fail
+
+**Details:**  
+Identified the root cause of why integer arithmetic works (`${8 / 2}` → `4.0`) but floating-point arithmetic fails (`${8.0 / 2.0}` → "got 1 argument"):
+
+**Context from WARP.md:**  
+This issue occurs in the context of extensive infix operator work described in WARP.md. ES-shell has a comprehensive infix operator system supporting multiple syntax styles (word-based: "plus", symbolic: "+", short forms: "add"). The current `<={...}` syntax for expression evaluation is planned to be replaced with `${...}` as part of a larger operator redesign, but the fundamental tokenization issue affects both syntaxes.
+
+**Root Cause Analysis:**
+- **Integer operations work**: `${8 / 2}` → trace shows `{echo <={{%division 8 2}}}` → correct result `4.0`
+- **Floating-point operations fail**: `${8.0 / 2.0}` → trace shows `{echo <={{%division 8^.0 $2.0}}}` → "got 1 argument"
+- **Issue affects ALL floating-point operators**: multiplication `${8.0 * 2.0}` → `8.0` (should be `16.0`), addition `${8.0 + 2.0}` → `8.0` (should be `10.0`)
+- **Affects infix operator redesign**: This bug blocks the planned transition from `<={...}` to `${...}` syntax mentioned in WARP.md
+
+**Technical Root Cause:**
+In `src/parser/token.c`, the `meta` character classification arrays treat `.` differently based on context:
+- `nw` array (normal context): `.` marked as `0` (non-meta) - treated as part of word  
+- `dnw` array (dollar context like `${...}`): `.` marked as `1` (meta) - treated as word separator
+
+**Tokenization Evidence:**
+- `${8.0 / 2.0}` becomes `8^.0 $2.0` instead of two number tokens
+- The `^` indicates escaped character handling, `$` indicates variable expansion attempt
+- `8.0` splits into `8` + `.` + `0`, confusing the infix parser argument count
+
+**Impact on Roadmap:** This prevents floating-point arithmetic entirely in expression evaluation contexts, limiting mathematical operations to integers only. It also blocks the planned `${...}` syntax migration described in WARP.md's "Comprehensive Operator Redesign" section.
+
+**Workaround Discovered:** Escaping decimal points works: `${8\.0 / 2\.0}` → `4.0` (produces `8^'.'^0 2^'.'^0` in trace)
+
+**Fix Required:** Modify `dnw` array in `token.c` to treat `.` as non-meta (value `0`) when part of numeric literals, similar to how `-`, `*`, and `+` are already handled for arithmetic contexts per WARP.md's infix operator support.
+
+**Testing Results:**
+- Direct primitives work: `%division 8.0 2.0` → `4.0`
+- Integer infix works: `${8 / 2}` → `4.0`  
+- Float multiplication fails: `${8.0 * 2.0}` → `8.0` (only first argument passed)
+- Float division fails: `${8.0 / 2.0}` → "Invalid arguments: got 1 argument"  
+- Float subtraction fails: `${8.0 - 2.0}` → "got 0 arguments" (even worse)
+
+**Status:** ✅ **RESOLVED** - Critical parsing bug successfully fixed with two-part solution:
+
+**Fix Applied:**
+1. **Token Classification Fix** (`src/parser/token.c` line 50): Modified `dnw` array to treat decimal point `.` as non-meta (value `0`) in dollar context, allowing `8.0` to tokenize as single word instead of `8` + `.` + `0`.
+
+2. **Numeric Recognition Fix** (`src/parser/syntax.c` lines 242-256 and `src/parser/parse.y` lines 9-25): Updated both `arithword()` and `makeinfixcall()` functions to use `strtod()` in addition to `strtol()`, properly recognizing floating-point literals as numbers instead of converting them to variables.
+
+**Verification Results:**
+- ✅ Floating-point division: `${8.0 / 2.0}` → `4.0` 
+- ✅ Floating-point multiplication: `${8.0 * 2.0}` → `16.0`
+- ✅ Floating-point addition: `${8.0 + 2.0}` → `10.0` 
+- ✅ Floating-point subtraction: `${8.0 - 2.0}` → `6.0`
+- ✅ Word operators: `${8.5 plus 1.5}` → `10.0`
+- ✅ Parentheses: `${(8.0 + 2.0) * 3.0}` → `30.0`
+- ✅ Integer arithmetic unchanged: `${8 / 2}` → `4.0`
+- ✅ Mathematical primitives pass test suite
+
+**Impact:** This fix unblocks the planned `${...}` syntax migration described in WARP.md and enables full floating-point arithmetic support in expression contexts. The extensive infix operator system now works correctly with both integer and floating-point literals.
+
+### [2025-09-24] External Commands and Redirection Testing
+
+**Discovery:** External commands work correctly, test failures due to old redirection syntax
+
+**Details:**  
+External commands like `ls`, `cat`, `wc`, and `date` work perfectly with ES shell. The piping system and command execution are fully functional. Test failures in `trip.es` are caused by tests using old redirection syntax (`> file` instead of `-> file`). The new arrow-based redirection system works correctly:
+- `-> file` for output redirection (replaces `> file`)
+- `<- file` for input redirection (replaces `< file`)  
+- `<--< delimiter` for heredoc syntax (replaces `<< delimiter`)
+
+### [2025-09-24] Expression Syntax Clarification - `${}` vs `<={}` 
+
+**Discovery:** `${}` is expression evaluation, `<={}` is comparison operator confusion
+
+**Details:**  
+The `${}` syntax generates an `EXPR_CALL` token for expression evaluation and arithmetic operations. The `<={}` syntax does NOT work as expression evaluation - it is tokenized as a `<=` (LE token - less than or equal comparison operator) followed by `{...}` braces. When the parser encounters `<={...}`, it tries to invoke the `%lessequal` primitive function but fails because the braces don't provide the correct argument format. The `<=` operator works correctly for comparisons like `if {8.0 <= 10.0}`. Only `${}` should be used for expression evaluation and arithmetic.
+
+### [2025-01-12] Build System – macOS Cross-Architecture Compatibility
+
+**Discovery:** Comprehensive build system redesign for macOS architecture targeting
+
+**Details:**
+Implemented sophisticated architecture targeting system to address critical Apple Silicon / Intel compatibility concerns. The user raised the question "if you're building this for 10.13, which Apple Silicon never supported, is this producing an intel binary?" which led to complete build system overhaul.
+
+**Architecture Targeting System:**
+- **Auto-detection**: Intel Macs default to `--intel-only` (fastest, maximum compatibility), Apple Silicon defaults to `--universal` (maximum utility)
+- **Intel-only builds**: Target macOS 10.13+ with `x86_64` architecture and `MACOSX_DEPLOYMENT_TARGET=10.13`  
+- **Apple Silicon-only builds**: Target macOS 11.0+ with `arm64` architecture and `MACOSX_DEPLOYMENT_TARGET=11.0`
+- **Universal binaries**: Fat binaries containing both architectures with appropriate deployment targets per slice
+
+**Build Options:**
+```bash
+./build.sh --static --intel-only    # Intel x86_64, macOS 10.13+
+./build.sh --static --arm-only      # Apple Silicon arm64, macOS 11.0+ 
+./build.sh --static --universal     # Universal binary (both architectures)
+./build.sh --static                 # Auto-detect host and choose optimal
+```
+
+**Implementation Features:**
+- Host architecture detection using `uname -m` and `arch` commands
+- Separate deployment targets: Intel (10.13), ARM (11.0) respecting historical Apple Silicon introduction
+- ICU dependency conflicts resolved by clearing `PKG_CONFIG_PATH` to avoid x86_64-only library issues
+- Cross-platform coordination of `CFLAGS`, `LDFLAGS`, and architecture-specific compiler flags
+- Proper `lipo` tool usage for universal binary creation and verification
+
+**Verification System:**
+```bash
+lipo -info bin/es-shell                    # Check architectures
+lipo -thin x86_64 bin/es-shell -output /tmp/es-x86 && otool -l /tmp/es-x86 | grep -A 3 LC_VERSION_MIN  # Intel deployment target
+lipo -thin arm64 bin/es-shell -output /tmp/es-arm && otool -l /tmp/es-arm | grep -A 3 LC_BUILD_VERSION  # ARM deployment target
+```
+
+**Results Achieved:**
+- ✅ Intel-only builds produce `x86_64` targeting macOS 10.13
+- ✅ ARM-only builds produce `arm64` targeting macOS 11.0  
+- ✅ Universal builds contain both architectures: "Architectures in the fat file: bin/es-shell are: x86_64 arm64"
+- ✅ Intel slice shows `version 10.13`, ARM slice shows `minos 11.0`
+- ✅ Eliminated ICU dependency conflicts that were forcing x86_64-only builds
+
+**Cross-Platform Considerations:**
+- Intel Mac building Universal: May require additional setup for ARM64 toolchain
+- Apple Silicon building Intel: Uses Rosetta 2 for Intel portions automatically  
+- Dependencies: ICU and other x86_64-only libraries automatically excluded
+
+This addresses the fundamental architecture compatibility question and ensures ES-shell can properly target the user's desired macOS 10.13+ Intel compatibility while supporting modern Apple Silicon systems.

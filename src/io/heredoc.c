@@ -19,7 +19,7 @@ extern Tree *getherevar(void) {
 	char *s;
 	size_t len;
 	Buffer *buf = openbuffer(0);
-	while ((c = GETC()) != EOF && !dnw[c])
+	while ((c = GETC()) != EOF && !is_dollar_nonword_char(c))
 		buf = bufputc(buf, c);
 	len = buf->len;
 	s = psealcountedbuffer(buf);

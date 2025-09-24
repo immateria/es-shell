@@ -136,7 +136,7 @@ get_elapsed_time() {
 
 usage() {
     cat <<'USAGE'
-Usage: $0 [--static] [--output-dir DIR] [--dry-run] [--enable-tests]
+Usage: $0 [--static] [--output-dir DIR] [--dry-run] [--enable-tests] [--intel-only|--arm-only|--universal]
 Install build dependencies, configure, build, and test es-shell.
 Automatically detects Linux (apt-get) or macOS (Homebrew) and uses appropriate package manager.
 
@@ -145,7 +145,15 @@ Options:
   --output-dir DIR  Directory to place built binary (default: bin)
   --dry-run         Show what would be done without executing
   --enable-tests    Run tests after building
+  --intel-only      Build Intel x86_64 binary only (macOS 10.13+)
+  --arm-only        Build Apple Silicon arm64 binary only (macOS 11.0+)  
+  --universal       Build universal binary for both architectures
   -h, --help        Show this help message and exit
+
+Architecture Selection (macOS only):
+  Auto-detection: Intel Mac → --intel-only, Apple Silicon → --universal
+  Intel builds target macOS 10.13+ for maximum compatibility
+  Apple Silicon builds target macOS 11.0+ (required minimum)
 USAGE
 }
 
@@ -153,6 +161,7 @@ static=0
 out_dir="bin"
 dry_run=0
 enable_tests=0
+build_target="auto"  # auto, intel, arm, universal
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -174,6 +183,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --enable-tests)
             enable_tests=1
+            shift
+            ;;
+        --intel-only)
+            build_target="intel"
+            shift
+            ;;
+        --arm-only)
+            build_target="arm"
+            shift
+            ;;
+        --universal)
+            build_target="universal"
             shift
             ;;
         -h|--help)
@@ -482,8 +503,50 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # Configure the build
     log_step "Configuring Build System"
     if [[ $static -eq 1 ]]; then
-        log_info "Configuring for static linking..."
-        execute_with_progress "./configure LDFLAGS='-static'" "Configuring build system" "configure.log"
+        if [[ "$(detect_os)" == "macos" ]]; then
+            log_warn "Static linking not supported on macOS - using dynamic linking with optimized flags"
+            
+            # Detect host architecture and set defaults
+            HOST_ARCH=$(uname -m)
+            
+            # Set Intel deployment target (prefer 10.13 for maximum compatibility)
+            INTEL_MIN_VERSION="10.13"
+            ARM_MIN_VERSION="11.0"
+            
+            # Determine build strategy based on host and options
+            if [[ "$build_target" == "intel" ]]; then
+                log_info "Building Intel-only binary (targeting macOS ${INTEL_MIN_VERSION}+)..."
+                export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
+                ARCH_FLAGS="-arch x86_64 -mmacosx-version-min=${INTEL_MIN_VERSION}"
+            elif [[ "$build_target" == "arm" ]]; then
+                log_info "Building Apple Silicon-only binary (targeting macOS ${ARM_MIN_VERSION}+)..."
+                export MACOSX_DEPLOYMENT_TARGET="$ARM_MIN_VERSION"
+                ARCH_FLAGS="-arch arm64 -mmacosx-version-min=${ARM_MIN_VERSION}"
+            elif [[ "$build_target" == "universal" ]]; then
+                log_info "Building universal binary (Intel: macOS ${INTEL_MIN_VERSION}+, Apple Silicon: macOS ${ARM_MIN_VERSION}+)..."
+                log_warn "Note: Universal builds may require Rosetta 2 on Apple Silicon during compilation"
+                export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
+                ARCH_FLAGS="-arch x86_64 -arch arm64"
+            else
+                # Auto-detect based on host
+                if [[ "$HOST_ARCH" == "arm64" ]]; then
+                    log_info "Auto-detected Apple Silicon - building universal binary (Intel: macOS ${INTEL_MIN_VERSION}+, Apple Silicon: macOS ${ARM_MIN_VERSION}+)..."
+                    export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
+                    ARCH_FLAGS="-arch x86_64 -arch arm64"
+                else
+                    log_info "Auto-detected Intel Mac - building Intel-only binary (targeting macOS ${INTEL_MIN_VERSION}+)..."
+                    export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
+                    ARCH_FLAGS="-arch x86_64 -mmacosx-version-min=${INTEL_MIN_VERSION}"
+                fi
+            fi
+            
+            # Clear problematic dependencies and configure
+            unset PKG_CONFIG_PATH
+            execute_with_progress "PKG_CONFIG_PATH='' ./configure LDFLAGS='-Wl,-dead_strip $ARCH_FLAGS' CFLAGS='-Os -fno-common $ARCH_FLAGS'" "Configuring build system" "configure.log"
+        else
+            log_info "Configuring for static linking..."
+            execute_with_progress "./configure LDFLAGS='-static'" "Configuring build system" "configure.log"
+        fi
     else
         log_info "Configuring for dynamic linking..."
         execute_with_progress "./configure" "Configuring build system" "configure.log"

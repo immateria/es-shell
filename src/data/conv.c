@@ -254,13 +254,13 @@ static Boolean Sconv(Format *f) {
 	int c;
 	enum { Begin, Quoted, Unquoted } state = Begin;
 	const unsigned char *s, *t;
-	extern const char nw[];
+	extern int is_nonword_char(int c);
 
 	s = va_arg(f->args, const unsigned char *);
 	if (f->flags & FMT_altform || *s == '\0')
 		goto quoteit;
 	for (t = s; (c = *t) != '\0'; t++)
-		if (nw[c] || c == '@')
+		if (is_nonword_char(c) || c == '@')
 			goto quoteit;
 	fmtprint(f, "%s", s);
 	return FALSE;

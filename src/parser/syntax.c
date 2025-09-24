@@ -240,15 +240,25 @@ static Tree *makeinfixcall(InfixOp op, Tree *lhs, Tree *rhs) {
         /* For infix operations, convert non-numeric words to variables */
         if (lhs != NULL && lhs->kind == nWord) {
                 char *end;
+                /* Check if it's an integer */
                 strtol(lhs->u[0].s, &end, 10);
-                if (*end != '\0')
-                        lhs = mk(nVar, lhs);
+                if (*end != '\0') {
+                        /* Check if it's a floating-point number */
+                        strtod(lhs->u[0].s, &end);
+                        if (*end != '\0')
+                                lhs = mk(nVar, lhs);
+                }
         }
         if (rhs != NULL && rhs->kind == nWord) {
                 char *end;
+                /* Check if it's an integer */
                 strtol(rhs->u[0].s, &end, 10);
-                if (*end != '\0')
-                        rhs = mk(nVar, rhs);
+                if (*end != '\0') {
+                        /* Check if it's a floating-point number */
+                        strtod(rhs->u[0].s, &end);
+                        if (*end != '\0')
+                                rhs = mk(nVar, rhs);
+                }
         }
         switch (op) {
         case infixAdd:
