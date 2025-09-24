@@ -17,6 +17,7 @@ extern Dict *initprims_controlflow(Dict *primdict);	/* prim-ctl.c */
 extern Dict *initprims_io(         Dict *primdict); /* prim-io.c */
 extern Dict *initprims_etc(        Dict *primdict);	/* prim-etc.c */
 extern Dict *initprims_math(       Dict *primdict);	/* prim-math.c */
+extern Dict *initprims_dict(       Dict *primdict);	/* prim-dict.c */
 extern Dict *initprims_sys(        Dict *primdict);	/* prim-sys.c */
 extern Dict *initprims_proc(       Dict *primdict);	/* proc.c */
 extern Dict *initprims_access(     Dict *primdict);	/* access.c */

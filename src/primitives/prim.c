@@ -45,6 +45,7 @@ extern void initprims(void) {
 	prims = initprims_io(prims);
 	prims = initprims_etc(prims);
 	prims = initprims_math(prims);
+	prims = initprims_dict(prims);
 	prims = initprims_sys(prims);
 	prims = initprims_proc(prims);
 	prims = initprims_access(prims);
