@@ -359,102 +359,216 @@ PRIM(resetterminal) {
 #endif
 
 PRIM(help) {
-	const char *topic = NULL;
-	
-	if (list != NULL) {
-		if (list->next != NULL)
-			fail("$&help", "usage: help [topic]");
-		topic = getstr(list->term);
-	}
-	
-	if (topic == NULL || streq(topic, "")) {
-		print("Es Shell Help - Available Topics:\n\n");
-		print("ARITHMETIC OPERATORS:\n");
-		print("  Infix:     3 + 5, 10 - 3, 4 * 5, 20 / 4, 13 %% 5\n");
-		print("  Words:     3 plus 5, 10 minus 3, 4 multiply 5, 20 divide 4, 13 mod 5\n");
-		print("  Power:     2 ** 3, 2 power 3\n");
-		print("  Min/Max:   5 min 3, 5 max 3\n\n");
-		
-		print("BITWISE OPERATORS:\n");
-		print("  Words:     5 ~and 3, 5 ~or 3, 5 ~xor 3, 8 ~shl 1, 16 ~shr 1\n");
-		print("  Alternate: 5 bitwiseand 3, 5 bitwiseor 3, 5 bitwisexor 3\n\n");
-		
-		print("UNARY OPERATORS:\n");
-		print("  Negate:    neg 5, negate 5 (result: -5)\n");
-		print("  Positive:  pos 5, positive 5 (result: 5)\n");
-		print("  Bitwise:   ~not 5, bitnot 5 (result: -6)\n");
-		print("  Absolute:  abs -5 (result: 5)\n\n");
-		
-		print("PRIMITIVES (use with %%):\n");
-		print("  %%addition, %%subtraction, %%multiplication, %%division, %%modulo\n");
-		print("  %%pow, %%abs, %%min, %%max, %%count\n");
-		print("  %%bitwiseand, %%bitwiseor, %%bitwisexor, %%bitwisenot\n");
-		print("  %%bitwiseshiftleft, %%bitwiseshiftright\n\n");
-		
-		print("EXAMPLES:\n");
-		print("  echo <={2 + 3 * 4}     # 14 (precedence: * before +)\n");
-		print("  echo <={neg 5 + 3}     # -2 (unary then infix)\n");
-		print("  echo <={5 ~and 3}      # 1  (bitwise AND)\n");
-		print("  echo <={2 ** 3}        # 8  (power)\n");
-		print("  echo <={abs neg 10}    # 10 (absolute of negative)\n\n");
-		
-		print("For specific help: help arithmetic, help bitwise, help unary, help primitives\n");
-	} else if (streq(topic, "arithmetic")) {
-		print("ARITHMETIC OPERATORS:\n\n");
-		print("Addition:      3 + 5  or  3 plus 5       → 8\n");
-		print("Subtraction:   10 - 3  or  10 minus 3     → 7\n");
-		print("Multiplication: 4 * 5  or  4 multiply 5   → 20\n");
-		print("Division:      20 / 4  or  20 divide 4    → 5\n");
-		print("Modulo:        13 %% 5  or  13 mod 5       → 3\n");
-		print("Power:         2 ** 3  or  2 power 3      → 8\n");
-		print("Minimum:       5 min 3                    → 3\n");
-		print("Maximum:       5 max 3                    → 5\n\n");
-		print("Precedence: *, /, %%, ** before +, -\n");
-		print("Example: 2 + 3 * 4 = 14 (not 20)\n");
-	} else if (streq(topic, "bitwise")) {
-		print("BITWISE OPERATORS:\n\n");
-		print("Bitwise AND:    5 ~and 3  or  5 bitwiseand 3     → 1\n");
-		print("Bitwise OR:     5 ~or 3   or  5 bitwiseor 3      → 7\n");
-		print("Bitwise XOR:    5 ~xor 3  or  5 bitwisexor 3     → 6\n");
-		print("Shift Left:     8 ~shl 1  or  8 shift-left 1     → 16\n");
-		print("Shift Right:    16 ~shr 1 or  16 shift-right 1   → 8\n");
-		print("Bitwise NOT:    ~not 5    or  bitnot 5           → -6\n\n");
-		print("All bitwise operations work on integers.\n");
-	} else if (streq(topic, "unary")) {
-		print("UNARY OPERATORS:\n\n");
-		print("Negate:      neg 5     or  negate 5      → -5\n");
-		print("Positive:    pos 5     or  positive 5    → 5\n");
-		print("Bitwise NOT: ~not 5    or  bitnot 5      → -6\n");
-		print("Absolute:    abs -5                      → 5\n\n");
-		print("Unary operators work with infix expressions:\n");
-		print("  neg 5 + 3 = -2  (negate 5, then add 3)\n");
-	} else if (streq(topic, "primitives")) {
-		print("PRIMITIVE FUNCTIONS (use with %%):\n\n");
-		print("Arithmetic:\n");
-		print("  %%addition 3 5        → 8\n");
-		print("  %%subtraction 10 3    → 7\n");
-		print("  %%multiplication 4 5  → 20\n");
-		print("  %%division 20 4       → 5\n");
-		print("  %%modulo 13 5         → 3\n");
-		print("  %%pow 2 3             → 8\n");
-		print("  %%abs -5              → 5\n");
-		print("  %%min 5 3 8           → 3\n");
-		print("  %%max 5 3 8           → 8\n");
-		print("  %%count a b c d       → 4\n\n");
-		print("Bitwise:\n");
-		print("  %%bitwiseand 5 3       → 1\n");
-		print("  %%bitwiseor 5 3        → 7\n");
-		print("  %%bitwisexor 5 3       → 6\n");
-		print("  %%bitwisenot 5         → -6\n");
-		print("  %%bitwiseshiftleft 8 1 → 16\n");
-		print("  %%bitwiseshiftright 16 1 → 8\n");
-	} else {
-		print("Unknown help topic: %s\n", topic);
-		print("Available topics: arithmetic, bitwise, unary, primitives\n");
-		print("Use 'help' with no arguments for overview.\n");
-	}
-	
-	return ltrue;
+    char *topic = NULL;
+    
+    // Get topic if provided
+    if (list != NULL) {
+        if (list->next != NULL)
+            fail("$&help", "usage: help [topic]");
+        topic = getstr(list->term);
+    }
+    
+    if (topic == NULL || streq(topic, "")) {
+        // General help overview
+        print("ES Shell Help System\n");
+        print("===================\n\n");
+        print("ES Shell is a functional shell with modern syntax enhancements.\n\n");
+        print("Available help topics:\n");
+        print("  help arithmetic     - ${...} expressions and math operations\n");
+        print("  help redirection    - New -> and <- operators\n");
+        print("  help variables      - Variable assignment and usage\n");
+        print("  help functions      - Function definition and usage\n");
+        print("  help primitives     - Built-in primitive operations\n");
+        print("  help syntax         - Basic ES Shell syntax\n");
+        
+        print("\nGeneral commands:\n");
+        print("  help <topic>        - Get help on specific topic\n");
+        print("  discover            - Discover available commands\n");
+        print("  examples            - Show usage examples\n");
+        print("  echo $&primitives   - List all primitive operations\n");
+        print("\nPhase 1 Features (NEW):\n");
+        print("  ${5 plus 3}         - Expression evaluation (→ 8)\n");
+        print("  echo data -> file   - Arrow redirection\n");
+        print("  if {${x} > 5} {...} - Comparisons in conditionals\n");
+        
+        return ltrue;
+    }
+    
+    // Handle specific topics
+    if (streq(topic, "arithmetic")) {
+        print("Arithmetic operations and expressions\n");
+        print("====================================\n\n");
+        print("ES Shell supports arithmetic with the new ${...} syntax:\n\n");
+        print("Basic operators:\n");
+        print("  plus, minus, times, div, mod - word-based operators\n");
+        print("  >, <, >=, <=, ==, != - comparison operators\n\n");
+        print("Operator precedence (highest to lowest):\n");
+        print("  times, div, mod\n");
+        print("  plus, minus\n");
+        print("  comparisons\n\n");
+        print("Examples:\n");
+        print("  echo ${5 plus 3}        # → 8\n");
+        print("  x = 5\n");
+        print("  echo ${x times 2}       # → 10\n");
+        print("  echo ${2 plus 3 times 4}  # → 14 (proper precedence)\n");
+        
+    } else if (streq(topic, "redirection")) {
+        print("New arrow-based redirection operators\n");
+        print("====================================\n\n");
+        print("ES Shell uses arrow operators for redirection:\n\n");
+        print("Input/Output:\n");
+        print("  <-      input redirection (replaces <)\n");
+        print("  ->      output redirection (replaces >)\n");
+        print("  ->>     append redirection\n\n");
+        print("Examples:\n");
+        print("  echo \"hello\" -> output.txt\n");
+        print("  cat <- input.txt\n");
+        print("  echo \"line\" ->> log.txt\n");
+        
+    } else if (streq(topic, "variables")) {
+        print("Variable assignment and usage\n");
+        print("=============================\n\n");
+        print("ES Shell variables are functional and immutable:\n\n");
+        print("Assignment:\n");
+        print("  var = value          # simple assignment\n");
+        print("  list = (a b c)       # list assignment\n\n");
+        print("Access:\n");
+        print("  $var                 # variable value\n");
+        print("  $#var                # count elements\n\n");
+        print("Examples:\n");
+        print("  name = Alice\n");
+        print("  echo \"Hello $name\"      # → Hello Alice\n");
+        print("  count = 5\n");
+        print("  total = ${count times 10} # → 50\n");
+        
+    } else if (streq(topic, "functions")) {
+        print("Function definition and usage\n");
+        print("=============================\n\n");
+        print("ES Shell functions are first-class values:\n\n");
+        print("Definition:\n");
+        print("  fn name params { body }\n\n");
+        print("Examples:\n");
+        print("  fn greet name { echo \"Hello $name!\" }\n");
+        print("  greet Alice               # → Hello Alice!\n");
+        print("  fn double x { echo ${x times 2} }\n");
+        print("  double 7                  # → 14\n");
+        
+    } else if (streq(topic, "primitives")) {
+        print("Built-in primitive operations\n");
+        print("============================\n\n");
+        print("ES Shell provides built-in primitives with %% prefix:\n\n");
+        print("Arithmetic:\n");
+        print("  %%addition, %%subtraction, %%multiplication, %%division\n");
+        print("  %%count, %%split, %%flatten\n\n");
+        print("Examples:\n");
+        print("  echo %%addition 5 3        # → 8\n");
+        print("  echo %%count (a b c)       # → 3\n\n");
+        print("See all: echo $&primitives\n");
+        
+    } else if (streq(topic, "syntax")) {
+        print("Basic ES Shell syntax overview\n");
+        print("==============================\n\n");
+        print("Commands:\n");
+        print("  command args              # simple command\n");
+        print("  {command args}            # grouped command\n\n");
+        print("Control flow:\n");
+        print("  if {condition} {then} {else}\n");
+        print("  for (var = list) { body }\n\n");
+        print("Expressions (NEW):\n");
+        print("  ${expression}             # evaluate expression\n");
+        print("  result = ${5 times 6}     # → 30\n");
+        
+    } else {
+        // Fallback for unknown topics or legacy math topics
+        if (streq(topic, "bitwise") || streq(topic, "unary")) {
+            print("Legacy math topic. Try: help arithmetic\n");
+            print("For comprehensive help: help (no arguments)\n");
+        } else {
+            print("Help topic '%s' not found.\n\n", topic);
+            print("Available topics: arithmetic, redirection, variables, functions, primitives, syntax\n");
+            print("Try: help (without arguments) for overview\n");
+        }
+        return lfalse;
+    }
+    
+    return ltrue;
+}
+
+PRIM(discover) {
+    if (list != NULL) {
+        fail("$&discover", "usage: discover");
+    }
+    
+    print("ES Shell Command Discovery\n");
+    print("=========================\n\n");
+    
+    print("Built-in commands:\n");
+    print("  exit, quit              - Exit the shell\n");
+    print("  cd, pwd                 - Directory navigation\n");
+    print("  set, unset              - Environment variables\n");
+    print("  echo, printf            - Output text\n");
+    print("  cat, ls, grep           - File operations\n\n");
+    
+    print("Control structures:\n");
+    print("  if ... then ... else    - Conditionals\n");
+    print("  for ... in ...          - Loops\n");
+    print("  fn ... { ... }          - Function definition\n\n");
+    
+    print("ES Shell features:\n");
+    print("  ${...}                  - Expression evaluation\n");
+    print("  -> <-                   - Arrow redirection\n");
+    print("  help, examples          - Documentation\n\n");
+    
+    print("Primitive functions (use with %%):\n");
+    print("  %%addition, %%count       - Math operations\n");
+    print("  %%split, %%flatten        - List operations\n");
+    print("  Use: echo $&primitives  - List all primitives\n\n");
+    
+    print("For detailed help: help <topic>\n");
+    
+    return ltrue;
+}
+
+PRIM(examples) {
+    if (list != NULL) {
+        fail("$&examples", "usage: examples");
+    }
+    
+    print("ES Shell Usage Examples\n");
+    print("======================\n\n");
+    
+    print("Basic arithmetic:\n");
+    print("  echo ${5 plus 3}         → 8\n");
+    print("  echo ${10 minus 4}       → 6\n");
+    print("  result = ${3 times 7}    → result holds 21\n\n");
+    
+    print("Comparisons:\n");
+    print("  if {${x} > 5} {echo \"big\"}\n");
+    print("  if {${age} >= 18} {echo \"adult\"}\n\n");
+    
+    print("Variables and lists:\n");
+    print("  name = Alice\n");
+    print("  files = (*.txt)          → glob expansion\n");
+    print("  echo $#files             → count of files\n\n");
+    
+    print("Redirection (new syntax):\n");
+    print("  echo \"Hello\" -> greeting.txt\n");
+    print("  cat <- input.txt\n");
+    print("  date ->> log.txt         → append\n\n");
+    
+    print("Functions:\n");
+    print("  fn double x { echo ${x times 2} }\n");
+    print("  double 15                → 30\n\n");
+    
+    print("Primitives:\n");
+    print("  echo %%addition 8 7       → 15\n");
+    print("  echo %%count a b c        → 3\n\n");
+    
+    print("Complex expressions:\n");
+    print("  total = ${base plus tax times rate}\n");
+    print("  valid = {${score} >= ${threshold}}\n\n");
+    
+    return ltrue;
 }
 
 
@@ -485,6 +599,8 @@ extern Dict *initprims_etc(Dict *primdict) {
 	X(noreturn);
 	X(setmaxevaldepth);
 	X(help);
+	X(discover);
+	X(examples);
 #if HAVE_READLINE
 	X(sethistory);
 	X(writehistory);
