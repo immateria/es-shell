@@ -2,6 +2,7 @@
 
 #include "es.h"
 #include "prim.h"
+#include "error.h"
 
 #include <limits.h>
 #include <math.h>
@@ -14,14 +15,11 @@
 
 PRIM(addition)
 {   double result = 0.0;
+    
+    validate_arg_count("addition", list, 1, -1, "addition number [number ...]");
 
     for (List *lp = list; lp != NULL; lp = lp->next)
-    {   char *endptr;
-        double operand = strtod(getstr(lp->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&addition", "arguments must be numbers");
-
+    {   double operand = validate_number("addition", getstr(lp->term), "operand");
         result += operand;
     }
     return mklist(mkstr(str("%g", result)), NULL);
@@ -69,26 +67,15 @@ PRIM(multiplication)
 }
 
 PRIM(division)
-{   char *endptr;
-    double result;
+{   double result;
 
-    if (list == NULL || list->next == NULL)
-        fail("$&division", "usage: $&division dividend divisor [...]");
+    validate_arg_count("division", list, 2, -1, "division dividend divisor [divisor ...]");
 
-    result = strtod(getstr(list->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&division", "arguments must be numbers");
+    result = validate_number("division", getstr(list->term), "dividend");
 
     for (list = list->next; list != NULL; list = list->next)
-    {   double divisor = strtod(getstr(list->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&division", "arguments must be numbers");
-
-        if (divisor == 0.0)
-            fail("$&division", "division by zero");
-
+    {   double divisor = validate_number("division", getstr(list->term), "divisor");
+        validate_not_zero("division", divisor, "division");
         result /= divisor;
     }
     return mklist(mkstr(str("%g", result)), NULL);
