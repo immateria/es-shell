@@ -184,7 +184,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
                         y->str = pdup(buf);
                         return WORD;
                 }
-        } else if (!is_meta_char(c, in_dollar_context) || c == '*' || c == '+') { /* it's a word or keyword. */
+        } else if (!is_meta_char(c, in_dollar_context) || (!in_dollar_context && (c == '*' || c == '+'))) { /* it's a word or keyword. */
                 InsertFreeCaret();
                 w = RW;
                 qword = FALSE;

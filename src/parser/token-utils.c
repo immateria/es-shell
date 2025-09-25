@@ -21,9 +21,7 @@ static const unsigned char ES_SPECIAL_CHARS[] = {
  * and a few special variable characters (%, *, .).
  */
 static const char DOLLAR_WORD_CHARS[] = 
-	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_*%.";
-
-/* Lookup tables for fast character classification during tokenization */
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_*%."; /* Lookup tables for fast character classification during tokenization */
 static char nonword_chars[256];
 static char dollar_nonword_chars[256];
 
