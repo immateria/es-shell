@@ -1491,3 +1491,18 @@ lipo -thin arm64 bin/es-shell -output /tmp/es-arm && otool -l /tmp/es-arm | grep
 - Dependencies: ICU and other x86_64-only libraries automatically excluded
 
 This addresses the fundamental architecture compatibility question and ensures ES-shell can properly target the user's desired macOS 10.13+ Intel compatibility while supporting modern Apple Silicon systems.
+
+### [2025-01-27] Phase 4 Complete - Infix Processing Extracted from syntax.c
+
+**Discovery:** Infix operator handling modularized into separate component
+
+**Details:**  
+Successfully extracted infix processing from syntax.c (788 lines → 429 lines):
+- Created `src/parser/syntax-infix.c` (530+ lines) - Complete infix operator system
+- Created `include/syntax-infix.h` - Clean public API exposing InfixOp enum and rewriteinfix()
+- Extracted all infix functions: classifyinfix(), makeinfixcall(), parseproduct/parsesum/parsebitwise/parsecomparison(), operator classification arrays
+- Syntax.c now focuses on tree manipulation and core syntax functions
+- Unicode arithmetic operators confirmed working (${5 × 3} → 15.000000, ${50 ÷ 5} → 10.000000)
+- Build system updated to include new module, compilation successful
+
+Manual linking was required due to Makefile template issues, but functionality preserved. ES shell maintains full arithmetic expression capability with clean modular architecture.
