@@ -5,6 +5,7 @@
 #include "syntax.h"
 #include "token.h"
 #include "token-utils.h"
+#include "token-redir.h"
 #include <string.h>
 
 #define	isodigit(c)	is_octal_digit(c)
@@ -395,119 +396,23 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 		/* char *cmd; */
 		/* int fd[2]; */
         case '<':
-                /* < is now ONLY a comparison operator */
-                /* Use <- for input redirection */
-                c = GETC();
-                if (c == '-') {
-                        c = GETC();
-                        if (c == '-') {
-                                c = GETC();
-                                if (c == '<') {
-                                        /* <--< heredoc syntax */
-                                        w = NW;
-                                        return HEREDOC_NEW;
-                                }
-                                /* Not heredoc, treat as comparison */
-                                UNGETC(c);
-                                UNGETC('-');
-                                UNGETC('-');
-                                w = NW;
-                                return LT;  /* Less than operator */
-                } else if (c == '!') {
-                                /* <-! forced input redirection */
-                                w = NW;
-                                return FLARROW;
-                        } else if (c == '>') {
-                                c = GETC();
-                                if (c == '>') {
-                                        /* <->> open-append redirection */
-                                        w = NW;
-                                        return OA_ARROW;
-                                } else {
-                                        /* <-> read-write redirection */
-                                        UNGETC(c);
-                                        w = NW;
-                                        return RW_ARROW;
-                                }
-                        } else {
-                                /* <- input redirection */
-                                UNGETC(c);
-                                w = NW;
-                                return LARROW;
-                        }
-                } else if (c == '=') {
-                        /* <= less than or equal */
-                        w = NW;
-                        return LE;
-                } else {
-                        /* < less than comparison */
-                        UNGETC(c);
-                        w = NW;
-                        return LT;
-                }
+                w = NW;
+                return parse_less_than_operators();
         case '>':
-                /* > is now ONLY a comparison operator */
-                /* Use -> for output redirection */
-                c = GETC();
-                if (c == '=') {
-                        /* >= greater than or equal */
-                        w = NW;
-                        return GE;
-                } else {
-                        /* > greater than comparison */
-                        UNGETC(c);
-                        w = NW;
-                        return GT;
-                }
+                w = NW;
+                return parse_greater_than_operators();
         
-        case '-':
-                /* Check for -> and ->! output redirection */
-                c = GETC();
-                if (c == '>') {
-                        c = GETC();
-                        if (c == '!') {
-                                /* ->! forced output redirection */
-                                w = NW;
-                                return FRARROW;
-                        } else if (c == '>') {
-                                c = GETC();
-                                if (c == '<') {
-                                        /* ->>< append with create */
-                                        w = NW;
-                                        return APPEND_CREATE;
-                                } else {
-                                        /* ->> append redirection */
-                                        UNGETC(c);
-                                        w = NW;
-                                        return APPEND_ARROW;
-                                }
-                        } else if (c == '-') {
-                                c = GETC();
-                                if (c == '<') {
-                                        /* ->-< open-create redirection */
-                                        w = NW;
-                                        return OC_ARROW;
-                                } else {
-                                        /* Not a valid operator */
-                                        UNGETC(c);
-                                        UNGETC('-');
-                                        /* -> output redirection */
-                                        w = NW;
-                                        return RARROW;
-                                }
-                        } else {
-                                /* -> output redirection */
-                                UNGETC(c);
-                                w = NW;
-                                return RARROW;
-                        }
-                } else {
-                        /* Just a regular minus sign - let it be processed as a word */
-                        UNGETC(c);
-                        UNGETC('-');
+        case '-': {
+                Boolean process_as_word = FALSE;
+                int token = parse_minus_operators(&process_as_word);
+                if (process_as_word) {
                         c = '-';
                         goto top;
+                } else {
+                        w = NW;
+                        return token;
                 }
+        }
 	/* This code block was originally used for old redirection syntax
 	 * but is no longer needed with the new arrow-based syntax.
 	 * Keeping it here commented out for reference.
