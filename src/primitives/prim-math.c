@@ -4,6 +4,7 @@
 #include "prim.h"
 #include "error.h"
 
+#include <errno.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -16,9 +17,11 @@
 /* Check if a string represents an integer within long range */
 static Boolean is_safe_integer(const char *str, long *result) {
     char *endptr;
+    errno = 0; /* Clear errno before strtol */
     long value = strtol(str, &endptr, 10);
     
-    if (endptr && *endptr == '\0') {
+    /* Check for successful conversion: no remaining characters and no overflow */
+    if (endptr && *endptr == '\0' && errno != ERANGE) {
         *result = value;
         return TRUE;
     }
@@ -52,12 +55,27 @@ static Boolean safe_multiply_integers(long a, long b, long *result) {
         *result = 0;
         return TRUE;
     }
-    if ((a > 0 && b > 0 && a > LONG_MAX / b) ||
-        (a < 0 && b < 0 && a < LONG_MAX / b) ||
-        (a > 0 && b < 0 && b < LONG_MIN / a) ||
-        (a < 0 && b > 0 && a < LONG_MIN / b)) {
-        return FALSE; /* Overflow */
+    
+    /* Check for overflow by examining the operands before multiplication */
+    if (a > 0) {
+        if (b > 0) {
+            /* Both positive: check a <= LONG_MAX / b */
+            if (a > LONG_MAX / b) return FALSE;
+        } else {
+            /* a positive, b negative: check b >= LONG_MIN / a */
+            if (a > LONG_MIN / b * -1) return FALSE;
+        }
+    } else {
+        if (b > 0) {
+            /* a negative, b positive: check a >= LONG_MIN / b */  
+            if (a < LONG_MIN / b) return FALSE;
+        } else {
+            /* Both negative: result positive, check |a| * |b| <= LONG_MAX */
+            if (a == LONG_MIN || b == LONG_MIN) return FALSE; /* Special case */
+            if (-a > LONG_MAX / -b) return FALSE;
+        }
     }
+    
     *result = a * b;
     return TRUE;
 }
