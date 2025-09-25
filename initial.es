@@ -379,6 +379,7 @@ fn-vars = @ {
 
 fn-%count      = $&count
 fn-%flatten    = $&flatten
+fn-%help       = $&help
 fn-%addition           = $&addition
 fn-%subtraction        = $&subtraction
 fn-%multiplication     = $&multiplication
@@ -1076,6 +1077,11 @@ fn-help-arithmetic = @ { %help arithmetic }
 fn-help-bitwise = @ { %help bitwise }
 fn-help-unary = @ { %help unary }
 fn-help-primitives = @ { %help primitives }
+
+# Create simple aliases without fn- prefix for user-friendly access
+help = fn-help
+builtins = fn-builtins
+discover = fn-discover
 
 # List all available primitives and functions
 fn-builtins = @ {

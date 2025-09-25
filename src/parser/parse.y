@@ -33,9 +33,16 @@ static Tree *arithword(Tree *t) {
 }
 %}
 
+%union {
+	Tree *tree;
+	char *str;
+	NodeKind kind;
+}
+
 %token <str>	WORD QWORD
 %token		LOCAL LET FOR CLOSURE FN
 %token <tree>	REDIR DUP
+%token <tree>	PIPE
 %token          ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
 %token          LT GT LE GE EQ NE  /* Comparison operators */
 %token		EXPR_CALL  /* ${...} expression evaluation */
@@ -55,15 +62,9 @@ static Tree *arithword(Tree *t) {
 %left		ANDAND OROR NL
 %left		'!'
 %left		LT GT LE GE EQ NE  /* Comparison operators */
-%left <tree>	PIPE
+%left		PIPE
 %right		'$' EXPR_CALL
 %left		SUB
-
-%union {
-	Tree *tree;
-	char *str;
-	NodeKind kind;
-}
 
 %type <str>	keyword
 %type <tree>	body cmd cmdsa cmdsan comword first fn line word param assign
