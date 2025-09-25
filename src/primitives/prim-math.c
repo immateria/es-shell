@@ -10,8 +10,22 @@
 #include <string.h>
 
 /*
- * Smart number formatting - display whole numbers as integers, others as floats
+ * Helper functions for optimal integer/float arithmetic
  */
+
+/* Check if a string represents an integer within long range */
+static Boolean is_safe_integer(const char *str, long *result) {
+    char *endptr;
+    long value = strtol(str, &endptr, 10);
+    
+    if (endptr && *endptr == '\0') {
+        *result = value;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Smart number formatting - display whole numbers as integers, others as floats */
 static char* format_smart_number(double value) {
     /* Check if the value is mathematically a whole number */
     if (value == floor(value) && !isinf(value) && !isnan(value)) {
@@ -24,17 +38,61 @@ static char* format_smart_number(double value) {
     return str("%g", value);
 }
 
+/* Fast integer arithmetic with overflow detection */
+static Boolean safe_add_integers(long a, long b, long *result) {
+    if ((b > 0 && a > LONG_MAX - b) || (b < 0 && a < LONG_MIN - b)) {
+        return FALSE; /* Overflow */
+    }
+    *result = a + b;
+    return TRUE;
+}
+
+static Boolean safe_multiply_integers(long a, long b, long *result) {
+    if (a == 0 || b == 0) {
+        *result = 0;
+        return TRUE;
+    }
+    if ((a > 0 && b > 0 && a > LONG_MAX / b) ||
+        (a < 0 && b < 0 && a < LONG_MAX / b) ||
+        (a > 0 && b < 0 && b < LONG_MIN / a) ||
+        (a < 0 && b > 0 && a < LONG_MIN / b)) {
+        return FALSE; /* Overflow */
+    }
+    *result = a * b;
+    return TRUE;
+}
+
 /*
  * Arithmetic Operations
  */
 
 PRIM(addition)
-{   double result = 0.0;
-    
-    validate_arg_count("addition", list, 1, -1, "addition number [number ...]");
+{   validate_arg_count("addition", list, 1, -1, "addition number [number ...]");
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   double operand = validate_number("addition", getstr(lp->term), "operand");
+    /* Try fast integer path first */
+    Boolean all_integers = TRUE;
+    long int_result = 0;
+    
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        long operand;
+        if (!is_safe_integer(getstr(lp->term), &operand)) {
+            all_integers = FALSE;
+            break;
+        }
+        if (!safe_add_integers(int_result, operand, &int_result)) {
+            all_integers = FALSE; /* Overflow, fall back to float */
+            break;
+        }
+    }
+    
+    if (all_integers) {
+        return mklist(mkstr(str("%ld", int_result)), NULL);
+    }
+    
+    /* Fall back to floating-point arithmetic */
+    double result = 0.0;
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        double operand = validate_number("addition", getstr(lp->term), "operand");
         result += operand;
     }
     return mklist(mkstr(format_smart_number(result)), NULL);
@@ -56,13 +114,33 @@ PRIM(subtraction)
 }
 
 PRIM(multiplication)
-{   double result = 1.0;
-
-    if (list == NULL)
+{   if (list == NULL)
         fail("$&multiplication", "usage: $&multiplication number [...]");
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   double operand = validate_number("multiplication", getstr(lp->term), "operand");
+    /* Try fast integer path first */
+    Boolean all_integers = TRUE;
+    long int_result = 1;
+    
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        long operand;
+        if (!is_safe_integer(getstr(lp->term), &operand)) {
+            all_integers = FALSE;
+            break;
+        }
+        if (!safe_multiply_integers(int_result, operand, &int_result)) {
+            all_integers = FALSE; /* Overflow, fall back to float */
+            break;
+        }
+    }
+    
+    if (all_integers) {
+        return mklist(mkstr(str("%ld", int_result)), NULL);
+    }
+    
+    /* Fall back to floating-point arithmetic */
+    double result = 1.0;
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        double operand = validate_number("multiplication", getstr(lp->term), "operand");
         result *= operand;
     }
     return mklist(mkstr(format_smart_number(result)), NULL);
