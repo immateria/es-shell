@@ -29,7 +29,7 @@ LIBS            = @READLINE_LIBS@ @LIBS@ $(ADDLIBS)
 # Header files (now in include/)
 HFILES          = include/config.h include/es.h include/gc.h include/input.h \
                   include/prim.h include/print.h include/sigmsgs.h \
-                  include/stdenv.h include/syntax.h include/syntax-infix.h \
+                  include/stdenv.h include/syntax.h include/syntax-infix.h include/syntax-tree.h \
                   include/debug.h include/token-utils.h include/token-redir.h \
                   include/token-string.h
 
@@ -39,7 +39,7 @@ PRIMITIVE_CFILES = src/primitives/prim.c src/primitives/prim-ctl.c     \
                   src/primitives/prim-etc.c src/primitives/prim-io.c   \
                   src/primitives/prim-math.c src/primitives/prim-sys.c \
                   src/primitives/prim-dict.c
-PARSER_CFILES   = src/parser/syntax.c src/parser/syntax-infix.c src/parser/token.c \
+PARSER_CFILES   = src/parser/syntax.c src/parser/syntax-infix.c src/parser/syntax-tree.c src/parser/token.c \
                   src/parser/token-utils.c src/parser/token-redir.c src/parser/token-string.c
 IO_CFILES       = src/io/input.c src/io/heredoc.c src/io/fd.c src/io/open.c \
                   src/io/proc.c src/io/term.c
@@ -154,8 +154,9 @@ src/primitives/prim-math.o : src/primitives/prim-math.c include/es.h include/con
 src/primitives/prim-sys.o  : src/primitives/prim-sys.c  include/es.h include/config.h include/stdenv.h include/prim.h
 src/primitives/prim-dict.o : src/primitives/prim-dict.c include/es.h include/config.h include/stdenv.h include/prim.h
 
-src/parser/syntax.o        : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h include/syntax-infix.h generated/token.h
+src/parser/syntax.o        : src/parser/syntax.c include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h include/syntax-infix.h include/syntax-tree.h generated/token.h
 src/parser/syntax-infix.o  : src/parser/syntax-infix.c include/es.h include/config.h include/stdenv.h include/syntax.h include/syntax-infix.h generated/token.h
+src/parser/syntax-tree.o   : src/parser/syntax-tree.c include/es.h include/config.h include/stdenv.h include/syntax.h include/syntax-tree.h
 src/parser/token.o         : src/parser/token.c  include/es.h include/config.h include/stdenv.h include/input.h include/syntax.h generated/token.h
 
 src/io/input.o             : src/io/input.c   include/es.h include/config.h include/stdenv.h include/input.h
