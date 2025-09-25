@@ -4,9 +4,10 @@
 #include "input.h"
 #include "syntax.h"
 #include "token.h"
+#include "token-utils.h"
 #include <string.h>
 
-#define	isodigit(c)	('0' <= (c) && (c) < '8')
+#define	isodigit(c)	is_octal_digit(c)
 
 #define	BUFSIZE	((size_t) 2048)
 #define	BUFMAX	(8 * BUFSIZE)
@@ -23,71 +24,6 @@ static char *tokenbuf = NULL;
 #define	InsertFreeCaret()	STMT(if (w != NW) { w = NW; UNGETC(c); return '^'; })
 
 
-/* 
- * Character classification for tokenizing.
- * 
- * ES shell syntax special characters that break words in normal context.
- * These are the core ES shell metacharacters and delimiters.
- */
-static const unsigned char ES_SPECIAL_CHARS[] = {
-	'\0', '\t', '\n', ' ', '!', '#', '$', '&', '\'', '(', ')', '*', '+', '-', ';', '<', '=', '>', '\\', '^', '`', '{', '|', '}'
-};
-#define ES_SPECIAL_CHARS_COUNT (sizeof(ES_SPECIAL_CHARS))
-
-/*
- * Characters allowed in variable names within $... expressions.
- * Much more restrictive than normal context - only alphanumeric, underscore,
- * and a few special variable characters (%, *, .).
- */
-static const char DOLLAR_WORD_CHARS[] = 
-	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_*%.";
-
-/* Lookup tables for fast character classification during tokenization */
-static char nonword_chars[256];
-static char dollar_nonword_chars[256];
-
-/*
- * Initialize character classification lookup tables.
- * Called once at startup to build the tables from semantic definitions.
- */
-static void init_char_tables(void) {
-	static int initialized = 0;
-	if (initialized) return;
-	
-	/* Initialize all characters as word characters (0) */
-	memset(nonword_chars, 0, sizeof(nonword_chars));
-	memset(dollar_nonword_chars, 1, sizeof(dollar_nonword_chars)); /* default non-word for $ context */
-	
-	/* Mark ES special characters as non-word in normal context */
-	for (int i = 0; i < (int)ES_SPECIAL_CHARS_COUNT; i++) {
-		nonword_chars[ES_SPECIAL_CHARS[i]] = 1;
-	}
-	
-	/* Mark allowed characters as word characters in dollar context */
-	for (const char *p = DOLLAR_WORD_CHARS; *p; p++) {
-		dollar_nonword_chars[(unsigned char)*p] = 0;
-	}
-	
-	initialized = 1;
-}
-
-/*
- * Check if character is a non-word character in normal context.
- * Used by external modules like conv.c.
- */
-extern int is_nonword_char(int c) {
-	init_char_tables();  /* Ensure tables are initialized */
-	return (c >= 0 && c < 256) ? nonword_chars[c] : 1;
-}
-
-/*
- * Check if character is a non-word character in dollar context.
- * Used by external modules like heredoc.c.
- */
-extern int is_dollar_nonword_char(int c) {
-	init_char_tables();  /* Ensure tables are initialized */
-	return (c >= 0 && c < 256) ? dollar_nonword_chars[c] : 1;
-}
 
 
 /* print_prompt2 -- called before all continuation lines */
@@ -166,13 +102,18 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
 	return TRUE;
 }
 
+/* Helper function to check if character is non-word in current context */
+static int is_meta_char(int c, Boolean in_dollar_context) {
+	return in_dollar_context ? is_dollar_nonword_char(c) : is_nonword_char(c);
+}
+
 extern int yylex(void) {
 	static Boolean dollar = FALSE;
 	int c;
 	size_t i;			/* The purpose of all these local assignments is to	*/
-	const char *meta;		/* allow optimizing compilers like gcc to load these	*/
-	char *buf = tokenbuf;		/* values into registers. On a sparc this is a		*/
-	YYSTYPE *y = &yylval;		/* win, in code size *and* execution time		*/
+	char *buf = tokenbuf;		/* allow optimizing compilers like gcc to load these	*/
+	YYSTYPE *y = &yylval;		/* values into registers. On a sparc this is a		*/
+	Boolean in_dollar_context;	/* win, in code size *and* execution time		*/
 
 	/* Initialize character classification tables on first call */
 	init_char_tables();
@@ -182,8 +123,8 @@ extern int yylex(void) {
 		return NL;
 	}
 
-	/* rc variable-names may contain only alnum, '*' and '_', so use dollar_nonword_chars if we are scanning one. */
-	meta = (dollar ? dollar_nonword_chars : nonword_chars);
+	/* rc variable-names may contain only alnum, '*' and '_', so use dollar context check if we are scanning one. */
+	in_dollar_context = dollar;
 	dollar = FALSE;
 	if (newline) {
 		--input->lineno; /* slight space optimization; print_prompt2() always increments lineno */
@@ -216,7 +157,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 				if (i >= bufsize)
 					buf = tokenbuf = erealloc(buf, bufsize *= 2);
 				c = GETC();
-			} while (c != EOF && (!meta[(unsigned char) c] || (!numeric && (c == '-' || c == '*' || c == '+'))));
+			} while (c != EOF && (!is_meta_char(c, in_dollar_context) || (!numeric && (c == '-' || c == '*' || c == '+'))));
 			UNGETC(c);
 			buf[i] = '\0';
 			w = KW;
@@ -241,7 +182,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
                         y->str = pdup(buf);
                         return WORD;
                 }
-        } else if (!meta[(unsigned char) c] || c == '*' || c == '+') { /* it's a word or keyword. */
+        } else if (!is_meta_char(c, in_dollar_context) || c == '*' || c == '+') { /* it's a word or keyword. */
                 InsertFreeCaret();
                 w = RW;
                 qword = FALSE;
@@ -252,7 +193,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 			if (i >= bufsize)
 				buf = tokenbuf = erealloc(buf, bufsize *= 2);
 			c = GETC();
-		} while (c != EOF && (!meta[(unsigned char) c] || (!numeric && (c == '-' || c == '*' || c == '+'))));
+		} while (c != EOF && (!is_meta_char(c, in_dollar_context) || (!numeric && (c == '-' || c == '*' || c == '+'))));
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;

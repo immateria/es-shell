@@ -1,0 +1,18 @@
+gcc -o build/testrun ./test/testrun.c
+./es -ps < ./test/test.es ./test/tests/*
+hi > redirect-file.2u3b86
+hello > > redirect-file.2u3b86
+overwrite > redirect-file.2u3b86
+uncaught exception: break
+%addition 1 2 -> <= %closure(expr='%addition 1 2';expect=3){eval $expr}
+%subtraction 5 2 -> <= %closure(expr='%subtraction 5 2';expect=3){eval $expr}
+%multiplication 2 4 -> <= %closure(expr='%multiplication 2 4';expect=8){eval $expr}
+%division 8 2 -> <= %closure(expr='%division 8 2';expect=4){eval $expr}
+%modulo 9 4 -> <= %closure(expr='%modulo 9 4';expect=1){eval $expr}
+cat: >: No such file or directory
+cat: <: No such file or directory
+cat: <: No such file or directory
+cat: EOF: No such file or directory
+onetwo
+./test/tests/trip.es:78: syntax error
+make: *** [test] Error 1
