@@ -10,12 +10,18 @@
 #include <string.h>
 
 /*
- * Helper function to check if a string represents a pure integer
+ * Smart number formatting - display whole numbers as integers, others as floats
  */
-static Boolean is_pure_integer(const char *str) {
-    char *endptr;
-    strtol(str, &endptr, 10);
-    return (endptr != NULL && *endptr == '\0');
+static char* format_smart_number(double value) {
+    /* Check if the value is mathematically a whole number */
+    if (value == floor(value) && !isinf(value) && !isnan(value)) {
+        /* Display as integer if it's a whole number within long range */
+        if (value >= LONG_MIN && value <= LONG_MAX) {
+            return str("%ld", (long)value);
+        }
+    }
+    /* Display as float for fractional numbers or very large integers */
+    return str("%g", value);
 }
 
 /*
@@ -24,98 +30,42 @@ static Boolean is_pure_integer(const char *str) {
 
 PRIM(addition)
 {   double result = 0.0;
-    Boolean all_integers = TRUE;
     
     validate_arg_count("addition", list, 1, -1, "addition number [number ...]");
 
-    /* First pass: check if all inputs are integers */
-    for (List *lp = list; lp != NULL; lp = lp->next) {
-        if (!is_pure_integer(getstr(lp->term))) {
-            all_integers = FALSE;
-            break;
-        }
+    for (List *lp = list; lp != NULL; lp = lp->next)
+    {   double operand = validate_number("addition", getstr(lp->term), "operand");
+        result += operand;
     }
-
-    /* Second pass: perform the calculation */
-    if (all_integers) {
-        long int_result = 0;
-        for (List *lp = list; lp != NULL; lp = lp->next) {
-            long operand = (long)validate_number("addition", getstr(lp->term), "operand");
-            int_result += operand;
-        }
-        return mklist(mkstr(str("%ld", int_result)), NULL);
-    } else {
-        for (List *lp = list; lp != NULL; lp = lp->next) {
-            double operand = validate_number("addition", getstr(lp->term), "operand");
-            result += operand;
-        }
-        return mklist(mkstr(str("%f", result)), NULL);
-    }
+    return mklist(mkstr(format_smart_number(result)), NULL);
 }
 
 PRIM(subtraction)
 {   double result;
-    Boolean all_integers = TRUE;
 
     if (list == NULL || list->next == NULL)
         fail("$&subtraction", "usage: $&subtraction number number [...]");
 
-    /* Check if all inputs are integers */
-    for (List *lp = list; lp != NULL; lp = lp->next) {
-        if (!is_pure_integer(getstr(lp->term))) {
-            all_integers = FALSE;
-            break;
-        }
-    }
+    result = validate_number("subtraction", getstr(list->term), "minuend");
 
-    /* Perform calculation */
-    if (all_integers) {
-        long int_result = (long)validate_number("subtraction", getstr(list->term), "minuend");
-        for (list = list->next; list != NULL; list = list->next) {
-            long operand = (long)validate_number("subtraction", getstr(list->term), "operand");
-            int_result -= operand;
-        }
-        return mklist(mkstr(str("%ld", int_result)), NULL);
-    } else {
-        result = validate_number("subtraction", getstr(list->term), "minuend");
-        for (list = list->next; list != NULL; list = list->next) {
-            double operand = validate_number("subtraction", getstr(list->term), "operand");
-            result -= operand;
-        }
-        return mklist(mkstr(str("%f", result)), NULL);
+    for (list = list->next; list != NULL; list = list->next)
+    {   double operand = validate_number("subtraction", getstr(list->term), "operand");
+        result -= operand;
     }
+    return mklist(mkstr(format_smart_number(result)), NULL);
 }
 
 PRIM(multiplication)
 {   double result = 1.0;
-    Boolean all_integers = TRUE;
 
     if (list == NULL)
         fail("$&multiplication", "usage: $&multiplication number [...]");
 
-    /* Check if all inputs are integers */
-    for (List *lp = list; lp != NULL; lp = lp->next) {
-        if (!is_pure_integer(getstr(lp->term))) {
-            all_integers = FALSE;
-            break;
-        }
+    for (List *lp = list; lp != NULL; lp = lp->next)
+    {   double operand = validate_number("multiplication", getstr(lp->term), "operand");
+        result *= operand;
     }
-
-    /* Perform calculation */
-    if (all_integers) {
-        long int_result = 1;
-        for (List *lp = list; lp != NULL; lp = lp->next) {
-            long operand = (long)validate_number("multiplication", getstr(lp->term), "operand");
-            int_result *= operand;
-        }
-        return mklist(mkstr(str("%ld", int_result)), NULL);
-    } else {
-        for (List *lp = list; lp != NULL; lp = lp->next) {
-            double operand = validate_number("multiplication", getstr(lp->term), "operand");
-            result *= operand;
-        }
-        return mklist(mkstr(str("%f", result)), NULL);
-    }
+    return mklist(mkstr(format_smart_number(result)), NULL);
 }
 
 PRIM(division)
@@ -130,20 +80,15 @@ PRIM(division)
         validate_not_zero("division", divisor, "division");
         result /= divisor;
     }
-    return mklist(mkstr(str("%f", result)), NULL);
+    return mklist(mkstr(format_smart_number(result)), NULL);
 }
 
 PRIM(modulo)
 {   double dividend;
     double divisor;
-    Boolean all_integers;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&modulo", "usage: $&modulo dividend divisor");
-
-    /* Check if both inputs are integers */
-    all_integers = is_pure_integer(getstr(list->term)) && 
-                   is_pure_integer(getstr(list->next->term));
 
     dividend = validate_number("modulo", getstr(list->term), "dividend");
     divisor = validate_number("modulo", getstr(list->next->term), "divisor");
@@ -151,13 +96,7 @@ PRIM(modulo)
     if (divisor == 0.0)
         fail("$&modulo", "division by zero");
 
-    if (all_integers) {
-        long int_dividend = (long)dividend;
-        long int_divisor = (long)divisor;
-        return mklist(mkstr(str("%ld", int_dividend % int_divisor)), NULL);
-    } else {
-        return mklist(mkstr(str("%f", fmod(dividend, divisor))), NULL);
-    }
+    return mklist(mkstr(format_smart_number(fmod(dividend, divisor))), NULL);
 }
 
 PRIM(pow)
