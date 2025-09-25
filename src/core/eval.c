@@ -447,29 +447,43 @@ restart:
 	char *op_pos = NULL;
 	char *prim_name = NULL;
 	
-	/* Only process compound expressions: digit + operator + digit */
+	/* Only process compound expressions: digit + operator + [sign +] digit */
 	size_t name_len = strlen(name);
 	Boolean has_digit_op_digit = FALSE;
+	size_t detected_op_pos = 0;
+	char detected_op = '\0';
+	
 	for (size_t i = 1; i < name_len - 1; i++) {
 		if ((name[i] == '+' || name[i] == '-' || name[i] == '*' || name[i] == '/') &&
-		    isdigit(name[i-1]) && isdigit(name[i+1])) {
-			has_digit_op_digit = TRUE;
-			break;
+		    isdigit(name[i-1])) {
+			/* Check if followed by digit or sign+digit */
+			if (isdigit(name[i+1])) {
+				/* Standard case: digit + operator + digit */
+				has_digit_op_digit = TRUE;
+				detected_op_pos = i;
+				detected_op = name[i];
+				break;
+			} else if ((name[i+1] == '+' || name[i+1] == '-') && 
+			          i+2 < name_len && isdigit(name[i+2])) {
+				/* Signed operand case: digit + operator + sign + digit */
+				has_digit_op_digit = TRUE;
+				detected_op_pos = i;
+				detected_op = name[i];
+				break;
+			}
 		}
 	}
 	
 	if (has_digit_op_digit) {
+		op_pos = name + detected_op_pos;
 		
-		if ((op_pos = strchr(name, '+')) != NULL) {
+		if (detected_op == '+') {
 			prim_name = "%addition";
-		} else if ((op_pos = strchr(name, '-')) != NULL) {
-			/* Make sure it's not a negative number at the start */
-			if (op_pos != name) {
-				prim_name = "%subtraction";
-			}
-		} else if ((op_pos = strchr(name, '*')) != NULL) {
+		} else if (detected_op == '-') {
+			prim_name = "%subtraction";
+		} else if (detected_op == '*') {
 			prim_name = "%multiplication";
-		} else if ((op_pos = strchr(name, '/')) != NULL) {
+		} else if (detected_op == '/') {
 			prim_name = "%division";
 		}
 	}

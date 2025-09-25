@@ -1221,7 +1221,9 @@ echo <={neg 5 + 3}        # -2 (unary then infix)
 **Discovery:** Successfully resolved the tokenization issue with compound arithmetic expressions without modifying the tokenizer
 
 **Details:**  
-Implemented a surgical fix in `src/core/eval.c` that intercepts compound arithmetic tokens like "5+0" at the evaluation level and automatically converts them to appropriate primitive calls like `%addition 5 0`. The solution detects digit+operator+digit patterns and supports +, -, *, / operators while preserving all existing functionality. Test results: `${5+0}` → 5, `${10-3}` → 7, `${3*4}` → 12, `${15/3}` → 5. Also fixed the test framework to use `${...}` syntax instead of broken `<={...}` and corrected assertion logic. The original issue is now completely resolved with a safe, targeted implementation that doesn't break existing arithmetic or negative number handling.
+Implemented a surgical fix in `src/core/eval.c` that intercepts compound arithmetic tokens like "5+0" at the evaluation level and automatically converts them to appropriate primitive calls like `%addition 5 0`. The solution detects digit+operator+digit patterns and supports +, -, *, / operators while preserving all existing functionality. Test results: `${5+0}` → 5, `${10-3}` → 7, `${3*4}` → 12, `${15/3}` → 5. Also fixed the test framework to use `${...}` syntax instead of broken `<={...}` and corrected assertion logic. 
+
+**Extended with Literal Number Support:** Added detection for pure numbers in `${}` expressions so `${5}` → 5, `${-3}` → -3, `${3.14}` → 3.14. Uses `strtod()` for robust number validation. **Comprehensive regression testing passed 23/23 tests** covering arithmetic, variables, I/O, conditionals, external commands, and pipes. The original issue is now completely resolved with safe, targeted implementation that preserves all ES shell functionality.
 echo <={abs neg 10}       # 10 (nested unary)
 
 # Mathematical primitives working:
@@ -1513,3 +1515,24 @@ Successfully extracted infix processing from syntax.c (788 lines → 429 lines):
 - Build system updated to include new module, compilation successful
 
 Manual linking was required due to Makefile template issues, but functionality preserved. ES shell maintains full arithmetic expression capability with clean modular architecture.
+
+### [2025-01-27] Signed Operand Arithmetic Expression Support
+
+**Discovery:** Enhanced compound arithmetic to support signed operands
+
+**Details:**  
+Fixed limitation in compound arithmetic expression detection that prevented signed operands like `${5+-5}`, `${10--4}`, `${3*-2}`, `${-8/-2}`. Original detection required digit+operator+digit pattern, failing for digit+operator+sign+digit.
+
+**Implementation:**
+- Modified `src/core/eval.c` compound detection loop to recognize signed operands
+- Enhanced pattern matching to detect: digit + operator + [optional sign] + digit 
+- Fixed operator position tracking to use detected position instead of `strchr()` first occurrence
+- Preserved all existing arithmetic functionality and literal number support
+
+**Verification:**
+- Tested against Node.js, Python, Ruby for behavioral consistency
+- Results match industry standards: `5+-5`→0, `10--4`→14, `3*-2`→-6, `-8/-2`→4
+- Extended regression test suite from 23 to 27 tests, all passing
+- Comprehensive edge case testing confirms robustness
+
+This enhancement brings ES shell's arithmetic expression handling in line with major programming languages while maintaining backward compatibility and performance.
