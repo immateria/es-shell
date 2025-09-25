@@ -442,6 +442,55 @@ restart:
 	/* the logic here is duplicated in $&whatis */
 
 	Ref(char *, name, getstr(list->term));
+	
+	/* Check for compound arithmetic expression like "5+0" and parse it */
+	char *op_pos = NULL;
+	char *prim_name = NULL;
+	
+	/* Only process compound expressions: digit + operator + digit */
+	size_t name_len = strlen(name);
+	Boolean has_digit_op_digit = FALSE;
+	for (size_t i = 1; i < name_len - 1; i++) {
+		if ((name[i] == '+' || name[i] == '-' || name[i] == '*' || name[i] == '/') &&
+		    isdigit(name[i-1]) && isdigit(name[i+1])) {
+			has_digit_op_digit = TRUE;
+			break;
+		}
+	}
+	
+	if (has_digit_op_digit) {
+		
+		if ((op_pos = strchr(name, '+')) != NULL) {
+			prim_name = "%addition";
+		} else if ((op_pos = strchr(name, '-')) != NULL) {
+			/* Make sure it's not a negative number at the start */
+			if (op_pos != name) {
+				prim_name = "%subtraction";
+			}
+		} else if ((op_pos = strchr(name, '*')) != NULL) {
+			prim_name = "%multiplication";
+		} else if ((op_pos = strchr(name, '/')) != NULL) {
+			prim_name = "%division";
+		}
+	}
+	
+	if (op_pos != NULL && prim_name != NULL && op_pos != name && *(op_pos + 1) != '\0') {
+		size_t left_len = op_pos - name;
+		char *left_operand = ealloc(left_len + 1);
+		memcpy(left_operand, name, left_len);
+		left_operand[left_len] = '\0';
+		
+		char *right_operand = str("%s", op_pos + 1);
+		
+		/* Create arithmetic call: primitive left_operand right_operand */
+		List *arith_call = mklist(mkstr(prim_name), 
+		                        mklist(mkstr(left_operand), 
+		                              mklist(mkstr(right_operand), list->next)));
+		list = arith_call;
+		RefPop(name);
+		goto restart;
+	}
+	
 	fn = varlookup2("fn-", name, binding);
 	if (fn != NULL) {
 		funcname = name;

@@ -24,11 +24,11 @@ let (
 	fn-xml-escape = @ {
 		let (result = ()) {
 			for (string = $*) {
-				string = <={%flatten '&amp;' <={%fsplit '&' $string}}
-				string = <={%flatten '&quot;' <={%fsplit " $string}}
-				string = <={%flatten '&apos;' <={%fsplit '''' $string}}
-				string = <={%flatten '&lt;' <={%fsplit '<' $string}}
-				result = $result <={%flatten '&gt;' <={%fsplit '>' $string}}
+				string = ${%flatten '&amp;' ${%fsplit '&' $string}}
+				string = ${%flatten '&quot;' ${%fsplit " $string}}
+				string = ${%flatten '&apos;' ${%fsplit '''' $string}}
+				string = ${%flatten '&lt;' ${%fsplit '<' $string}}
+				result = $result ${%flatten '&gt;' ${%fsplit '>' $string}}
 			}
 			result $result
 		}
@@ -59,21 +59,21 @@ let (
 
 	fn-report = @ {
 		if $junit {
-			echo <={%flatten '' \
+			echo ${%flatten '' \
 				'    <testsuite errors="0" failures="' $#failed-cases \
-					'" name="' <={xml-escape $name} \
+					'" name="' ${xml-escape $name} \
 					'" tests="' $#cases \
 					'">'}
 
 			for (case = $cases) {
-				echo -n <={%flatten '' '        <testcase name="' <={xml-escape $case} '"'}
+				echo -n ${%flatten '' '        <testcase name="' ${xml-escape $case} '"'}
 				if {~ $case $failed-cases} {
 					echo '>'
 					for (fcase = $failed-cases; msg = $failure-msgs)
 					if {~ $case $fcase} {
-						echo <={%flatten '' '            <failure message="' <={xml-escape $msg} \
+						echo ${%flatten '' '            <failure message="' ${xml-escape $msg} \
 							'" type="WARNING">'}
-						echo <={xml-escape $msg}
+						echo ${xml-escape $msg}
 						echo '            </failure>'
 						echo '        </testcase>'
 					}
@@ -120,9 +120,9 @@ let (status = ()) {
 						fail-case $title $message $e
 						return
 					} {
-						result = <={$cmd}
+						result = ${$cmd}
 					}
-					if {result $result} {
+					if $result {
 						pass-case $title $message
 					} {
 						fail-case $title $message
