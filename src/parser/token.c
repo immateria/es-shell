@@ -6,6 +6,7 @@
 #include "token.h"
 #include "token-utils.h"
 #include "token-redir.h"
+#include "token-string.h"
 #include <string.h>
 
 #define	isodigit(c)	is_octal_digit(c)
@@ -19,8 +20,8 @@ static State w = NW;
 static Boolean qword = FALSE;
 static Boolean newline = FALSE;
 static Boolean goterror = FALSE;
-static size_t bufsize = 0;
-static char *tokenbuf = NULL;
+size_t bufsize = 0;
+char *tokenbuf = NULL;
 
 #define	InsertFreeCaret()	STMT(if (w != NW) { w = NW; UNGETC(c); return '^'; })
 
@@ -39,7 +40,7 @@ extern void print_prompt2(void) {
 }
 
 /* scanerror -- called for lexical errors */
-static void scanerror(int c, char *s) {
+extern void scanerror(int c, char *s) {
 	while (c != '\n' && c != EOF)
 		c = GETC();
 	goterror = TRUE;
@@ -267,85 +268,17 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
         case '\'':
                 w = RW;
                 qword = TRUE;
-                i = 0;
-		while ((c = GETC()) != '\'' || (c = GETC()) == '\'') {
-			buf[i++] = c;
-			if (c == '\n')
-				print_prompt2();
-			if (c == EOF) {
-				w = NW;
-				scanerror(c, "eof in quoted string");
-				return ERROR;
-			}
-			if (i >= bufsize)
-				buf = tokenbuf = erealloc(buf, bufsize *= 2);
-		}
-		UNGETC(c);
-		buf[i] = '\0';
-		y->str = pdup(buf);
-		return QWORD;
-	case '\\':
-		if ((c = GETC()) == '\n') {
-			print_prompt2();
-			UNGETC(' ');
-			goto top; /* Pretend it was just another space. */
-		}
-		if (c == EOF) {
-			UNGETC(EOF);
-			goto badescape;
-		}
-		UNGETC(c);
-		c = '\\';
+                return parse_quoted_string();
+	case '\\': {
+		Boolean continue_line = FALSE;
 		InsertFreeCaret();
 		w = RW;
-		c = GETC();
-		switch (c) {
-		case 'a':	*buf = '\a';	break;
-		case 'b':	*buf = '\b';	break;
-		case 'e':	*buf = '\033';	break;
-		case 'f':	*buf = '\f';	break;
-		case 'n':	*buf = '\n';	break;
-		case 'r':	*buf = '\r';	break;
-		case 't':	*buf = '\t';	break;
-		case 'x': case 'X': {
-			int n = 0;
-			for (;;) {
-				c = GETC();
-				if (!isxdigit(c))
-					break;
-				n = (n << 4)
-				  | (c - (isdigit(c) ? '0' : ((islower(c) ? 'a' : 'A') - 0xA)));
-			}
-			if (n == 0)
-				goto badescape;
-			UNGETC(c);
-			*buf = n;
-			break;
+		int result = handle_backslash_line_continuation(&continue_line);
+		if (continue_line) {
+			goto top; /* Pretend it was just another space. */
 		}
-		case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
-			int n = 0;
-			do {
-				n = (n << 3) | (c - '0');
-				c = GETC();
-			} while (isodigit(c));
-			if (n == 0)
-				goto badescape;
-			UNGETC(c);
-			*buf = n;
-			break;
-		}
-		default:
-			if (isalnum(c)) {
-			badescape:
-				scanerror(c, "bad backslash escape");
-				return ERROR;
-			}
-			*buf = c;
-			break;
-		}
-		buf[1] = 0;
-		y->str = pdup(buf);
-		return QWORD;
+		return result;
+	}
 	case '#':
 		while ((c = GETC()) != '\n') /* skip comment until newline */
 			if (c == EOF)
