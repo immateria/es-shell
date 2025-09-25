@@ -10,60 +10,112 @@
 #include <string.h>
 
 /*
+ * Helper function to check if a string represents a pure integer
+ */
+static Boolean is_pure_integer(const char *str) {
+    char *endptr;
+    strtol(str, &endptr, 10);
+    return (endptr != NULL && *endptr == '\0');
+}
+
+/*
  * Arithmetic Operations
  */
 
 PRIM(addition)
 {   double result = 0.0;
+    Boolean all_integers = TRUE;
     
     validate_arg_count("addition", list, 1, -1, "addition number [number ...]");
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   double operand = validate_number("addition", getstr(lp->term), "operand");
-        result += operand;
+    /* First pass: check if all inputs are integers */
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        if (!is_pure_integer(getstr(lp->term))) {
+            all_integers = FALSE;
+            break;
+        }
     }
-    return mklist(mkstr(str("%f", result)), NULL);
+
+    /* Second pass: perform the calculation */
+    if (all_integers) {
+        long int_result = 0;
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+            long operand = (long)validate_number("addition", getstr(lp->term), "operand");
+            int_result += operand;
+        }
+        return mklist(mkstr(str("%ld", int_result)), NULL);
+    } else {
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+            double operand = validate_number("addition", getstr(lp->term), "operand");
+            result += operand;
+        }
+        return mklist(mkstr(str("%f", result)), NULL);
+    }
 }
 
 PRIM(subtraction)
-{   char *endptr;
-    double result;
+{   double result;
+    Boolean all_integers = TRUE;
 
     if (list == NULL || list->next == NULL)
         fail("$&subtraction", "usage: $&subtraction number number [...]");
 
-    result = strtod(getstr(list->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&subtraction", "arguments must be numbers");
-
-    for (list = list->next; list != NULL; list = list->next)
-    {   double operand = strtod(getstr(list->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&subtraction", "arguments must be numbers");
-
-        result -= operand;
+    /* Check if all inputs are integers */
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        if (!is_pure_integer(getstr(lp->term))) {
+            all_integers = FALSE;
+            break;
+        }
     }
-    return mklist(mkstr(str("%f", result)), NULL);
+
+    /* Perform calculation */
+    if (all_integers) {
+        long int_result = (long)validate_number("subtraction", getstr(list->term), "minuend");
+        for (list = list->next; list != NULL; list = list->next) {
+            long operand = (long)validate_number("subtraction", getstr(list->term), "operand");
+            int_result -= operand;
+        }
+        return mklist(mkstr(str("%ld", int_result)), NULL);
+    } else {
+        result = validate_number("subtraction", getstr(list->term), "minuend");
+        for (list = list->next; list != NULL; list = list->next) {
+            double operand = validate_number("subtraction", getstr(list->term), "operand");
+            result -= operand;
+        }
+        return mklist(mkstr(str("%f", result)), NULL);
+    }
 }
 
 PRIM(multiplication)
-{   char *endptr;
-    double result = 1.0;
+{   double result = 1.0;
+    Boolean all_integers = TRUE;
 
     if (list == NULL)
         fail("$&multiplication", "usage: $&multiplication number [...]");
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   double operand = strtod(getstr(lp->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&multiplication", "arguments must be numbers");
-
-        result *= operand;
+    /* Check if all inputs are integers */
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        if (!is_pure_integer(getstr(lp->term))) {
+            all_integers = FALSE;
+            break;
+        }
     }
-    return mklist(mkstr(str("%f", result)), NULL);
+
+    /* Perform calculation */
+    if (all_integers) {
+        long int_result = 1;
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+            long operand = (long)validate_number("multiplication", getstr(lp->term), "operand");
+            int_result *= operand;
+        }
+        return mklist(mkstr(str("%ld", int_result)), NULL);
+    } else {
+        for (List *lp = list; lp != NULL; lp = lp->next) {
+            double operand = validate_number("multiplication", getstr(lp->term), "operand");
+            result *= operand;
+        }
+        return mklist(mkstr(str("%f", result)), NULL);
+    }
 }
 
 PRIM(division)
@@ -82,28 +134,30 @@ PRIM(division)
 }
 
 PRIM(modulo)
-{   char *endptr;
-    double dividend;
+{   double dividend;
     double divisor;
+    Boolean all_integers;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&modulo", "usage: $&modulo dividend divisor");
 
-    dividend = strtod(getstr(list->term), &endptr);
+    /* Check if both inputs are integers */
+    all_integers = is_pure_integer(getstr(list->term)) && 
+                   is_pure_integer(getstr(list->next->term));
 
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be numbers");
-
-    list = list->next;
-    divisor = strtod(getstr(list->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be numbers");
+    dividend = validate_number("modulo", getstr(list->term), "dividend");
+    divisor = validate_number("modulo", getstr(list->next->term), "divisor");
 
     if (divisor == 0.0)
         fail("$&modulo", "division by zero");
 
-    return mklist(mkstr(str("%f", fmod(dividend, divisor))), NULL);
+    if (all_integers) {
+        long int_dividend = (long)dividend;
+        long int_divisor = (long)divisor;
+        return mklist(mkstr(str("%ld", int_dividend % int_divisor)), NULL);
+    } else {
+        return mklist(mkstr(str("%f", fmod(dividend, divisor))), NULL);
+    }
 }
 
 PRIM(pow)
