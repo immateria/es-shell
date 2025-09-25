@@ -491,6 +491,21 @@ restart:
 		goto restart;
 	}
 	
+	/* Check for literal numbers like "5", "-3.14", "0" */
+	{
+		char *endptr;
+		double parsed_value = strtod(name, &endptr);
+		(void)parsed_value; /* Suppress unused variable warning */
+		
+		/* If strtod consumed the entire string, it's a valid number */
+		if (*endptr == '\0' && endptr != name) {
+			/* Return the number as a literal string value */
+			list = mklist(mkstr(name), list->next);
+			RefPop(name);
+			goto done;
+		}
+	}
+	
 	fn = varlookup2("fn-", name, binding);
 	if (fn != NULL) {
 		funcname = name;
