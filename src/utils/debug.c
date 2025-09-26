@@ -34,6 +34,12 @@ void debug_init(void) {
             es_debug_flags = DEBUG_TREE;
         } else if (strcmp(debug_env, "var") == 0) {
             es_debug_flags = DEBUG_VAR;
+        } else if (strcmp(debug_env, "assign") == 0) {
+            es_debug_flags = DEBUG_ASSIGN;
+        } else if (strcmp(debug_env, "token") == 0) {
+            es_debug_flags = DEBUG_TOKEN;
+        } else if (strcmp(debug_env, "memory") == 0) {
+            es_debug_flags = DEBUG_MEMORY;
         } else {
             /* Try to parse as numeric flags */
             es_debug_flags = atoi(debug_env);

@@ -4,7 +4,7 @@ test 'lexical analysis' {
 	let (tmp = `{mktemp trip-nul.XXXXXX})
 	unwind-protect {
 		./testrun 0 > $tmp
-		let ((status output) = <={$&backquote \n {$es $tmp >[2=1]}}) {
+		let ((status output) = ${$&backquote \n {$es $tmp ->[2=1]}}) {
 			assert {~ $output *'null character ignored'*} 'null character produces warning'
 			assert {~ $status 6} 'null character does not disturb behavior'
 		}
@@ -117,9 +117,9 @@ test 'redirections' {
 	assert {~ `` '' {cat 2} foo} dup put wrong contents in file : `` '' {cat 2}
 	rm -f 1 2
 
-	assert {~ `` \n {$es -c 'cat >[0=]' >[2=1]} *'cat:'*'Bad file '*}
-	assert {~ `` \n {$es -c 'cat >(1 2 3)' >[2=1]} *'too many'*}
-	assert {~ `` \n {$es -c 'cat >()' >[2=1]} *'null'*}
+	assert {~ `` \n {$es -c 'cat >[0=]' ->[2=1]} *'cat:'*'Bad file '*}
+	assert {~ `` \n {$es -c 'cat >(1 2 3)' ->[2=1]} *'too many'*}
+	assert {~ `` \n {$es -c 'cat >()' ->[2=1]} *'null'*}
 }
 
 test 'exceptions' {
@@ -207,27 +207,27 @@ EOF
 		assert {~ `` \n cat '	'} 'quoted heredoc' << ' '
 	
  
-		<<<[9] `` '' {cat $bigfile} \
+		<--([9] `` '' {cat $bigfile} \
 		{
-			assert {~ `` '' {cat <[0=9]} `` '' cat} 'large herestrings'
+			assert {~ `` '' {cat <-[0=9]} `` '' cat} 'large herestrings'
 		} < $bigfile
 	} {
 		rm -f $bigfile
 	}
 
-	assert {~ `{cat<<eof
+	assert {~ `{cat<--<EOF
 $$
 eof
 	} '$'} 'quoting ''$'' in heredoc'
 
-	assert {~ `` \n {$es -c 'cat<<eof' >[2=1]} *'pending'*} 'incomplete heredoc 1'
-	assert {~ `` \n {$es -c 'cat<<eof'\n >[2=1]} *'incomplete'*} 'incomplete heredoc 2'
-	assert {~ `` \n {$es -c 'cat<<eof'\n\$ >[2=1]} *'incomplete'*} 'incomplete heredoc 3'
+	assert {~ `` \n {$es -c 'cat<--<EOF' ->[2=1]} *'pending'*} 'incomplete heredoc 1'
+	assert {~ `` \n {$es -c 'cat<--<EOF'\n ->[2=1]} *'incomplete'*} 'incomplete heredoc 2'
+	assert {~ `` \n {$es -c 'cat<--<EOF'\n\$ ->[2=1]} *'incomplete'*} 'incomplete heredoc 3'
 
-	assert {~ `` \n {$es -c 'cat<<()' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 1'
-	assert {~ `` \n {$es -c 'cat<<(eof eof)' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 2'
-	assert {~ `` \n {$es -c 'cat<<'''\n''''\n >[2=1]} *'contains a newline'*} 'bad heredoc marker 3'
-}
+	assert {~ `` \n {$es -c 'cat<--<()' ->[2=1]} *'not a single literal word'*} 'bad heredoc marker 1'
+	assert {~ `` \n {$es -c 'cat<--<(eof eof)' ->[2=1]} *'not a single literal word'*} 'bad heredoc marker 2'
+	assert {~ `` \n {$es -c 'cat<--<'''\n''''\n ->[2=1]} *'contains a newline'*} 'bad heredoc marker 3'
+}``
 
 test 'tilde matching' {
 	assert {$es -c '~ 0 1 `{}`{}`{}`{}`{} 0'}
@@ -243,25 +243,25 @@ test 'flat command expansion' {
 	let (x = ``^ abc {echo -n abchello})
 		assert {~ $x 'hello'}
 
-	assert {~ `` \n {$es -c '``^{true}' >[2=1]} *'syntax error'*}
-	assert {~ `` \n {$es -c '`^^{true}' >[2=1]} *'syntax error'*}
+	assert {~ `` \n {$es -c '``^{true}' ->[2=1]} *'syntax error'*}
+	assert {~ `` \n {$es -c '`^^{true}' ->[2=1]} *'syntax error'*}
 }
 
 test 'equal sign in command arguments' {
-	assert {$es -c 'echo foo=bar' > /dev/null} '''='' in argument does not cause error'
+	assert {$es -c 'echo foo=bar' -> /dev/null} '''='' in argument does not cause error'
 	assert {~ `^{echo foo=bar} 'foo=bar'} '''='' is automatically concatenated with adjacent strings'
-	assert {$es -c 'echo foo = bar' > /dev/null} '''='' as standalone argument does not cause error'
+	assert {$es -c 'echo foo = bar' -> /dev/null} '''='' as standalone argument does not cause error'
 	assert {~ `^{echo foo = bar} 'foo = bar'} '''='' is not automatically concatenated with non-adjacent strings'
 	assert {~ `` \n {$es -c 'foo^= = 384; echo $foo'} *'= 384'*}
 	assert {~ `` \n {$es -c 'echo =foo; echo $echo'} *'foo'*}
 }
 
 test 'exit with signal codes' {
-	assert {~ <={$es -c 'signals = sigterm; kill -TERM $pid' >[2] /dev/null} sigterm} \
+	assert {~ ${$es -c 'signals = sigterm; kill -TERM $pid' >[2] /dev/null} sigterm} \
 		'die with a signal code'
-	assert {~ <={$es -c 'signals = sigchld; kill -CHLD $pid' >[2] /dev/null} 1} \
+	assert {~ ${$es -c 'signals = sigchld; kill -CHLD $pid' ->[2] /dev/null} 1} \
 		'die normally with an ignored signal'
-	assert {~ <={$es -c 'signals = -sigterm; throw signal sigterm' >[2] /dev/null} sigterm} \
+	assert {~ ${$es -c 'signals = -sigterm; throw signal sigterm' ->[2] /dev/null} sigterm} \
 		'die from a thrown signal even if we would ignore it externally'
 }
 

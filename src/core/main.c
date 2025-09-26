@@ -1,6 +1,7 @@
 /* main.c -- initialization for es ($Revision: 1.3 $) */
 
 #include "es.h"
+#include "debug.h"
 
 #if GCVERBOSE
 Boolean gcverbose	= FALSE;	/* -G */
@@ -177,6 +178,9 @@ getopt_done:
 
 	ExceptionHandler
 		roothandler = &_localhandler;	/* unhygeinic */
+
+		/* Initialize debug system early for tracing startup */
+		debug_init();
 
 		initinput();
 #if HAVE_READLINE

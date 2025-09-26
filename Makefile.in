@@ -20,21 +20,26 @@ INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA    = $(INSTALL) -m 644
 MKDIR_P         = @MKDIR_P@
 
-# Include paths for new structure
+# Include paths for new structure  
 CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -Iinclude -I$(srcdir)/include -Igenerated \
                   -W -Wall @READLINE_CFLAGS@ @CFLAGS@ $(ADDCFLAGS)
 LDFLAGS         = @LDFLAGS@ $(ADDLDFLAGS)
 LIBS            = @READLINE_LIBS@ @LIBS@ $(ADDLIBS)
+
+# Debug build configuration
+DEBUG_CFLAGS    = -DES_DEBUG -g -O0 -DDEBUG
+RELEASE_CFLAGS  = -O2 -DNDEBUG
 
 # Header files (now in include/)
 HFILES          = include/config.h include/es.h include/gc.h include/input.h \
                   include/prim.h include/print.h include/sigmsgs.h \
                   include/stdenv.h include/syntax.h include/syntax-infix.h include/syntax-tree.h \
                   include/debug.h include/token-utils.h include/token-redir.h \
-                  include/token-string.h
+                  include/token-string.h include/eval/arithmetic.h include/eval/binding.h include/eval/control.h
 
 # Source files by category
-CORE_CFILES     = src/core/eval.c src/core/gc.c src/core/main.c
+CORE_CFILES     = src/core/eval.c src/core/gc.c src/core/main.c \
+                  src/core/eval/arithmetic.c src/core/eval/binding.c src/core/eval/control.c
 PRIMITIVE_CFILES = src/primitives/prim.c src/primitives/prim-ctl.c     \
                   src/primitives/prim-etc.c src/primitives/prim-io.c   \
                   src/primitives/prim-math.c src/primitives/prim-sys.c \
@@ -75,6 +80,20 @@ SIGFILES        = @SIGFILES@
 
 # Default target
 all: es
+
+# Debug and release build targets
+debug: es-debug
+release: es-release
+
+# Debug build with ES_DEBUG enabled
+es-debug: CFLAGS += $(DEBUG_CFLAGS)
+es-debug: clean $(OFILES) generated/initial.o
+	$(CC) -o es-debug $(LDFLAGS) $(OFILES) generated/initial.o $(LIBS)
+
+# Release build with optimizations
+es-release: CFLAGS += $(RELEASE_CFLAGS)  
+es-release: clean $(OFILES) generated/initial.o
+	$(CC) -o es-release $(LDFLAGS) $(OFILES) generated/initial.o $(LIBS)
 
 # Directory creation rules
 build:
@@ -143,8 +162,11 @@ include/config.h : include/config.h.in
 
 # Update dependencies for new structure
 src/core/main.o        : src/core/main.c include/es.h include/config.h include/stdenv.h
-src/core/eval.o        : src/core/eval.c include/es.h include/config.h include/stdenv.h
+src/core/eval.o        : src/core/eval.c include/es.h include/config.h include/stdenv.h include/eval/arithmetic.h include/eval/binding.h include/eval/control.h
 src/core/gc.o          : src/core/gc.c include/es.h include/config.h include/stdenv.h include/gc.h
+src/core/eval/arithmetic.o : src/core/eval/arithmetic.c include/es.h include/config.h include/stdenv.h include/eval/arithmetic.h
+src/core/eval/binding.o    : src/core/eval/binding.c include/es.h include/config.h include/stdenv.h include/eval/binding.h
+src/core/eval/control.o    : src/core/eval/control.c include/es.h include/config.h include/stdenv.h include/eval/control.h
 
 src/primitives/prim.o      : src/primitives/prim.c      include/es.h include/config.h include/stdenv.h include/prim.h
 src/primitives/prim-ctl.o  : src/primitives/prim-ctl.c  include/es.h include/config.h include/stdenv.h include/prim.h

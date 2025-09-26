@@ -11,7 +11,7 @@
  * These are the core ES shell metacharacters and delimiters.
  */
 static const unsigned char ES_SPECIAL_CHARS[] = {
-	'\0', '\t', '\n', ' ', '!', '#', '$', '&', '\'', '(', ')', '*', '+', '-', ';', '<', '=', '>', '\\', '^', '`', '{', '|', '}'
+	'\0', '\t', '\n', ' ', '!', '#', '$', '&', '\'', '(', ')', '*', '+', '-', '/', ';', '<', '=', '>', '\\', '^', '`', '{', '|', '}'
 };
 #define ES_SPECIAL_CHARS_COUNT (sizeof(ES_SPECIAL_CHARS))
 

@@ -1,8 +1,8 @@
 # tests/option.es -- verify that es handles command line arguments correctly
 
 test 'es -c' {
-	assert {!$es -c >[2] /dev/null} 'bad flags produce a bad exit status'
-	assert {~ `` \n {$es -c 'echo $0 $2 $#*' a b c d e f} <={%flatten ' ' $es b 6}} 'shell positional args represented correctly'
+	assert {!$es -c ->[2] /dev/null} 'bad flags produce a bad exit status'
+	assert {~ `` \n {$es -c 'echo $0 $2 $#*' a b c d e f} ${%flatten ' ' $es b 6}} 'shell positional args represented correctly'
 	assert {~ `` \n {$es -c 'echo command # comment'} 'command'} 'comments in command strings ignored correctly'
 }
 
@@ -26,12 +26,12 @@ test 'es -e' {
 			'let (x = false) true'			true
 			'local (x = false) true'		true
 		)) {
-			cat > $temp << EOF
+			cat -> $temp <--< EOF
 echo -n one
 $command
 echo two
 EOF
-			let (want = <={if $continue {result 'onetwo'} {result 'one'}})
+			let (want = ${if $continue {result 'onetwo'} {result 'one'}})
 				assert {~ `` \n {$es -e $temp} $want} -e handles $command
 		}
 	} {

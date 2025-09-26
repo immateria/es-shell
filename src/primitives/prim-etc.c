@@ -4,12 +4,16 @@
 
 #include "es.h"
 #include "prim.h"
+#include "eval/binding.h"
+#include "syntax.h"
+#include "debug.h"
 
 PRIM(result) {
 	return list;
 }
 
 PRIM(echo) {
+	DEBUG_TRACE(DEBUG_ASSIGN, "echo: binding parameter = %p", (void*)binding);
 	const char *eol = "\n";
 	if (list != NULL) {
 		if (termeq(list->term, "-n")) {
@@ -571,6 +575,328 @@ PRIM(examples) {
     return ltrue;
 }
 
+/* Assignment operators - enhanced assignment operations */
+
+PRIM(plus_assign) {
+	/* x += value: arithmetic addition assignment */
+	DEBUG_TRACE_ENTER(DEBUG_ASSIGN, "plus_assign called");
+	
+	char *var = getstr(list->term);
+	List *values = list->next;
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "plus_assign: var=%s", var ? var : "(null)");
+	DEBUG_PRINT_LIST(DEBUG_ASSIGN, values, "plus_assign values:");
+	
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || values == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "plus_assign: NULL current or values - returning NULL");
+		return NULL;
+	}
+		
+	/* Convert to numbers and add */
+	char *current_str = getstr(current->term);
+	char *value_str = getstr(values->term);
+	DEBUG_TRACE(DEBUG_ASSIGN, "plus_assign: current=%s, adding=%s", 
+	           current_str ? current_str : "(null)", 
+	           value_str ? value_str : "(null)");
+	
+	long current_num = strtol(current_str, NULL, 10);
+	long value_num = strtol(value_str, NULL, 10);
+	long result = current_num + value_num;
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "plus_assign: %ld + %ld = %ld", current_num, value_num, result);
+	
+	char result_str[32];
+	snprintf(result_str, sizeof(result_str), "%ld", result);
+	
+	List *result_list = mklist(mkstr(result_str), NULL);
+	vardef(var, binding, result_list);
+	
+	DEBUG_TRACE_EXIT(DEBUG_ASSIGN, "plus_assign: assigned %s = %s", var, result_str);
+	return result_list;
+}
+
+PRIM(minus_assign) {
+	/* x -= value: arithmetic subtraction assignment */
+	DEBUG_TRACE_ENTER(DEBUG_ASSIGN, "minus_assign called");
+	
+	char *var = getstr(list->term);
+	List *values = list->next;
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "minus_assign: var=%s", var ? var : "(null)");
+	
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || values == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "minus_assign: NULL current or values - returning NULL");
+		return NULL;
+	}
+		
+	/* Convert to numbers and subtract */
+	char *current_str = getstr(current->term);
+	char *value_str = getstr(values->term);
+	DEBUG_TRACE(DEBUG_ASSIGN, "minus_assign: current=%s, subtracting=%s", 
+	           current_str ? current_str : "(null)", 
+	           value_str ? value_str : "(null)");
+	
+	long current_num = strtol(current_str, NULL, 10);
+	long value_num = strtol(value_str, NULL, 10);
+	long result = current_num - value_num;
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "minus_assign: %ld - %ld = %ld", current_num, value_num, result);
+	
+	char result_str[32];
+	snprintf(result_str, sizeof(result_str), "%ld", result);
+	
+	List *result_list = mklist(mkstr(result_str), NULL);
+	vardef(var, binding, result_list);
+	
+	DEBUG_TRACE_EXIT(DEBUG_ASSIGN, "minus_assign: assigned %s = %s", var, result_str);
+	return result_list;
+}
+
+PRIM(mult_assign) {
+	/* x *= value: arithmetic multiplication assignment */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || values == NULL)
+		return NULL;
+		
+	/* Convert to numbers and multiply */
+	long current_num = strtol(getstr(current->term), NULL, 10);
+	long value_num = strtol(getstr(values->term), NULL, 10);
+	long result = current_num * value_num;
+	
+	char result_str[32];
+	snprintf(result_str, sizeof(result_str), "%ld", result);
+	
+	List *result_list = mklist(mkstr(result_str), NULL);
+	vardef(var, binding, result_list);
+	return result_list;
+}
+
+PRIM(div_assign) {
+	/* x /= value: arithmetic division assignment */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || values == NULL)
+		return NULL;
+		
+	/* Convert to numbers and divide */
+	long current_num = strtol(getstr(current->term), NULL, 10);
+	long value_num = strtol(getstr(values->term), NULL, 10);
+	
+	if (value_num == 0)
+		fail("es:div-assign", "division by zero");
+		
+	long result = current_num / value_num;
+	
+	char result_str[32];
+	snprintf(result_str, sizeof(result_str), "%ld", result);
+	
+	List *result_list = mklist(mkstr(result_str), NULL);
+	vardef(var, binding, result_list);
+	return result_list;
+}
+
+PRIM(intdiv_assign) {
+	/* x //= value: integer division assignment (same as /= for now) */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || values == NULL)
+		return NULL;
+		
+	/* Convert to numbers and divide */
+	long current_num = strtol(getstr(current->term), NULL, 10);
+	long value_num = strtol(getstr(values->term), NULL, 10);
+	
+	if (value_num == 0)
+		fail("es:intdiv-assign", "division by zero");
+		
+	long result = current_num / value_num;
+	
+	char result_str[32];
+	snprintf(result_str, sizeof(result_str), "%ld", result);
+	
+	List *result_list = mklist(mkstr(result_str), NULL);
+	vardef(var, binding, result_list);
+	return result_list;
+}
+
+PRIM(dot_assign) {
+	/* x .= value: string concatenation assignment */
+	DEBUG_TRACE_ENTER(DEBUG_ASSIGN, "dot_assign called");
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: binding parameter = %p", (void*)binding);
+	
+	if (list == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: NULL list - returning NULL");
+		return NULL;
+	}
+	
+	char *var = getstr(list->term);
+	List *values = list->next;
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: var=%s", var ? var : "(null)");
+	DEBUG_PRINT_LIST(DEBUG_ASSIGN, values, "dot_assign values:");
+	
+	if (var == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: NULL variable name - returning NULL");
+		return NULL;
+	}
+	
+	List *current = varlookup(var, binding);
+	
+	char *current_str = "";
+	if (current != NULL) {
+		current_str = getstr(current->term);
+		if (current_str == NULL) current_str = "";
+	}
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: current_str='%s'", current_str);
+		
+	/* Concatenate strings */
+	char *value_str = (values != NULL) ? getstr(values->term) : "";
+	if (value_str == NULL) value_str = "";
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: value_str='%s'", value_str);
+	
+	size_t current_len = strlen(current_str);
+	size_t value_len = strlen(value_str);
+	size_t len = current_len + value_len + 1;
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: current_len=%zu, value_len=%zu, total_len=%zu", 
+	           current_len, value_len, len);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: calling ealloc(%zu)", len);
+	char *result = ealloc(len);
+	if (result == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: ERROR - ealloc returned NULL!");
+		return NULL;
+	}
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: ealloc returned %p", (void*)result);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: copying current_str");
+	strcpy(result, current_str);
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: after strcpy: result='%s'", result);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: concatenating value_str");
+	strcat(result, value_str);
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: after strcat: result='%s'", result);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: calling mkstr('%s')", result);
+	Term *result_term = mkstr(result);
+	if (result_term == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: ERROR - mkstr returned NULL!");
+		efree(result);
+		return NULL;
+	}
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: mkstr returned %p", (void*)result_term);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: calling mklist");
+	List *result_list = mklist(result_term, NULL);
+	if (result_list == NULL) {
+		DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: ERROR - mklist returned NULL!");
+		efree(result);
+		return NULL;
+	}
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: mklist returned %p", (void*)result_list);
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: calling vardef('%s', %p, %p)", var, (void*)binding, (void*)result_list);
+	DEBUG_PRINT_LIST(DEBUG_ASSIGN, result_list, "dot_assign: about to assign list:");
+	vardef(var, binding, result_list);
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: vardef completed successfully");
+	
+	/* Test: Look up the variable immediately after assignment */
+	List *check_var = varlookup(var, binding);
+	DEBUG_PRINT_LIST(DEBUG_ASSIGN, check_var, "dot_assign: immediate lookup after vardef:");
+	
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: calling efree(%p)", (void*)result);
+	efree(result);
+	DEBUG_TRACE(DEBUG_ASSIGN, "dot_assign: efree completed");
+	
+	DEBUG_TRACE_EXIT(DEBUG_ASSIGN, "dot_assign: assigned %s, returning %p", var, (void*)result_list);
+	return result_list;
+}
+
+PRIM(prepend_assign) {
+	/* x =+ value: prepend value to variable x */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	List *new_value = append(values, current);
+	vardef(var, binding, new_value);
+	return new_value;
+}
+
+PRIM(and_assign) {
+	/* x &&= value: logical AND assignment - assign only if x is false/empty */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	/* If current is false/empty, assign the new value */
+	if (current == NULL || !istrue(current)) {
+		vardef(var, binding, values);
+		return values;
+	}
+	/* Otherwise, keep current value */
+	return current;
+}
+
+PRIM(or_assign) {
+	/* x ||= value: logical OR assignment - assign only if x is true/non-empty */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	/* If current is true/non-empty, keep it; otherwise assign new value */
+	if (current != NULL && istrue(current)) {
+		return current;
+	}
+	vardef(var, binding, values);
+	return values;
+}
+
+PRIM(colon_assign) {
+	/* x := value: define/declare assignment (like regular assignment for now) */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	vardef(var, binding, values);
+	return values;
+}
+
+PRIM(question_assign) {
+	/* x ?= value: conditional assignment - assign only if variable is undefined */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL) {
+		vardef(var, binding, values);
+		return values;
+	}
+	return current;
+}
+
+PRIM(null_coalesce_assign) {
+	/* x ??= value: null coalescing assignment - assign if x is null/empty */
+	char *var = getstr(list->term);
+	List *values = list->next;
+	List *current = varlookup(var, binding);
+	
+	if (current == NULL || (current->term != NULL && streq(getstr(current->term), ""))) {
+		vardef(var, binding, values);
+		return values;
+	}
+	return current;
+}
+
 
 /*
  * initialization
@@ -601,6 +927,42 @@ extern Dict *initprims_etc(Dict *primdict) {
 	X(help);
 	X(discover);
 	X(examples);
+	/* Assignment operators - manually register with hyphen names */
+	static Prim plus_assign_struct = { prim_plus_assign };
+	primdict = dictput(primdict, "plus-assign", (void *) &plus_assign_struct);
+	
+	static Prim minus_assign_struct = { prim_minus_assign };
+	primdict = dictput(primdict, "minus-assign", (void *) &minus_assign_struct);
+	
+	static Prim mult_assign_struct = { prim_mult_assign };
+	primdict = dictput(primdict, "mult-assign", (void *) &mult_assign_struct);
+	
+	static Prim div_assign_struct = { prim_div_assign };
+	primdict = dictput(primdict, "div-assign", (void *) &div_assign_struct);
+	
+	static Prim intdiv_assign_struct = { prim_intdiv_assign };
+	primdict = dictput(primdict, "intdiv-assign", (void *) &intdiv_assign_struct);
+	
+	static Prim dot_assign_struct = { prim_dot_assign };
+	primdict = dictput(primdict, "dot-assign", (void *) &dot_assign_struct);
+	
+	static Prim prepend_assign_struct = { prim_prepend_assign };
+	primdict = dictput(primdict, "prepend-assign", (void *) &prepend_assign_struct);
+	
+	static Prim and_assign_struct = { prim_and_assign };
+	primdict = dictput(primdict, "and-assign", (void *) &and_assign_struct);
+	
+	static Prim or_assign_struct = { prim_or_assign };
+	primdict = dictput(primdict, "or-assign", (void *) &or_assign_struct);
+	
+	static Prim colon_assign_struct = { prim_colon_assign };
+	primdict = dictput(primdict, "colon-assign", (void *) &colon_assign_struct);
+	
+	static Prim question_assign_struct = { prim_question_assign };
+	primdict = dictput(primdict, "question-assign", (void *) &question_assign_struct);
+	
+	static Prim null_coalesce_assign_struct = { prim_null_coalesce_assign };
+	primdict = dictput(primdict, "null-coalesce-assign", (void *) &null_coalesce_assign_struct);
 #if HAVE_READLINE
 	X(sethistory);
 	X(writehistory);

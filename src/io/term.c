@@ -3,6 +3,7 @@
 #include "es.h"
 #include "gc.h"
 #include "term.h"
+#include "debug.h"
 
 DefineTag(Term, static);
 

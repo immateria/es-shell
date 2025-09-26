@@ -19,10 +19,16 @@ extern int parse_greater_than_operators(void);
 
 /*
  * Parse '-' and related redirection operators.
- * Handles: ->, ->!, ->>, ->>< , ->-<
+ * Handles: ->, ->!, ->>, ->>< , ->-<, ->[n]
  * Sets *process_as_word to TRUE if this should be handled as a regular minus.
  * Returns appropriate token when process_as_word is FALSE.
  */
 extern int parse_minus_operators(Boolean *process_as_word);
+
+/*
+ * Get the file descriptor number for numbered redirection (->[n]).
+ * Returns the file descriptor number parsed from the last ->[n] token.
+ */
+extern int get_numbered_redir_fd(void);
 
 #endif /* TOKEN_REDIR_H */

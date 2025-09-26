@@ -25,30 +25,30 @@ test 'syntactic sugar' {
 		'fn name { cmd }'	'fn-^name=@ *{cmd}'
 
 		# Input/Output Commands (New Arrow Syntax)
-		# NOTE: the <={%one file} part of these is not mentioned in the man page
-		'cmd <- file'		'%open 0 <={%one file} {cmd}'
-		'cmd -> file'		'%create 1 <={%one file} {cmd}'
-		'cmd ->[6] file'		'%create 6 <={%one file} {cmd}'
-		'cmd ->> file'		'%append 1 <={%one file} {cmd}'
-		'cmd <-> file'		'%open-write 0 <={%one file} {cmd}'
-		'cmd <->> file'		'%open-append 0 <={%one file} {cmd}'
-		'cmd ->-< file'		'%open-create 1 <={%one file} {cmd}'
-		'cmd ->>< file'		'%open-append 1 <={%one file} {cmd}'
-		'cmd >[7=]'		'%close 7 {cmd}'
-		'cmd >[8=9]'		'%dup 8 9 {cmd}'
-		'cmd <<< string'	'%here 0 string {cmd}'
+		# NOTE: the ${%one file} part of these is not mentioned in the man page
+		'cmd <-- file'		'%open 0 ${%one file} {cmd}'
+		'cmd -> file'		'%create 1 ${%one file} {cmd}'
+		'cmd ->[6] file'		'%create 6 ${%one file} {cmd}'
+		'cmd ->> file'		'%append 1 ${%one file} {cmd}'
+		'cmd <--> file'		'%open-write 0 ${%one file} {cmd}'
+		'cmd <-->> file'		'%open-append 0 ${%one file} {cmd}'
+		'cmd ->-< file'		'%open-create 1 ${%one file} {cmd}'
+		'cmd ->>< file'		'%open-append 1 ${%one file} {cmd}'
+		'cmd ->[7=]'		'%close 7 {cmd}'
+		'cmd ->[8=9]'		'%dup 8 9 {cmd}'
+		'cmd <-<< string'	'%here 0 string {cmd}'
 		'cmd1 | cmd2'		'%pipe {cmd1} 1 0 {cmd2}'
 		'cmd1 |[10=11] cmd2'	'%pipe {cmd1} 10 11 {cmd2}'
 		# readfrom/writeto handled specially below
 
 		# Expressions
-		'$#var'			'<={%count $var}'
-		'$^var'			'<={%flatten '' '' $var}'
-		'`{cmd args}'		'<={%backquote <={%flatten '''' $ifs} {cmd args}}'
-		'``ifs {cmd args}'	'<={%backquote <={%flatten '''' ifs} {cmd args}}'
+		'$#var'			'${%count $var}'
+		'$^var'			'${%flatten '' '' $var}'
+		'`{cmd args}'		'${%backquote ${%flatten '''' $ifs} {cmd args}}'
+		'``ifs {cmd args}'	'${%backquote ${%flatten '''' ifs} {cmd args}}'
 		# NOTE: these lines are missing from this section of the man page!
-		'`^{cmd args}'		'<={%flatten '' '' <={%backquote <={%flatten '''' $ifs} {cmd args}}}'
-		'``^ifs {cmd args}'	'<={%flatten '' '' <={%backquote <={%flatten '''' ifs} {cmd args}}}'
+		'`^{cmd args}'		'${%flatten '' '' ${%backquote ${%flatten '''' $ifs} {cmd args}}}'
+		'``^ifs {cmd args}'	'${%flatten '' '' ${%backquote ${%flatten '''' ifs} {cmd args}}}'
 	)) {
 		assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'} $have 'is rewritten to' $want
 	}
@@ -56,8 +56,8 @@ test 'syntactic sugar' {
 
 test 'readfrom/writeto sugar' {
 	for ((have want) = (
-		'cmd1 >{ cmd2 }' '%writeto _devfd0 {cmd2} {cmd1 $_devfd0}'
-		'cmd1 <{ cmd2 }' '%readfrom _devfd0 {cmd2} {cmd1 $_devfd0}'
+		'cmd1 ->{ cmd2 }' '%writeto _devfd0 {cmd2} {cmd1 $_devfd0}'
+		'cmd1 <-{ cmd2 }' '%readfrom _devfd0 {cmd2} {cmd1 $_devfd0}'
 	)) {
 		# using a totally new es forces _devfd0 specifically
 		assert {~ `` \n {$es -c 'echo {'$have'}'} '{'$want'}'}
@@ -67,7 +67,7 @@ test 'readfrom/writeto sugar' {
 test 'heredoc sugar' {
 	let (
 		# NOTE: is it a bug that this only works with the closing newline?
-		have = 'cmd <--< tag
+		have = 'cmd <---< tag
 input
 tag
 '
@@ -104,7 +104,7 @@ test 'complex variables' {
 		'$foo'
 		'$(foo bar)'
 		'$(foo^$bar)'
-		'$(<={foo})'
+		'$(${foo})'
 	)) {
 		assert {~ `` \n {eval echo '{'$syntax'}'} '{'^$syntax^'}'}
 	}
@@ -122,9 +122,9 @@ test 'precedence' {
 		'let (a=b) x || y'	'let(a=b)%or {x} {y}'
 		'let (a=b) x & y'	'%seq {%background {let(a=b)x}} {y}'
 		'let (a=b) x | y'	'let(a=b)%pipe {x} 1 0 {y}'
-		'a && b -> c'		'%and {a} {%create 1 <={%one c} {b}}'
-		'a | b -> c'		'%pipe {a} 1 0 {%create 1 <={%one c} {b}}'
-		'let (a=b) c -> d'	'let(a=b)%create 1 <={%one d} {c}'
+		'a && b -> c'		'%and {a} {%create 1 ${%one c} {b}}'
+		'a | b -> c'		'%pipe {a} 1 0 {%create 1 ${%one c} {b}}'
+		'let (a=b) c -> d'	'let(a=b)%create 1 ${%one d} {c}'
 	)) {
 		assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
 	}

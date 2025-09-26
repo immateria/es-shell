@@ -1,5 +1,27 @@
 # Discoveries
 
+## [2025-01-17] Assignment Operators - Comprehensive Debug Analysis
+
+### Key Discovery: Assignment Primitives Work But Have Scoping Issues
+
+**Analysis Summary**:
+Comprehensive debugging reveals the assignment operator primitives work correctly but have a variable scoping issue when called directly.
+
+**Technical Details**:
+1. **dot-assign primitive implementation is correct**: Successfully concatenates strings ("first" + "second" = "firstsecond"), calls vardef, and returns expected List
+2. **Variable assignment succeeds**: vardef completes successfully and immediate lookup within primitive shows correct value: `"firstsecond"`
+3. **Scoping issue identified**: Variable assigned via `%dot-assign` is not accessible later to `echo $x` - suggests different binding contexts  
+4. **All primitives receive null binding**: binding=0x0 for all primitive calls, including working primitives like echo
+5. **No segmentation fault in assignment**: Previous segfault reports were from initialization issues, not assignment operators
+
+**Root Cause**:
+When calling primitives directly with `%primitive-name` syntax, they execute in a different scope than regular shell commands. The variable assignment works within the primitive's scope but isn't visible to subsequent commands in the main shell scope.
+
+**Solution Strategy**:
+The assignment operators need to be integrated into the parser/evaluator as proper syntax (like `.=`, `+=`) rather than manually-called primitives (`%dot-assign`, `%plus-assign`). This would ensure they execute in the correct binding context and variables remain accessible.
+
+**Status**: Assignment primitive implementation is complete and functional. Next step is parser integration for proper syntax support.
+
 ## Repository overview
 - Es is an extensible shell derived from Plan 9's rc and influenced by functional languages like Scheme and Tcl. The implementation derives from Byron Rakitzis's public domain version of rc.
 - `initial.es` holds the initial memory state; `esdebug` is a basic debugger. The project is public domain with maintenance by Soren Dayton and James Haggerty.

@@ -26,7 +26,7 @@ OPATH = $PATH
 
 fn ask {
   echo -n $^*^'[y/n] '
-  ans = <={%read}
+  ans = ${%read}
 
   if {~ $ans y* Y*} {
     return 0
@@ -42,7 +42,7 @@ if {~ $#PAGER 0} {
 }
 
 fn instructions {
-  cat << EOF
+  cat <--< EOF
 
                   Instructions for the Adventure shell
 
@@ -121,10 +121,10 @@ local (signals = $signals sigint sigquit) {
 
     cd
     LIM = .limbo			# $HOME/$LIM contains "destroyed" objects
-    mkdir $LIM >/dev/null >[2=1]
+    mkdir $LIM ->/dev/null ->[2=1]
     KNAP = .knapsack			# $HOME/$KNAP contains objects being "carried"
     if {! access -d $KNAP} {
-      if {mkdir $KNAP >/dev/null >[2=1]} {
+      if {mkdir $KNAP ->/dev/null ->[2=1]} {
         echo 'You found a discarded empty knapsack.'
       } {
         echo 'You have no knapsack to carry things in.'
@@ -199,7 +199,7 @@ local (signals = $signals sigint sigquit) {
 
       echo -n '-advsh> '			# prompt
       local (line = ) {
-        line = <={%read}
+        line = ${%read}
         if {~ $#line 0} {
           verb = quit	# EOF
         } {
@@ -216,9 +216,9 @@ local (signals = $signals sigint sigquit) {
 		  if {access -f $2} {
 		    echo You must destroy $2 first.
 		  }
-		  if {mv $obj $2 >/dev/null >[2=1]} {
+		  if {mv $obj $2 ->/dev/null ->[2=1]} {
 		    echo The $obj shimmers and turns into $2.
-		    obs = <={delete $obj $2 $obs}
+		    obs = ${delete $obj $2 $obs}
 		  } {
 		    echo There is a cloud of smoke but the $obj is unchanged.
 		  }
@@ -251,7 +251,7 @@ local (signals = $signals sigint sigquit) {
 		    if {access -f $2} {
 		      echo You must destroy $2 first.
 		    } {
-		      if {cp $obj $2 >/dev/null >[2=1]} {
+		      if {cp $obj $2 ->/dev/null ->[2=1]} {
 			echo Poof!  When the smoke clears, you see the new $2.
 			obs = $obs $2
 		      } {
@@ -283,9 +283,9 @@ local (signals = $signals sigint sigquit) {
               if {access -w $it} {
 	        echo You must destroy $it first.
               } {
-                if {mv $HOME/$KNAP/$it $it >/dev/null >[2=1]} {
+                if {mv $HOME/$KNAP/$it $it ->/dev/null ->[2=1]} {
 		  echo $it: dropped.
-		  kn = <={delete $it $kn}
+		  kn = ${delete $it $kn}
 		  obs = $it $obs
                 } {
 	          echo The $it is caught in your knapsack.
@@ -333,7 +333,7 @@ local (signals = $signals sigint sigquit) {
 	  for (it = $obj $x) {
 	    if {~ $it $obs $hobs $exs $hexs} {
               echo Upon close inspection of the $it, you see:
-	      if {! ls -ld $it >[2]/dev/null} {
+	      if {! ls -ld $it ->/dev/null ->[2=1]} {
 	        echo -- when you look directly at the $it, it vanishes.
 	      }
 	    } {
@@ -355,10 +355,10 @@ local (signals = $signals sigint sigquit) {
 		if {! ~ $#2 0} {
 		  * = $*(2 ...)
 		  local (PATH = $OPATH) {
-		    if {$* <$obj >[2]/dev/null} {
+		    if {$* <$obj ->/dev/null ->[2=1]} {
 		      echo The $1 monster devours your $obj.
-		      if {/bin/rm -f $obj >/dev/null >[2=1]} {
-			obs = <={delete $obj $obs}
+		      if {/bin/rm -f $obj ->/dev/null ->[2=1]} {
+			obs = ${delete $obj $obs}
 		      } {
 			echo 'But he spits it back up.'
 		      }
@@ -394,10 +394,10 @@ local (signals = $signals sigint sigquit) {
               if {~ $it $kn} {
 		echo 'You already have one.'
               } {
-                if {mv $it $HOME/$KNAP/$it >/dev/null >[2=1]} {
+                if {mv $it $HOME/$KNAP/$it ->/dev/null ->[2=1]} {
                   echo $it: taken.
 		  kn = $it $kn
-		  obs = <={delete $it $obs}
+		  obs = ${delete $it $obs}
                 } {
 		  echo The $it is too heavy.
 		}
@@ -434,13 +434,13 @@ local (signals = $signals sigint sigquit) {
 	  }
           for (it = $obj $x) {
 	    if {~ $it $obs $hobs} {
-	      if {mv $it $HOME/$LIM </dev/null >[1=0] >[2=0]} {
+	      if {mv $it $HOME/$LIM </dev/null ->/dev/null ->[2=1]} {
 		if {~ $verb kill} {
 		  echo The $it cannot defend himself; he dies.
                 } {
 		  echo You have destroyed the $it; it vanishes.
 		}
-		obs = <={delete $it $obs}
+		obs = ${delete $it $obs}
               } {~ $verb kill} {
                 echo Your feeble blows are no match for the $it.
               } {
@@ -481,7 +481,7 @@ local (signals = $signals sigint sigquit) {
 	  } {
             if {ask 'Are you a wizard?'} {
 	      echo -n 'Prove it!  Say the magic word: '
-	      obj = <={%read}
+	      obj = ${%read}
               if {~ $obj armadillo} {
 	        echo 'Yes, master!!'
 	        wiz=true
@@ -537,7 +537,7 @@ local (signals = $signals sigint sigquit) {
 	    if {~ $it $obs $hobs} {
 	      echo The $it is already alive and well.
 	    } {
-              if {mv $HOME/$LIM/$it $it </dev/null >[1=0] >[2=0]} {
+              if {mv $HOME/$LIM/$it $it </dev/null ->/dev/null ->[2=1]} {
 	        echo The $it staggers to his feet.
 		obs = $it $obs
 		echo There are sparks but no $it appears.
@@ -557,12 +557,12 @@ local (signals = $signals sigint sigquit) {
 		if {! ~ $#2 0} {
 		  * = $*(2 ...)
 		  local (PATH = $OPATH) {
-		    if {$* >$obj >[2]/dev/null} {
+		    if {$* -> $obj ->/dev/null ->[2=1]} {
 		      echo The $1 monster drops the $obj.
 		      obs = $obj $obs
 		    } {
 		      echo The $1 monster runs away as you approach.
-		      /bin/rm -f $obj >/dev/null >[2=1]
+		      /bin/rm -f $obj ->/dev/null ->[2=1]
 		    }
 		  } {
 		    echo 'From what?'
@@ -583,7 +583,7 @@ local (signals = $signals sigint sigquit) {
               if {~ $x(2) daemon}  {
                 if {lpr -r $obj} {
 	          echo The daemon catches the $obj, turns it into paper,\nand leaves it in the basket.
-		  obs = <={delete $obj $obs}
+		  obs = ${delete $obj $obs}
 		} {
                   echo The daemon is nowhere to be found.
 		}

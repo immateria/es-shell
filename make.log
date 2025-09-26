@@ -1,26 +1,20 @@
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/core/eval.o src/core/eval.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/core/gc.o src/core/gc.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/core/main.o src/core/main.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim.o src/primitives/prim.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-ctl.o src/primitives/prim-ctl.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-etc.o src/primitives/prim-etc.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-io.o src/primitives/prim-io.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-math.o src/primitives/prim-math.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-sys.o src/primitives/prim-sys.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-dict.o src/primitives/prim-dict.c
-src/primitives/prim-dict.c:59:61: warning: unused parameter 'value' [-Wunused-parameter]
-   59 | static void collect_keys_helper(void *arg, char *key, void *value) {
-      |                                                             ^
-src/primitives/prim-dict.c:65:51: warning: unused parameter 'key' [-Wunused-parameter]
-   65 | static void count_entries_helper(void *arg, char *key, void *value) {
-      |                                                   ^
-src/primitives/prim-dict.c:65:62: warning: unused parameter 'value' [-Wunused-parameter]
-   65 | static void count_entries_helper(void *arg, char *key, void *value) {
-      |                                                              ^
-src/primitives/prim-dict.c:323:11: warning: unused variable 'key' [-Wunused-variable]
-  323 |     char *key = getstr(list->term);
-      |           ^~~
-4 warnings generated.
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/eval.o src/core/eval.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/gc.o src/core/gc.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/main.o src/core/main.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/eval/arithmetic.o src/core/eval/arithmetic.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/eval/binding.o src/core/eval/binding.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/core/eval/control.o src/core/eval/control.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim.o src/primitives/prim.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-ctl.o src/primitives/prim-ctl.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-etc.o src/primitives/prim-etc.c
+src/primitives/prim-etc.c:816:8: warning: unused variable 'check_var' [-Wunused-variable]
+  816 |         List *check_var = varlookup(var, binding);
+      |               ^~~~~~~~~
+1 warning generated.
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-io.o src/primitives/prim-io.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-math.o src/primitives/prim-math.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-sys.o src/primitives/prim-sys.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/primitives/prim-dict.o src/primitives/prim-dict.c
 src/primitives/prim-dict.c:59:61: warning: unused parameter 'value' [-Wunused-parameter]
    59 | static void collect_keys_helper(void *arg, char *key, void *value) {
       |                                                             ^
@@ -35,45 +29,974 @@ src/primitives/prim-dict.c:323:11: warning: unused variable 'key' [-Wunused-vari
       |           ^~~
 4 warnings generated.
 bison -y -vd ./src/parser/parse.y
+./src/parser/parse.y: warning: 186 shift/reduce conflicts [-Wconflicts-sr]
+./src/parser/parse.y: note: rerun with option '-Wcounterexamples' to generate conflict counterexamples
 mv y.tab.h y.tab.c generated/
 mv y.output generated/ 2>/dev/null || true
 cmp -s generated/y.tab.h generated/token.h || cp generated/y.tab.h generated/token.h
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/syntax.o src/parser/syntax.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/token.o src/parser/token.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/input.o src/io/input.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/heredoc.o src/io/heredoc.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/fd.o src/io/fd.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/open.o src/io/open.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/proc.o src/io/proc.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/io/term.o src/io/term.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/str.o src/data/str.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/list.o src/data/list.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/split.o src/data/split.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/glom.o src/data/glom.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/conv.o src/data/conv.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/dict.o src/data/dict.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/tree.o src/data/tree.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/data/vec.o src/data/vec.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/debug.o src/utils/debug.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/print.o src/utils/print.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/match.o src/utils/match.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/glob.o src/utils/glob.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/util.o src/utils/util.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/var.o src/utils/var.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/access.o src/system/access.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/signal.o src/system/signal.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/status.o src/system/status.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/history.o src/system/history.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/opt.o src/system/opt.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/except.o src/system/except.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/closure.o src/system/closure.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/system/error.o src/system/error.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o generated/y.tab.o generated/y.tab.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/syntax.o src/parser/syntax.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/syntax-infix.o src/parser/syntax-infix.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/syntax-tree.o src/parser/syntax-tree.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/token.o src/parser/token.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/token-utils.o src/parser/token-utils.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/token-redir.o src/parser/token-redir.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/parser/token-string.o src/parser/token-string.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/input.o src/io/input.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/heredoc.o src/io/heredoc.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/fd.o src/io/fd.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/open.o src/io/open.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/proc.o src/io/proc.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/io/term.o src/io/term.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/str.o src/data/str.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/list.o src/data/list.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/split.o src/data/split.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/glom.o src/data/glom.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/conv.o src/data/conv.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/dict.o src/data/dict.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/tree.o src/data/tree.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/data/vec.o src/data/vec.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/debug.o src/utils/debug.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/print.o src/utils/print.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/match.o src/utils/match.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/glob.o src/utils/glob.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/util.o src/utils/util.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/utils/var.o src/utils/var.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/access.o src/system/access.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/signal.o src/system/signal.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/status.o src/system/status.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/history.o src/system/history.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/opt.o src/system/opt.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/except.o src/system/except.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/closure.o src/system/closure.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/system/error.o src/system/error.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o generated/y.tab.o generated/y.tab.c
 sh ./mksignal /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternalLegacy.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityVersions.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/i386/_mcontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/i386/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/i386/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/i386/types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/mach/i386/_structs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/mach/machine/_structs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/_mcontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/signal.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_posix_availability.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_attr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_symbol_aliasing.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int16_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int32_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int64_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_int8_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_intptr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_pid_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_sigaltstack.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_sigset_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_size_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int16_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int32_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int64_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_u_int8_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_ucontext.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_uid_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_uintptr_t.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/appleapiopts.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/signal.h /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/ptrcheck.h  > generated/sigmsgs.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o generated/sigmsgs.o generated/sigmsgs.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/build/version.o src/build/version.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o src/build/dump.o src/build/dump.c
-gcc -o esdump -Wl,-dead_strip -arch x86_64 -arch arm64  src/core/eval.o src/core/gc.o src/core/main.o src/primitives/prim.o src/primitives/prim-ctl.o src/primitives/prim-etc.o src/primitives/prim-io.o src/primitives/prim-math.o src/primitives/prim-sys.o src/primitives/prim-dict.o src/parser/syntax.o src/parser/token.o src/io/input.o src/io/heredoc.o src/io/fd.o src/io/open.o src/io/proc.o src/io/term.o src/data/str.o src/data/list.o src/data/split.o src/data/glom.o src/data/conv.o src/data/dict.o src/data/tree.o src/data/vec.o src/utils/debug.o src/utils/print.o src/utils/match.o src/utils/glob.o src/utils/util.o src/utils/var.o src/system/access.o src/system/signal.o src/system/status.o src/system/history.o src/system/opt.o src/system/except.o src/system/closure.o src/system/error.o generated/y.tab.o generated/sigmsgs.o src/build/version.o src/build/dump.o -lreadline  
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o generated/sigmsgs.o generated/sigmsgs.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/build/version.o src/build/version.c
+gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -g -O2  -I/usr/local/opt/icu4c@76/include  -c -o src/build/dump.o src/build/dump.c
+gcc -o esdump -L/usr/local/opt/icu4c@76/lib  src/core/eval.o src/core/gc.o src/core/main.o src/core/eval/arithmetic.o src/core/eval/binding.o src/core/eval/control.o src/primitives/prim.o src/primitives/prim-ctl.o src/primitives/prim-etc.o src/primitives/prim-io.o src/primitives/prim-math.o src/primitives/prim-sys.o src/primitives/prim-dict.o src/parser/syntax.o src/parser/syntax-infix.o src/parser/syntax-tree.o src/parser/token.o src/parser/token-utils.o src/parser/token-redir.o src/parser/token-string.o src/io/input.o src/io/heredoc.o src/io/fd.o src/io/open.o src/io/proc.o src/io/term.o src/data/str.o src/data/list.o src/data/split.o src/data/glom.o src/data/conv.o src/data/dict.o src/data/tree.o src/data/vec.o src/utils/debug.o src/utils/print.o src/utils/match.o src/utils/glob.o src/utils/util.o src/utils/var.o src/system/access.o src/system/signal.o src/system/status.o src/system/history.o src/system/opt.o src/system/except.o src/system/closure.o src/system/error.o generated/y.tab.o generated/sigmsgs.o src/build/version.o src/build/dump.o -lreadline  
 ./esdump < ./initial.es > generated/initial.c
-gcc -I. -I. -Iinclude -I./include -Igenerated -W -Wall  -Os -fno-common -arch x86_64 -arch arm64  -I/usr/local/opt/icu4c@76/include  -c -o generated/initial.o generated/initial.c
-gcc -o es -Wl,-dead_strip -arch x86_64 -arch arm64  src/core/eval.o src/core/gc.o src/core/main.o src/primitives/prim.o src/primitives/prim-ctl.o src/primitives/prim-etc.o src/primitives/prim-io.o src/primitives/prim-math.o src/primitives/prim-sys.o src/primitives/prim-dict.o src/parser/syntax.o src/parser/token.o src/io/input.o src/io/heredoc.o src/io/fd.o src/io/open.o src/io/proc.o src/io/term.o src/data/str.o src/data/list.o src/data/split.o src/data/glom.o src/data/conv.o src/data/dict.o src/data/tree.o src/data/vec.o src/utils/debug.o src/utils/print.o src/utils/match.o src/utils/glob.o src/utils/util.o src/utils/var.o src/system/access.o src/system/signal.o src/system/status.o src/system/history.o src/system/opt.o src/system/except.o src/system/closure.o src/system/error.o generated/y.tab.o generated/sigmsgs.o src/build/version.o generated/initial.o -lreadline  
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched 'simple' rule
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first assign' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+PARSER DEBUG: Matched 'words word' rule
+PARSER DEBUG: Matched 'first' rule with comword
+PARSER DEBUG: Matched empty 'words' rule
+initial.es:600: syntax error
+make: *** [generated/initial.c] Error 1

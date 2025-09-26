@@ -15,6 +15,9 @@
 #define DEBUG_LIST     0x0010  /* List operations */
 #define DEBUG_TREE     0x0020  /* AST tree operations */
 #define DEBUG_VAR      0x0040  /* Variable lookup */
+#define DEBUG_ASSIGN   0x0080  /* Assignment operators */
+#define DEBUG_TOKEN    0x0100  /* Tokenizer */
+#define DEBUG_MEMORY   0x0200  /* Memory operations */
 #define DEBUG_ALL      0xFFFF
 
 /* Compile-time debug control */

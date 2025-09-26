@@ -9,7 +9,6 @@ Phase 1 ✅ **COMPLETED**: Core syntax modernization
 - Expression evaluation syntax (`${...}`)
 - Variable expansion in expressions
 - Comparison operators in conditionals
-- 100% backward compatibility
 
 Phase 2 🎯 **CURRENT**: User experience and modern features
 - Enhanced error messages and help system

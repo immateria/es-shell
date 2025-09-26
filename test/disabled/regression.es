@@ -7,7 +7,7 @@
 # TODO not all tagged bugs have been covered. Some are hard to repro.
 test 'regressions' {
 	# https://github.com/wryun/es-shell/issues/5
-	assert {~ `` \n {$&a. >[2=1]} 'invalid primitive name: $&a^.'}
+	assert {~ `` \n {$&a. ->[2=1]} 'invalid primitive name: $&a^.'}
 
 	# https://github.com/wryun/es-shell/issues/7
 	# slow and busy, but we're testing for a race condition
@@ -17,7 +17,7 @@ test 'regressions' {
 	} |[2] grep child}}
 
 	# https://github.com/wryun/es-shell/issues/8
-	let (fd = <=%newfd) {
+	let (fd = $%newfd) {
 		catch @ {} {
 			%open $fd /dev/null {
 				throw blah
@@ -65,14 +65,14 @@ test 'regressions' {
 	assert {./testrun 0 | {catch @ {} {%read}}}
 
 	# https://github.com/wryun/es-shell/issues/99
-	assert {$es -c {catch @ {} {echo >[1=]}}}
+	assert {$es -c {catch @ {} {echo ->[1=]}}}
 
 	# https://github.com/wryun/es-shell/issues/104
 	assert {$es -c 'eval {}'}
 
 	# https://github.com/wryun/es-shell/issues/150
-	assert {!$es >[2] /dev/null << EOF
-%read << EOM
+	assert {!$es ->[2] /dev/null <--< EOF
+%read <--< EOM
 hello
 EOM
 wait
@@ -85,13 +85,13 @@ EOF
 	# https://github.com/wryun/es-shell/issues/191
 	# this one actually would hang before the fix on systems with
 	# unsigned chars
-	assert {!$es -c 'echo hi |[2' >[2] /dev/null}
+	assert {!$es -c 'echo hi |[2' ->[2] /dev/null}
 
 	# https://github.com/wryun/es-shell/issues/199
-	assert {~ `` \n {echo 'fn-%write-history = $&collect'^\n^'cat << eof' | $es -i >[2=1]} *'incomplete here document'*}
+	assert {~ `` \n {echo 'fn-%write-history = $&collect'^\n^'cat <--< eof' | $es -i ->[2=1]} *'incomplete here document'*}
 
 	# https://github.com/wryun/es-shell/issues/206
-	assert {~ `` \n {$es -c 'let (a=<=true) echo $a'} <=true} 'concatenated assignment+call syntax works'
+	assert {~ `` \n {$es -c 'let (a=$true) echo $a'} $true} 'concatenated assignment+call syntax works'
 }
 
 # These tests are based on notes in the CHANGES file from the pre-git days.
@@ -111,7 +111,7 @@ test 'old regressions' {
 
 	let (exception = ()) {
 		catch @ e {exception = $e} {
-			for (a = <={break; result b}) {
+			for (a = ${break; result b}) {
 				assert {false} 'break in binder escapes for loop'
 			}
 		}
@@ -119,11 +119,11 @@ test 'old regressions' {
 	}
 
 	let (a = b) {
-		{a = c} >[1=2]
+		{a = c} ->[1=2]
 		assert {~ $a c}
-		{a = d} >[1=]
+		{a = d} ->[1=]
 		assert {~ $a d}
-		{a = e} < /dev/null
+		{a = e} <- /dev/null
 		assert {~ $a e}
 	}
 
