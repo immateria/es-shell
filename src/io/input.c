@@ -3,6 +3,9 @@
 #include "es.h"
 #include "input.h"
 
+#ifndef DEBUG_H
+	#include "debug.h"
+#endif
 /*
  * constants
  */
@@ -84,10 +87,16 @@ static int ungetfill(Input *in) {
 
 /* unget -- push back one character */
 extern void unget(Input *in, int c) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "unget: pushing back char '%c' (0x%02x)", isprint(c) ? c : '?', c);
 	if (in->ungot > 0) {
+		DEBUG_TRACE_ENTER(DEBUG_INPUT, "unget: using existing unget buffer");
 		assert(in->ungot < MAXUNGET);
 		in->unget[in->ungot++] = c;
-	} else {
+		DEBUG_TRACE_EXIT(DEBUG_INPUT, "unget: used existing unget buffer");
+	}
+
+	else {
+		DEBUG_TRACE_ENTER(DEBUG_INPUT, "unget: setting up unget buffer");
 		assert(in->rfill == NULL);
 		in->rfill = in->fill;
 		in->fill = ungetfill;
@@ -97,7 +106,9 @@ extern void unget(Input *in, int c) {
 		assert(in->ungot == 0);
 		in->ungot = 1;
 		in->unget[0] = c;
+		DEBUG_TRACE_EXIT(DEBUG_INPUT, "unget: set up unget buffer");
 	}
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "unget: done");
 }
 
 
@@ -107,12 +118,14 @@ extern void unget(Input *in, int c) {
 
 /* get -- get a character, filter out nulls */
 static int get(Input *in) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "get: fetching next character");
 	int c;
 	Boolean uf = (in->fill == ungetfill);
 	while ((c = (in->buf < in->bufend ? *in->buf++ : (*in->fill)(in))) == '\0')
 		warn("null character ignored");
 	if (!uf && c != EOF)
 		addhistbuffer((char)c);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "get: fetched character '%c' (0x%02x)", isprint(c) ? c : '?', c);
 	return c;
 }
 
@@ -270,6 +283,7 @@ extern void resetparser(void) {
 
 /* runinput -- run from an input source */
 extern List *runinput(Input *in, int runflags) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "runinput: starting with flags 0x%02x", runflags);
 	volatile int flags = runflags;
 	List * volatile result = NULL;
 	List *repl, *dispatch;
@@ -310,7 +324,7 @@ extern List *runinput(Input *in, int runflags) {
 		varpop(&push);
 
 	CatchException (e)
-
+		DEBUG_TRACE_EXIT(DEBUG_INPUT, "runinput: exception caught: %s", e);
 		(*input->cleanup)(input);
 		input = input->prev;
 		throw(e);
@@ -319,6 +333,7 @@ extern List *runinput(Input *in, int runflags) {
 
 	input = in->prev;
 	(*in->cleanup)(in);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "runinput: done");
 	return result;
 }
 
@@ -360,17 +375,23 @@ extern List *runfd(int fd, const char *name, int flags) {
 
 /* stringcleanup -- cleanup after running from a string */
 static void stringcleanup(Input *in) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "stringcleanup: cleaning up string input");
 	efree(in->bufbegin);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "stringcleanup: done");
 }
 
 /* stringfill -- placeholder than turns into EOF right away */
 static int stringfill(Input *in) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "stringfill: turning into EOF");
 	in->fill = eoffill;
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "stringfill: done");
 	return EOF;
 }
 
 /* runstring -- run commands from a string */
 extern List *runstring(const char *str, const char *name, int flags) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "runstring: name='%s', flags=0x%02x", 
+	                  name ? name : "(null)", flags);
 	Input in;
 	List *result;
 	unsigned char *buf;
@@ -392,11 +413,13 @@ extern List *runstring(const char *str, const char *name, int flags) {
 	RefAdd(in.name);
 	result = runinput(&in, flags);
 	RefRemove(in.name);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "runstring: done");
 	return result;
 }
 
 /* parseinput -- turn an input source into a tree */
 extern Tree *parseinput(Input *in) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "parseinput: starting, input=%p", (void*)in);
 	Tree * volatile result = NULL;
 
 	in->prev = input;
@@ -409,6 +432,7 @@ extern Tree *parseinput(Input *in) {
 		if (get(in) != EOF)
 			fail("$&parse", "more than one value in term");
 	CatchException (e)
+		DEBUG_TRACE_EXIT(DEBUG_INPUT, "parseinput: exception caught: %s", e);
 		(*input->cleanup)(input);
 		input = input->prev;
 		throw(e);
@@ -416,11 +440,13 @@ extern Tree *parseinput(Input *in) {
 
 	input = in->prev;
 	(*in->cleanup)(in);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "parseinput: done");
 	return result;
 }
 
 /* parsestring -- turn a string into a tree; must be exactly one tree */
 extern Tree *parsestring(const char *str) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "parsestring: starting, str='%s'", str ? str : "(null)");
 	Input in;
 	Tree *result;
 	unsigned char *buf;
@@ -444,6 +470,7 @@ extern Tree *parsestring(const char *str) {
 	RefAdd(in.name);
 	result = parseinput(&in);
 	RefRemove(in.name);
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "parsestring: done");
 	return result;
 }
 
@@ -493,6 +520,8 @@ static __attribute__((unused)) char *quote(char *text, int type, char *qp) {
 
 /* unquote -- teach es how to unquote a word */
 static __attribute__((unused)) char *unquote(char *text, int quote_char) {
+	DEBUG_TRACE_ENTER(DEBUG_INPUT, "unquote: starting, text='%s', quote_char=%d", 
+	                  text ? text : "(null)", quote_char);
 	char *p, *r;
 
 	p = r = ealloc(strlen(text) + 1);
@@ -502,6 +531,7 @@ static __attribute__((unused)) char *unquote(char *text, int quote_char) {
 			++text;
 	}
 	*p = '\0';
+	DEBUG_TRACE_EXIT(DEBUG_INPUT, "unquote: done, result='%s'", r);
 	return r;
 }
 

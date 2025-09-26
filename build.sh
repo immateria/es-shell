@@ -67,45 +67,50 @@ log_package() {
 
 # Progress spinner
 show_spinner() {
-    local pid=$1
-    local message="${2:-Processing}"
-    local delay=0.1
-    local -a spinner=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-    local i=0
+	local    pid message delay i
+    local -a spinner
+	         spinner=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+             pid=$1
+             message="${2:-Processing}"
+             delay=0.1
+             i=0
+
     while kill -0 "$pid" 2>/dev/null; do
         printf "\r  ${YELLOW}%s${NC} %s..." "${spinner[i]}" "$message"
         i=$(((i + 1) % 10))
-        sleep $delay
+        sleep "$delay"
     done
     printf "\r"
 }
 
 # Execute command with progress spinner and clean output
 execute_with_progress() {
-    local cmd="$1"
-    local message="${2:-Running command}"
-    local logfile="${3:-build.log}"
+	local cmd message logfile cmd_pid exit_status
+          cmd="$1"
+          message="${2:-Running command}"
+          logfile="${3:-build.log}"
     
-    if [[ $dry_run -eq 1 ]]; then
+    if [[ "$dry_run" -eq 1 ]]; then
         log_info "[DRY-RUN] Would execute with progress: $cmd"
         return 0
     fi
     
     # Start command in background, redirecting output to log
     eval "$cmd" >"$logfile" 2>&1 &
-    local cmd_pid=$!
+    cmd_pid=$!
     
     # Show spinner while command runs
     show_spinner "$cmd_pid" "$message"
     
     # Wait for command to complete and get exit status
     wait "$cmd_pid"
-    local exit_status=$?
+    exit_status=$?
     
     # Clear the spinner line and show result
     printf "\r  "
-    if [[ $exit_status -eq 0 ]]; then
+    if [[ "$exit_status" -eq 0 ]]; then
         echo -e "${GREEN}${CHECKMARK}${NC} $message completed successfully"
+
     else
         echo -e "${RED}${CROSS}${NC} $message failed (see $logfile for details)"
         return $exit_status
@@ -121,21 +126,22 @@ start_timing() {
 
 # Get elapsed time in a human readable format
 get_elapsed_time() {
-    local end_time
-    end_time=$(date +%s)
-    local elapsed=$((end_time - start_time))
-    local minutes=$((elapsed / 60))
-    local seconds=$((elapsed % 60))
+    local end_time elapsed minutes seconds
+          end_time=$(date +%s)
+          elapsed=$((end_time - start_time))
+          minutes=$((elapsed / 60))
+          seconds=$((elapsed % 60))
     
-    if [[ $minutes -gt 0 ]]; then
+    if [[ "$minutes" -gt 0 ]]; then
         echo "${minutes}m ${seconds}s"
+
     else
         echo "${seconds}s"
     fi
 }
 
 usage() {
-    cat <<'USAGE'
+    command cat <<'USAGE'
 Usage: $0 [--static] [--output-dir DIR] [--dry-run] [--enable-tests] [--intel-only|--arm-only|--universal]
 Install build dependencies, configure, build, and test es-shell.
 Automatically detects Linux (apt-get) or macOS (Homebrew) and uses appropriate package manager.
@@ -162,6 +168,7 @@ out_dir="bin"
 dry_run=0
 enable_tests=0
 build_target="auto"  # auto, intel, arm, universal
+build_mode="release"  # release | debug
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -197,6 +204,10 @@ while [[ $# -gt 0 ]]; do
             build_target="universal"
             shift
             ;;
+        --debug)
+            build_mode="debug"
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -226,8 +237,9 @@ detect_os() {
 
 # Validate that a command exists and is functional
 validate_tool() {
-    local tool="$1"
-    local test_cmd="${2:-}"
+	local tool test_cmd
+          tool="$1"
+          test_cmd="${2:-}"
     
     if ! command -v "$tool" >/dev/null 2>&1; then
         log_error "$tool is not available in PATH"
@@ -247,8 +259,9 @@ validate_tool() {
 
 # Dry run wrapper
 execute() {
-    if [[ $dry_run -eq 1 ]]; then
+    if [[ "$dry_run" -eq 1 ]]; then
         log_info "[DRY-RUN] Would execute: $*"
+
     else
         "$@"
     fi
@@ -261,9 +274,11 @@ install_deps_linux() {
         log_error "This script needs to install packages but sudo is not available and not running as root"
         exit 1
     fi
-    
-    local apt_cmd="apt-get"
-    if [[ $EUID -ne 0 ]]; then
+
+    local apt_cmd
+          apt_cmd="apt-get"
+
+    if [[ "$EUID" -ne 0 ]]; then
         apt_cmd="sudo apt-get"
     fi
     
@@ -313,7 +328,7 @@ check_homebrew() {
 check_xcode_tools() {
     if ! xcode-select -p >/dev/null 2>&1; then
         log_step "Xcode command line tools not found. Installing..."
-        if [[ $dry_run -eq 1 ]]; then
+        if [[ "$dry_run" -eq 1 ]]; then
             log_info "[DRY-RUN] Would run: xcode-select --install"
             log_info "[DRY-RUN] Would wait for user confirmation"
         else
@@ -343,7 +358,8 @@ install_deps_macos() {
     
     # Install required packages
     log_info "Installing Homebrew packages..."
-    local packages=("autoconf" "automake" "libtool" "pkg-config" "bison" "flex")
+	local packages
+          packages=("autoconf" "automake" "libtool" "pkg-config" "bison" "flex")
     for package in "${packages[@]}"; do
         if ! brew list "$package" >/dev/null 2>&1; then
             log_package "Installing $package"
@@ -358,9 +374,11 @@ install_deps_macos() {
     if [[ -d "/opt/homebrew" ]]; then
         homebrew_prefix="/opt/homebrew"
         log_info "Detected Apple Silicon Homebrew"
+
     elif [[ -d "/usr/local" ]]; then
         homebrew_prefix="/usr/local"
         log_info "Detected Intel Homebrew"
+
     else
         log_error "Cannot determine Homebrew prefix"
         exit 1
@@ -413,6 +431,8 @@ install_dependencies() {
     
     log_success "Dependencies installed successfully"
 }
+
+
 # Clean architecture-specific build artifacts
 clean_architecture_specific() {
     log_step "Cleaning Build Artifacts"
@@ -455,9 +475,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     
     log_header "ES-SHELL BUILD SYSTEM"
     log_info "Build configuration:"
-    echo -e "  ${ARROW} Static linking: $([ $static -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
+    echo -e "  ${ARROW} Static linking:   $([ $static -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
     echo -e "  ${ARROW} Output directory: ${CYAN}$out_dir${NC}"
-    echo -e "  ${ARROW} Tests: $([ $enable_tests -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
+    echo -e "  ${ARROW} Tests:            $([ $enable_tests -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
+	echo -e "  ${ARROW} Build mode:       ${CYAN}$build_mode${NC}"
     
     if [[ $dry_run -eq 1 ]]; then
         log_warn "DRY RUN MODE - No actual changes will be made"
@@ -503,6 +524,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # Configure the build
     log_step "Configuring Build System"
     if [[ $static -eq 1 ]]; then
+
         if [[ "$(detect_os)" == "macos" ]]; then
             log_warn "Static linking not supported on macOS - using dynamic linking with optimized flags"
             
@@ -518,25 +540,30 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
                 log_info "Building Intel-only binary (targeting macOS ${INTEL_MIN_VERSION}+)..."
                 export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
                 ARCH_FLAGS="-arch x86_64 -mmacosx-version-min=${INTEL_MIN_VERSION}"
+
             elif [[ "$build_target" == "arm" ]]; then
                 log_info "Building Apple Silicon-only binary (targeting macOS ${ARM_MIN_VERSION}+)..."
                 export MACOSX_DEPLOYMENT_TARGET="$ARM_MIN_VERSION"
                 ARCH_FLAGS="-arch arm64 -mmacosx-version-min=${ARM_MIN_VERSION}"
+
             elif [[ "$build_target" == "universal" ]]; then
                 log_info "Building universal binary (Intel: macOS ${INTEL_MIN_VERSION}+, Apple Silicon: macOS ${ARM_MIN_VERSION}+)..."
                 log_warn "Note: Universal builds may require Rosetta 2 on Apple Silicon during compilation"
                 export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
                 ARCH_FLAGS="-arch x86_64 -arch arm64"
+
             else
                 # Auto-detect based on host
                 if [[ "$HOST_ARCH" == "arm64" ]]; then
                     log_info "Auto-detected Apple Silicon - building universal binary (Intel: macOS ${INTEL_MIN_VERSION}+, Apple Silicon: macOS ${ARM_MIN_VERSION}+)..."
                     export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
                     ARCH_FLAGS="-arch x86_64 -arch arm64"
+
                 else
                     log_info "Auto-detected Intel Mac - building Intel-only binary (targeting macOS ${INTEL_MIN_VERSION}+)..."
                     export MACOSX_DEPLOYMENT_TARGET="$INTEL_MIN_VERSION"
                     ARCH_FLAGS="-arch x86_64 -mmacosx-version-min=${INTEL_MIN_VERSION}"
+
                 fi
             fi
             
@@ -557,10 +584,17 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         execute rm -rf autom4te.cache
     fi
     
+
     # Build the project
     log_step "Compiling ES-Shell"
-    log_info "Compiling source files..."
-    execute_with_progress "make" "Compiling ES-Shell" "make.log"
+    if [[ "$build_mode" == "debug" ]]; then
+        log_info "Building debug binary (with ES_DEBUG, -g, -O0)..."
+        execute_with_progress "make es-debug" "Compiling ES-Shell (debug)" "make.log"
+    else
+        # either the generic 'make' or the explicit release target; explicit is clearer
+        log_info "Building release binary..."
+        execute_with_progress "make es-release" "Compiling ES-Shell (release)" "make.log"
+    fi
     
     # Run tests if enabled
     if [[ $enable_tests -eq 1 ]]; then
@@ -579,8 +613,17 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     log_step "Installing Binary"
     log_info "Creating output directory: $out_dir"
     execute mkdir -p "$out_dir"
-    log_info "Installing es-shell binary..."
-    execute cp es "$out_dir/es-shell"
+    
+    if [[ "$build_mode" == "debug" ]]; then
+        # Makefile emits 'es-debug'
+        log_info "Installing debug binary..."
+        execute cp es-debug "$out_dir/es-shell-debug"
+    else
+        # Makefile emits 'es-release'
+        log_info "Installing release binary..."
+        # keep the friendly name 'es-shell'
+        execute cp es-release "$out_dir/es-shell"
+    fi
     
     # Final summary
     echo
@@ -593,7 +636,18 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     log_success "ES-Shell build completed successfully!"
     echo
     echo -e "${WHITE}${BOLD}┌─────────────────────────────────────────┐${NC}"
+
+if [[ "$build_mode" == "debug" ]]; then
+	
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Binary:         ${GREEN}$out_dir/es-shell-debug${NC}"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Mode:           ${CYAN}debug (-g -O0, ES_DEBUG)${NC}"
+
+else
+
     echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Binary:         ${GREEN}$out_dir/es-shell${NC}"
+    echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Mode:           ${CYAN}release (-O2, NDEBUG)${NC}"
+
+fi
     echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Build time:     ${CYAN}$elapsed_time${NC}"
     echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Static linking: $([ $static -eq 1 ] && echo "${GREEN}enabled${NC}" || echo "${YELLOW}disabled${NC}")"
     echo -e "${WHITE}${BOLD}│${NC} ${GREEN}${CHECKMARK}${NC} Tests:          $([ $enable_tests -eq 1 ] && echo "${GREEN}ran${NC}" || echo "${YELLOW}skipped${NC}")"
@@ -602,8 +656,13 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     
     if [[ $dry_run -eq 0 ]]; then
         echo
-        echo -e "${ARROW} To test the shell, run: ${GREEN}$out_dir/es-shell${NC}"
-        echo -e "${ARROW} For help, run: ${GREEN}$out_dir/es-shell --help${NC}"
+        if [[ "$build_mode" == "debug" ]]; then
+            echo -e "${ARROW} To test the shell, run: ${GREEN}$out_dir/es-shell-debug${NC}"
+            echo -e "${ARROW} For help, run: ${GREEN}$out_dir/es-shell-debug --help${NC}"
+        else
+            echo -e "${ARROW} To test the shell, run: ${GREEN}$out_dir/es-shell${NC}"
+            echo -e "${ARROW} For help, run: ${GREEN}$out_dir/es-shell --help${NC}"
+        fi
     fi
     
     echo

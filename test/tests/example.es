@@ -27,7 +27,7 @@ test 'redirects redirect' {
 	# build upon each other.
 	let (test-file = `{mktemp redirect-file.XXXXXX})
 	unwind-protect {
-		assert {~ `{cat <--( $test-file} $test-file} 'herestring herestrings'
+		assert {~ `{cat <~ $test-file} $test-file} 'herestring herestrings'
 
 		echo 'hi' -> $test-file
 		assert {~ `` () {cat $test-file} 'hi'\n} 'write writes'

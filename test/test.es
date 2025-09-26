@@ -117,26 +117,28 @@ let (status = ()) {
 						message = $^message
 					}
 					catch @ e {
-						fail-case $title $message $e
+						$fn-fail-case $title $message $e
 						return
 					} {
 						result = ${$cmd}
 					}
 					if $result {
-						pass-case $title $message
+						$fn-pass-case $title $message
 					} {
-						fail-case $title $message
+						$fn-fail-case $title $message
 					}
 				}
 			}
+			# Create alias for assert function
+			assert = $fn-assert
 		) {
-			new-test $title
+			$fn-new-test $title
 			catch @ e {
 				test-execution-failure = $e
 			} {
 				$testbody
 			}
-			status = $status <=report
+			status = $status ${$fn-report}
 		}
 	}
 
@@ -147,6 +149,9 @@ let (status = ()) {
 		}
 	}
 }
+
+# Make test functions available globally for test files
+test = $fn-test
 
 noexport = $noexport fn-assert fn-test fn-report-testfile
 
@@ -171,7 +176,7 @@ if $junit {
 let (status = ()) {
 	for (testfile = $*) {
 		. $testfile
-		status = $status <=report-testfile
+		status = $status ${$fn-report-testfile}
 	}
 
 	if $junit {

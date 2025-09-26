@@ -82,9 +82,9 @@ extern struct Binding *letbindings(struct Tree *defn0, struct Binding *outer0,
 
 /* localbind -- recursively convert a Bindings list into dynamic binding */
 extern struct List *localbind(struct Binding *dynamic0, struct Binding *lexical0,
-		       struct Tree *body0, int evalflags, WalkFunc walk_func) {
+		       struct Tree *body0, int evalflags) {
 	if (dynamic0 == NULL)
-		return walk_func(body0, lexical0, evalflags);
+		return walk(body0, lexical0, evalflags);
 	else {
 		Push p;
 		Ref(List *, result, NULL);
@@ -93,7 +93,7 @@ extern struct List *localbind(struct Binding *dynamic0, struct Binding *lexical0
 		Ref(Binding *, lexical, lexical0);
 
 		varpush(&p, dynamic->name, dynamic->defn);
-		result = localbind(dynamic->next, lexical, body, evalflags, walk_func);
+		result = localbind(dynamic->next, lexical, body, evalflags);
 		varpop(&p);
 
 		RefEnd3(lexical, dynamic, body);
@@ -103,14 +103,14 @@ extern struct List *localbind(struct Binding *dynamic0, struct Binding *lexical0
 	
 /* local -- build, recursively, one layer of local assignment */
 extern struct List *local(struct Tree *defn, struct Tree *body0,
-		   struct Binding *bindings0, int evalflags, WalkFunc walk_func) {
+		   struct Binding *bindings0, int evalflags) {
 	Ref(List *, result, NULL);
 	Ref(Tree *, body, body0);
 	Ref(Binding *, bindings, bindings0);
 	Ref(Binding *, dynamic,
 	    reversebindings(letbindings(defn, NULL, bindings, evalflags)));
 
-	result = localbind(dynamic, bindings, body, evalflags, walk_func);
+	result = localbind(dynamic, bindings, body, evalflags);
 
 	RefEnd3(dynamic, bindings, body);
 	RefReturn(result);

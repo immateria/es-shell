@@ -23,8 +23,9 @@ extern int get_numbered_redir_fd(void) {
 extern int parse_less_than_operators(void) {
 	int c = GETC();
 	if (c == '~') {
-		/* <~ herestring syntax */
-		return HERESTRING;
+		/* <~ herestring syntax - treat as LT for now */
+		UNGETC(c);
+		return LT;
 	} else if (c == '<') {
 		c = GETC();
 		if (c == '<') {
@@ -131,12 +132,12 @@ extern int parse_minus_operators(Boolean *process_as_word) {
 			}
 			
 			if (i > 0 && fd_char == ']') {
-				/* Valid ->[n] syntax */
+				/* Valid ->[n] syntax - treat as RARROW for now */
 				fd_buf[i] = '\0';
 				numbered_redir_fd = atoi(fd_buf);
 				
 				*process_as_word = FALSE;
-				return NUMBERED_REDIR;
+				return RARROW;
 			} else {
 				/* Invalid syntax, treat as -> followed by other tokens */
 				/* Push back what we read */
@@ -168,9 +169,11 @@ extern int parse_minus_operators(Boolean *process_as_word) {
 			return RARROW;
 		}
 	} else if (c == '=') {
-		/* -= minus assignment */
-		*process_as_word = FALSE;
-		return ASSIGN_MINUS;
+		/* -= minus assignment - treat as word for now */
+		UNGETC(c);
+		UNGETC('-');
+		*process_as_word = TRUE;
+		return 0; /* Return value ignored when process_as_word is TRUE */
 	} else {
 		/* Just a regular minus sign - let it be processed as a word */
 		UNGETC(c);

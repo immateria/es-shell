@@ -1,10 +1,9 @@
 /* eval.c -- evaluation of lists and trees ($Revision: 1.2 $) */
 
 #include "es.h"
-#include "eval/arithmetic.h"
+#include "debug.h"
 #include "eval/binding.h"
 #include "eval/control.h"
-#include "debug.h"
 
 unsigned long evaldepth = 0, maxevaldepth = MAXmaxevaldepth;
 
@@ -49,16 +48,6 @@ extern List *forkexec(char *file, List *list, Boolean inchild) {
 	return mklist(mkterm(mkstatus(status), NULL), NULL);
 }
 
-
-
-
-
-
-
-
-
-
-
 /* walk -- walk through a tree, evaluating nodes */
 extern List *walk(Tree *tree0, Binding *binding0, int flags) {
 	Tree *volatile tree = tree0;
@@ -82,7 +71,7 @@ top:
 		return eval(list, binding, flags);
 	    }
 
-	case nAssign:
+	    case nAssign:
 		return assign(tree->u[0].p, tree->u[1].p, binding);
 
 	    case nLet: case nClosure:
@@ -93,7 +82,7 @@ top:
 		goto top;
 
 	    case nLocal:
-		return local(tree->u[0].p, tree->u[1].p, binding, flags, walk);
+		return local(tree->u[0].p, tree->u[1].p, binding, flags);
 
 	    case nFor:
 		return forloop(tree->u[0].p, tree->u[1].p, binding, flags);
@@ -101,14 +90,8 @@ top:
 	    case nMatch:
 		return matchpattern(tree->u[0].p, tree->u[1].p, binding);
 
-	    case nExtract: {
-		List *result = extractpattern(tree->u[0].p, tree->u[1].p, binding);
-		if (result != NULL) {
-			/* Print the extracted matches to stdout */
-			print("%L\n", result, " ");
-		}
-		return result;
-	    }
+	    case nExtract:
+		return extractpattern(tree->u[0].p, tree->u[1].p, binding);
 
 	    default:
 		panic("walk: bad node kind %d", tree->kind);
@@ -116,9 +99,6 @@ top:
 	}
 	NOTREACHED;
 }
-
-
-
 
 /* pathsearch -- evaluate fn %pathsearch + some argument */
 extern List *pathsearch(Term *term) {
@@ -138,8 +118,14 @@ extern List *eval(List *list0, Binding *binding0, int flags) {
 	Closure *volatile cp;
 	List *fn;
 
-	if (++evaldepth >= maxevaldepth)
+	DEBUG_TRACE_ENTER(DEBUG_EVAL, "eval called with depth=%lu, flags=%d", evaldepth, flags);
+	DEBUG_PRINT_LIST(DEBUG_EVAL, list0, "Input list");
+	DEBUG_PERF_START("eval");
+
+	if (++evaldepth >= maxevaldepth) {
+		DEBUG_TRACE(DEBUG_EVAL, "Max eval depth exceeded: %lu >= %lu", evaldepth, maxevaldepth);
 		fail("es:eval", "max-eval-depth exceeded");
+	}
 
 	Ref(List *, list, list0);
 	Ref(Binding *, binding, binding0);
@@ -147,20 +133,24 @@ extern List *eval(List *list0, Binding *binding0, int flags) {
 
 restart:
 	SIGCHK();
+	DEBUG_CHECKPOINT();  /* Interactive debugging checkpoint */
+	
 	if (list == NULL) {
+		DEBUG_TRACE(DEBUG_EVAL, "eval: empty list, returning ltrue");
+		DEBUG_PERF_END("eval");
 		RefPop3(funcname, binding, list);
 		--evaldepth;
+		DEBUG_TRACE_EXIT(DEBUG_EVAL, "eval returning ltrue, depth=%lu", evaldepth);
 		return ltrue;
 	}
 	assert(list->term != NULL);
 
 	if ((cp = getclosure(list->term)) != NULL) {
+		DEBUG_TRACE(DEBUG_EVAL, "eval: found closure, kind=%d", cp->tree->kind);
 		switch (cp->tree->kind) {
 		    case nPrim:
 			assert(cp->binding == NULL);
-			DEBUG_TRACE(DEBUG_PRIM, "eval: calling primitive '%s'", cp->tree->u[0].s);
 			list = prim(cp->tree->u[0].s, list->next, binding, flags);
-			DEBUG_TRACE(DEBUG_PRIM, "eval: primitive '%s' returned %p", cp->tree->u[0].s, (void*)list);
 			break;
 		    case nThunk:
 			list = walk(cp->tree->u[0].p, cp->binding, flags);
@@ -220,24 +210,66 @@ restart:
 
 	Ref(char *, name, getstr(list->term));
 	
-	/* Check for arithmetic expressions (compound like "5+3" or literals like "42") */
-	if (is_arithmetic_expression(name)) {
-		List *arith_result = parse_arithmetic_expression(name, list->next);
-		if (arith_result != NULL) {
-			/* Check if this is a literal number (single term, same as original name) */
-			if (arith_result->next == list->next && 
-			    arith_result->term != NULL &&
-			    strcmp(getstr(arith_result->term), name) == 0) {
-				/* It's a literal - return directly to avoid infinite loop */
-				list = arith_result;
-				RefPop(name);
-				goto done;
-			} else {
-				/* It's a compound expression - restart evaluation */
-				list = arith_result;
-				RefPop(name);
-				goto restart;
+	/* Check for compound arithmetic expression like "5+0" and parse it */
+	char *op_pos = NULL;
+	char *prim_name = NULL;
+	
+	/* Only process compound expressions: digit + operator + digit */
+	size_t name_len = strlen(name);
+	Boolean has_digit_op_digit = FALSE;
+	for (size_t i = 1; i < name_len - 1; i++) {
+		if ((name[i] == '+' || name[i] == '-' || name[i] == '*' || name[i] == '/') &&
+		    isdigit(name[i-1]) && isdigit(name[i+1])) {
+			has_digit_op_digit = TRUE;
+			break;
+		}
+	}
+	
+	if (has_digit_op_digit) {
+		
+		if ((op_pos = strchr(name, '+')) != NULL) {
+			prim_name = "%addition";
+		} else if ((op_pos = strchr(name, '-')) != NULL) {
+			/* Make sure it's not a negative number at the start */
+			if (op_pos != name) {
+				prim_name = "%subtraction";
 			}
+		} else if ((op_pos = strchr(name, '*')) != NULL) {
+			prim_name = "%multiplication";
+		} else if ((op_pos = strchr(name, '/')) != NULL) {
+			prim_name = "%division";
+		}
+	}
+	
+	if (op_pos != NULL && prim_name != NULL && op_pos != name && *(op_pos + 1) != '\0') {
+		size_t left_len = op_pos - name;
+		char *left_operand = ealloc(left_len + 1);
+		memcpy(left_operand, name, left_len);
+		left_operand[left_len] = '\0';
+		
+		char *right_operand = str("%s", op_pos + 1);
+		
+		/* Create arithmetic call: primitive left_operand right_operand */
+		List *arith_call = mklist(mkstr(prim_name), 
+		                        mklist(mkstr(left_operand), 
+		                              mklist(mkstr(right_operand), list->next)));
+		list = arith_call;
+		RefPop(name);
+		goto restart;
+	}
+	
+	/* Check for literal numbers like "5", "-3.14", "0" */
+	{
+		char *endptr;
+		double parsed_value = strtod(name, &endptr);
+		(void)parsed_value; /* Suppress unused variable warning */
+		
+		/* If strtod consumed the entire string, it's a valid number */
+		if (*endptr == '\0' && endptr != name) {
+			/* Return the number as a literal string value */
+			list = mklist(mkstr(name), list->next);
+			RefPop(name);
+			goto done;
 		}
 	}
 	
@@ -276,13 +308,14 @@ restart:
 	goto restart;
 
 done:
-	DEBUG_TRACE(DEBUG_EVAL, "eval: exiting with list=%p", (void*)list);
-	DEBUG_PRINT_LIST(DEBUG_EVAL, list, "eval exit list:");
+	DEBUG_PERF_END("eval");
 	--evaldepth;
+	DEBUG_TRACE_EXIT(DEBUG_EVAL, "eval returning result, depth=%lu", evaldepth);
+	DEBUG_PRINT_LIST(DEBUG_EVAL, list, "Result list");
+	
 	if ((flags & eval_exitonfalse) && !istrue(list))
 		esexit(exitstatus(list));
 	RefEnd2(funcname, binding);
-	DEBUG_TRACE(DEBUG_EVAL, "eval: about to RefReturn list=%p", (void*)list);
 	RefReturn(list);
 }
 

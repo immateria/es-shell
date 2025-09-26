@@ -537,7 +537,7 @@ fn-%one = @ {
 #    same form, the %here hook function.
 #
 #        cmd <--< tag input tag    %here 0 input  {cmd}
-#        cmd <= string             %here 0 string {cmd}
+#        cmd <~ string             %here 0 string {cmd}
 
 fn-%here    = $&here
 
@@ -1394,4 +1394,3 @@ fn-dict-to-string = @ dict {
     parts = $parts ' }'
     result ${%flatten '' $parts}
 }
-

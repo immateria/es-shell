@@ -5,7 +5,6 @@
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
-#include "token-redir.h"
 
 static Tree *arithword(Tree *t) {
        if (t != NULL && t->kind == nWord) {
@@ -46,15 +45,10 @@ static Tree *arithword(Tree *t) {
 %token <tree>	PIPE
 %token          ANDAND BACKBACK BBFLAT BFLAT EXTRACT CALL COUNT FLAT OROR PRIM SUB
 %token          LT GT LE GE EQ NE  /* Comparison operators */
-%token          ASSIGN_AND ASSIGN_OR ASSIGN_COLON ASSIGN_QUESTION ASSIGN_NULL_COALESCE
-%token          ASSIGN_PLUS ASSIGN_MINUS ASSIGN_MULT ASSIGN_DIV ASSIGN_DOT ASSIGN_INT_DIV
-%token          ASSIGN_PREPEND  /* Assignment operators */
 %token		EXPR_CALL  /* ${...} expression evaluation */
 %token		LARROW RARROW  /* <- and -> for redirection */
 %token		FLARROW FRARROW  /* <-! and ->! for forced redirection */
 %token		HEREDOC_NEW  /* <--< for new heredoc syntax */
-%token		HERESTRING  /* <~ for herestring (intuitive literal input) */
-%token		NUMBERED_REDIR  /* ->[n] for numbered redirection */
 %token		RW_ARROW  /* <-> for read-write */
 %token		OA_ARROW  /* <->> for open-append */
 %token		OC_ARROW  /* ->-< for open-create */
@@ -69,7 +63,6 @@ static Tree *arithword(Tree *t) {
 %left		'!'
 %left		LT GT LE GE EQ NE  /* Comparison operators */
 %left		PIPE
-%right		ASSIGN_PLUS ASSIGN_MINUS ASSIGN_MULT ASSIGN_DIV ASSIGN_DOT ASSIGN_INT_DIV ASSIGN_PREPEND ASSIGN_AND ASSIGN_OR ASSIGN_COLON ASSIGN_QUESTION ASSIGN_NULL_COALESCE  /* Assignment operators */
 %right		'$' EXPR_CALL
 %left		SUB
 
@@ -102,21 +95,9 @@ cmdsan	: cmdsa			{ $$ = $1; }
 	| cmd NL		{ $$ = $1; if (!readheredocs(FALSE)) YYABORT; }
 
 cmd	:		%prec LET		{ $$ = NULL; }
-	| simple				{ fprintf(stderr, "PARSER DEBUG: Matched 'simple' rule\n"); fflush(stderr); $$ = redirect($1); if ($$ == &errornode) YYABORT; }
+	| simple				{ $$ = redirect($1); if ($$ == &errornode) YYABORT; }
 	| redir cmd	%prec '!'		{ $$ = redirect(mk(nRedir, $1, $2)); if ($$ == &errornode) YYABORT; }
-	| first assign				{ fprintf(stderr, "PARSER DEBUG: Matched 'first assign' rule\n"); fflush(stderr); $$ = mk(nAssign, $1, $2); }
-	| first ASSIGN_PLUS words		{ fprintf(stderr, "PARSER DEBUG: Matched ASSIGN_PLUS rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%plus-assign", treecons($1, $3))); }
-	| first ASSIGN_MINUS words		{ fprintf(stderr, "PARSER DEBUG: Matched ASSIGN_MINUS rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%minus-assign", treecons($1, $3))); }
-	| first ASSIGN_MULT words		{ fprintf(stderr, "PARSER DEBUG: Matched ASSIGN_MULT rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%mult-assign", treecons($1, $3))); }
-	| first ASSIGN_DIV words		{ fprintf(stderr, "PARSER DEBUG: Matched ASSIGN_DIV rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%div-assign", treecons($1, $3))); }
-	| first ASSIGN_DOT words		{ fprintf(stderr, "PARSER DEBUG: Matched ASSIGN_DOT rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%dot-assign", treecons($1, $3))); }
-	| first ASSIGN_INT_DIV words		{ $$ = mk(nCall, prefix("%intdiv-assign", treecons($1, $3))); }
-	| first ASSIGN_PREPEND words		{ $$ = mk(nCall, prefix("%prepend-assign", treecons($1, $3))); }
-	| first ASSIGN_AND words		{ $$ = mk(nCall, prefix("%and-assign", treecons($1, $3))); }
-	| first ASSIGN_OR words			{ $$ = mk(nCall, prefix("%or-assign", treecons($1, $3))); }
-	| first ASSIGN_COLON words		{ $$ = mk(nCall, prefix("%colon-assign", treecons($1, $3))); }
-	| first ASSIGN_QUESTION words		{ $$ = mk(nCall, prefix("%question-assign", treecons($1, $3))); }
-	| first ASSIGN_NULL_COALESCE words	{ $$ = mk(nCall, prefix("%null-coalesce-assign", treecons($1, $3))); }
+	| first assign				{ $$ = mk(nAssign, $1, $2); }
 	| fn					{ $$ = $1; }
 	| binder nl '(' bindings ')' nl cmd	{ $$ = mk($1, $4, $7); }
 	| cmd ANDAND nl cmd			{ $$ = mkseq("%and", $1, $4); }
@@ -134,14 +115,8 @@ cases	: case				{ $$ = treecons($1, NULL); }
 case	:				{ $$ = NULL; }
 	| word first			{ $$ = mk(nMatch, $1, thunkify($2)); }
 
-simple	: first	%prec NL		{ Tree *expr = rewriteinfix($1, NULL); $$ = (expr != NULL) ? expr : treecons($1, NULL); }
+simple	: first				{ Tree *expr = rewriteinfix($1, NULL); $$ = (expr != NULL) ? expr : treecons($1, NULL); }
 	| first args			{ Tree *expr = rewriteinfix($1, $2); $$ = (expr != NULL) ? expr : firstprepend($1, $2); }
-	| first ASSIGN_DOT args		{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_DOT rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%dot-assign", treecons($1, $3))); }
-	| first ASSIGN_PLUS args	{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_PLUS rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%plus-assign", treecons($1, $3))); }
-	| first ASSIGN_MINUS args	{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_MINUS rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%minus-assign", treecons($1, $3))); }
-	| first ASSIGN_MULT args	{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_MULT rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%mult-assign", treecons($1, $3))); }
-	| first ASSIGN_DIV args		{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_DIV rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%div-assign", treecons($1, $3))); }
-	| first ASSIGN_INT_DIV args	{ fprintf(stderr, "PARSER DEBUG: Matched spaced ASSIGN_INT_DIV rule\n"); fflush(stderr); $$ = mk(nCall, prefix("%int-div-assign", treecons($1, $3))); }
 
 args	: word				{ $$ = treecons($1, NULL); }
 	| redir				{ $$ = redirappend(NULL, $1); }
@@ -155,8 +130,6 @@ redir	: DUP				{ $$ = $1; }
 	| FLARROW word			{ $$ = mkredir(mkredircmd("%open-force", 0), $2); }  /* <-! forced input */
 	| FRARROW word			{ $$ = mkredir(mkredircmd("%create-force", 1), $2); }  /* ->! forced output */
 	| HEREDOC_NEW word		{ $$ = mkredir(mkredircmd("%heredoc", 0), $2); }  /* <--< heredoc */
-	| HERESTRING word		{ $$ = mkredir(mkredircmd("%here", 0), $2); }  /* <~ herestring */
-	| NUMBERED_REDIR word		{ $$ = mkredir(mkredircmd("%create", get_numbered_redir_fd()), $2); }  /* ->[n] numbered redirection */
 	| RW_ARROW word			{ $$ = mkredir(mkredircmd("%open-write", 0), $2); }  /* <-> read-write */
 	| OA_ARROW word			{ $$ = mkredir(mkredircmd("%open-append", 0), $2); }  /* <->> open-append */
 	| OC_ARROW word			{ $$ = mkredir(mkredircmd("%open-create", 1), $2); }  /* ->-< open-create */
@@ -170,25 +143,13 @@ bindings: binding			{ $$ = treecons($1, NULL); }
 binding	:				{ $$ = NULL; }
 	| fn				{ $$ = $1; }
 	| first assign			{ $$ = mk(nAssign, $1, $2); }
-	| first ASSIGN_PLUS words	{ $$ = mk(nCall, prefix("%plus-assign", treecons($1, $3))); }
-	| first ASSIGN_MINUS words	{ $$ = mk(nCall, prefix("%minus-assign", treecons($1, $3))); }
-	| first ASSIGN_MULT words	{ $$ = mk(nCall, prefix("%mult-assign", treecons($1, $3))); }
-	| first ASSIGN_DIV words	{ $$ = mk(nCall, prefix("%div-assign", treecons($1, $3))); }
-	| first ASSIGN_DOT words	{ $$ = mk(nCall, prefix("%dot-assign", treecons($1, $3))); }
-	| first ASSIGN_INT_DIV words	{ $$ = mk(nCall, prefix("%intdiv-assign", treecons($1, $3))); }
-	| first ASSIGN_PREPEND words	{ $$ = mk(nCall, prefix("%prepend-assign", treecons($1, $3))); }
-	| first ASSIGN_AND words	{ $$ = mk(nCall, prefix("%and-assign", treecons($1, $3))); }
-	| first ASSIGN_OR words		{ $$ = mk(nCall, prefix("%or-assign", treecons($1, $3))); }
-	| first ASSIGN_COLON words	{ $$ = mk(nCall, prefix("%colon-assign", treecons($1, $3))); }
-	| first ASSIGN_QUESTION words	{ $$ = mk(nCall, prefix("%question-assign", treecons($1, $3))); }
-	| first ASSIGN_NULL_COALESCE words { $$ = mk(nCall, prefix("%null-coalesce-assign", treecons($1, $3))); }
 
-assign	: caret '=' caret words			{ $$ = $4; }
+assign	: caret '=' caret words		{ $$ = $4; }
 
 fn	: FN word params '{' body '}'	{ $$ = fnassign($2, mklambda($3, $5)); }
 	| FN word			{ $$ = fnassign($2, NULL); }
 
-first	: comword			{ fprintf(stderr, "PARSER DEBUG: Matched 'first' rule with comword\n"); fflush(stderr); $$ = $1; }
+first	: comword			{ $$ = $1; }
 	| first '^' sword		{ $$ = mk(nConcat, $1, $3); }
 
 sword	: comword			{ $$ = $1; }
@@ -219,8 +180,8 @@ param	: WORD				{ $$ = mk(nWord, $1); }
 params	:				{ $$ = NULL; }
 	| params param			{ $$ = treeconsend($1, $2); }
 
-words	:				{ fprintf(stderr, "PARSER DEBUG: Matched empty 'words' rule\n"); fflush(stderr); $$ = NULL; }
-	| words word			{ fprintf(stderr, "PARSER DEBUG: Matched 'words word' rule\n"); fflush(stderr); $$ = treeconsend($1, $2); }
+words	:				{ $$ = NULL; }
+	| words word			{ $$ = treeconsend($1, $2); }
 
 nlwords :				{ $$ = NULL; }
 	| nlwords word			{ $$ = treeconsend($1, $2); }

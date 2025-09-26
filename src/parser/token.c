@@ -220,25 +220,7 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
                 y->str = pdup(buf);
                 return WORD;
         }
-	
-	/* Check for assignment operators with lookahead */
-	int enter_switch = 0;
-	if (c == '+' || c == '*' || c == '/' || c == '.') {
-		int next = GETC();
-		if (next == '=') {
-			/* This is an assignment operator */
-			UNGETC(next);
-			enter_switch = 1;
-		} else {
-			/* Not an assignment operator - put back and process normally */
-			UNGETC(next);
-			enter_switch = 0;
-		}
-	} else if (c == '`' || c == '!' || c == '$' || c == '\'' || c == '=') {
-		enter_switch = 1;
-	}
-	
-	if (enter_switch) {
+	if (c == '`' || c == '!' || c == '$' || c == '\'' || c == '=') {
 		InsertFreeCaret();
 		if (c == '!' || c == '=')
 			w = KW;
