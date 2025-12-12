@@ -81,8 +81,8 @@ top:
 		RefEnd(body);
 		goto top;
 
-	    case nLocal:
-		return local(tree->u[0].p, tree->u[1].p, binding, flags);
+            case nLocal:
+                return local(tree->u[0].p, tree->u[1].p, binding, flags, walk);
 
 	    case nFor:
 		return forloop(tree->u[0].p, tree->u[1].p, binding, flags);

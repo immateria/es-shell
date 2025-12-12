@@ -1,6 +1,6 @@
 /* input.h -- definitions for es lexical analyzer ($Revision: 1.1.1.1 $) */
 
-#define	MAXUNGET	2		/* maximum 2 character pushback */
+#define	MAXUNGET	16		/* maximum character pushback depth */
 
 typedef struct Input Input;
 struct Input {
