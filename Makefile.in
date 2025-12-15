@@ -24,12 +24,21 @@ MKDIR_P          = @MKDIR_P@
 CFLAGS          = @STRICT_CFLAGS@ -I. -I$(srcdir) -Iinclude -I$(srcdir)/include -Igenerated \
                    -W -Wall @READLINE_CFLAGS@ @CFLAGS@ $(ADDCFLAGS)
 LDFLAGS          = @LDFLAGS@ $(ADDLDFLAGS)
-LIBS             = @READLINE_LIBS@ @LIBS@ $(ADDLIBS)
+LIBS             = @READLINE_LIBS@ @LIBS@ -lm $(ADDLIBS)
 
 # Debug build configuration
 DEBUG_CFLAGS     = -DES_DEBUG -g -O0 -DDEBUG
 RELEASE_CFLAGS   = -O2 -DNDEBUG
+
+# macOS builds need architecture flags for universal/arm/x86 output, but these
+# flags are invalid on Linux toolchains. Default to no extra arch flags unless
+# running on Darwin, while still allowing callers to override ARCH_FLAGS.
+UNAME_S         := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
 ARCH_FLAGS      ?= -arch arm64 -mmacosx-version-min=11.0
+else
+ARCH_FLAGS      ?=
+endif
 
 # Header files (now in include/)
 HFILES          = include/config.h       include/es.h              include/gc.h           include/input.h        \
@@ -69,6 +78,8 @@ UTILS_CFILES    =  src/utils/debug.c                 src/utils/debug_events.c   
 SYSTEM_CFILES   = src/system/access.c  src/system/signal.c src/system/status.c   \
                   src/system/history.c src/system/opt.c    src/system/except.c   \
                   src/system/closure.c src/system/error.c
+
+.PHONY: test testrun testclean
 
 BUILD_CFILES    = src/build/dump.c src/build/version.c
 
@@ -181,14 +192,18 @@ build/testrun   : $(testdir)/testrun.c | build
 	$(CC) -o build/testrun $(testdir)/testrun.c
 #-------------------------------------------------------------------------
 
+testrun         : build/testrun
+	ln -sf $< $@
 #-------------------------------------------------------------------------
-test            : es build/testrun $(testdir)/test.es
+
+#-------------------------------------------------------------------------
+test            : es testrun $(testdir)/test.es
 	./es -ps < $(testdir)/test.es $(testdir)/tests/*
 #-------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------
 testclean       :
-	rm -f build/testrun
+	rm -f build/testrun testrun
 #-------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------

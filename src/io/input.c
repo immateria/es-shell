@@ -90,7 +90,8 @@ extern void unget(Input *in, int c) {
 	DEBUG_TRACE_ENTER(DEBUG_INPUT, "unget: pushing back char '%c' (0x%02x)", isprint(c) ? c : '?', c);
 	if (in->ungot > 0) {
 		DEBUG_TRACE_ENTER(DEBUG_INPUT, "unget: using existing unget buffer");
-		assert(in->ungot < MAXUNGET);
+		if (in->ungot >= MAXUNGET)
+			panic("unget buffer overflow");
 		in->unget[in->ungot++] = c;
 		DEBUG_TRACE_EXIT(DEBUG_INPUT, "unget: used existing unget buffer");
 	}
@@ -110,7 +111,6 @@ extern void unget(Input *in, int c) {
 	}
 	DEBUG_TRACE_EXIT(DEBUG_INPUT, "unget: done");
 }
-
 
 /*
  * getting characters

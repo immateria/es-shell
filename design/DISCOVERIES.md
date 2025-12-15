@@ -1,5 +1,14 @@
 # Discoveries
 
+## [2025-05-08] Input Handling – Unget buffer overflow
+
+### Discovery: tokenizer pushback exceeded the two-character limit
+
+**Details:**
+- Running `make test` repeatedly aborted with `src/io/input.c:93: assertion failed (in->ungot < 2)` when the redirection tokenizer rewound invalid patterns.
+- Parsing of numbered redirections (e.g., `->[n]` fallback paths) can unget the closing bracket and several digits (see `src/parser/token-redir.c`), exceeding the legacy two-slot buffer.
+- Expanding `MAXUNGET` to 16 and converting the guard to a runtime panic in `unget` prevents the overflow without changing the existing pushback semantics.
+
 ## [2025-01-17] Assignment Operators - Comprehensive Debug Analysis
 
 ### Key Discovery: Assignment Primitives Work But Have Scoping Issues
@@ -38,6 +47,21 @@ The assignment operators need to be integrated into the parser/evaluator as prop
 - Requires an ANSI compiler and POSIX.1-2001 system. Supports build outside source directory and custom install paths.
 - Optional GNU readline via `--with-readline` (enabled by default if available).
 - OpenBSD build instructions include setting specific `AUTOMAKE_VERSION` and `AUTOCONF_VERSION`, and linking against updated readline.
+
+## [2025-12-12] Build System – Linux build blocked by macOS arch flags
+
+### Discovery: Default ARCH_FLAGS inject macOS-only options
+
+**Details:**
+- Running `./build.sh` on Linux forwards `ARCH_FLAGS` from `Makefile.in`, which defaulted to `-arch arm64 -mmacosx-version-min=11.0`.
+- GCC rejects these macOS-only flags (`unrecognized command-line option '-arch'`), causing the release build to fail before producing `es-release`.
+- The ARCH_FLAGS default needs to be platform-aware so non-Darwin builds skip macOS deployment flags unless explicitly requested.
+
+### Discovery: Linker misses libm for math primitives
+
+**Details:**
+- Linking the build fails with undefined references to `pow` and `fmod` in `prim_pow` and `prim_modulo` because the math library was not included in `LIBS`.
+- Adding `-lm` to the default libraries resolves the missing symbols and allows the release binary to link successfully on Linux.
 
 ## Testing
 - Without a generated `Makefile`, running `make test` prints "Nothing to be done"; `Makefile.in` later defines a `test` target that executes `test/test.es` with `./es` and a helper `testrun` program.
@@ -1558,3 +1582,16 @@ Fixed limitation in compound arithmetic expression detection that prevented sign
 - Comprehensive edge case testing confirms robustness
 
 This enhancement brings ES shell's arithmetic expression handling in line with major programming languages while maintaining backward compatibility and performance.
+
+### [2025-12-12] Test Harness – Provide `testrun` in repository root
+
+**Discovery:** Missing helper binary prevented lexical-analysis tests from executing
+
+**Details:**
+`make test` builds `build/testrun`, but the test suites invoke `./testrun` relative to the repository root (e.g., `trip.es`'s lexical analysis cases). Without a root-level executable or symlink, the harness reported `error $&whatis ./testrun: No such file or directory` and aborted the suite early. Adding a `testrun` target to `Makefile.in` creates a symlink to `build/testrun` and ensures the helper is available before running tests; `testclean` now removes both copies. The change eliminates the missing-binary failure so other test assertions can run to completion.
+
+### [2026-05-24] Build System – Ensure `make test` always executes recipes
+
+**Discovery:** `make test` reported “Nothing to be done for 'test'” when no generated `Makefile` was present, because the target name collided with the existing `test/` directory and make treated it as an up-to-date file. Even after configuration, a non-phony `test` target could be skipped if the directory timestamp was newer than its prerequisites.
+
+**Details:** Marked `test`, `testrun`, and `testclean` as phony targets in `Makefile.in` so make always runs the recipes instead of relying on filesystem timestamps for the `test/` directory. This guarantees the test harness, helper symlink, and cleanup routines execute on each invocation once `Makefile` is generated from the template.
