@@ -3,6 +3,8 @@
 #include "es.h"
 #include "print.h"
 
+#include <stdio.h>
+
 #define	MAXCONV 256
 
 /*
@@ -150,8 +152,20 @@ static Boolean oconv(Format *format) {
 }
 
 static Boolean xconv(Format *format) {
-	intconv(format, 16, 0, "0x");
-	return FALSE;
+        intconv(format, 16, 0, "0x");
+        return FALSE;
+}
+
+static Boolean gconv(Format *format) {
+        char buf[128];
+        double value = va_arg(format->args, double);
+        int len = snprintf(buf, sizeof buf, "%g", value);
+
+        if (len < 0)
+                return FALSE;
+
+        fmtappend(format, buf, (size_t)len);
+        return FALSE;
 }
 
 static Boolean pctconv(Format *format) {
@@ -180,10 +194,11 @@ static void inittab(void) {
 
 	fmttab['s'] = sconv;
 	fmttab['c'] = cconv;
-	fmttab['d'] = dconv;
-	fmttab['o'] = oconv;
-	fmttab['x'] = xconv;
-	fmttab['%'] = pctconv;
+        fmttab['d'] = dconv;
+        fmttab['o'] = oconv;
+        fmttab['x'] = xconv;
+        fmttab['g'] = gconv;
+        fmttab['%'] = pctconv;
 
 	fmttab['u'] = uconv;
 	fmttab['h'] = hconv;
@@ -237,8 +252,8 @@ extern void fmtcat(Format *format, const char *s) {
 extern int printfmt(Format *format, const char *fmt) {
 	unsigned char *s = (unsigned char *) fmt;
 
-	if (fmttab[0] == NULL)
-		inittab();
+        if (fmttab == NULL)
+                inittab();
 
 	for (;;) {
 		int c = *s++;

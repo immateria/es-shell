@@ -3,6 +3,8 @@
 #include "es.h"
 #include "gc.h"
 
+#include <limits.h>
+
 /* concat -- cartesian cross product concatenation
  * Combines two lists by concatenating every element from list1 with every element from list2
  * Example: list1=[a,b], list2=[1,2] -> result=[a1,a2,b1,b2]
@@ -101,6 +103,16 @@ static List *qconcat(List *first_list, List *second_list, StrList *quote_list1, 
     RefReturn(list);
 }
 
+static int parse_positive_subscript(const char *string) {
+    char *end;
+    long parsed = strtol(string, &end, 10);
+
+    if (*string == '\0' || *end != '\0' || parsed <= 0 || parsed > INT_MAX)
+        return -1;
+
+    return (int) parsed;
+}
+
 /* subscript -- variable subscripting with range support
  * Supports syntax like: $var(1), $var(2...5), $var(1...)
  */
@@ -128,42 +140,47 @@ static List *subscript(List *list, List *subscript_list)
     }
 
     while (subscript_list != NULL)
-    {   low_index = atoi(getstr(subscript_list->term));
-        if (low_index < 1)
-        {   Ref(char *, bad_subscript, getstr(subscript_list->term));
-            gcenable();
-            fail("es:subscript", "bad subscript: %s", bad_subscript);
-            RefEnd(bad_subscript);
+    {   Ref(char *, low_value, getstr(subscript_list->term));
+
+        if ((low_index = parse_positive_subscript(low_value)) < 1)
+        {   gcenable();
+            fail("es:subscript", "bad subscript: %s", low_value);
         }
         subscript_list = subscript_list->next;
-        
+
         if (subscript_list != NULL && streq(getstr(subscript_list->term), "..."))
         {
         mid_range:
             subscript_list = subscript_list->next;
-			
+
             if (subscript_list == NULL)
                 high_index = list_length;
-				
+
             else
-            {   high_index = atoi(getstr(subscript_list->term));
-                if (high_index < 1)
-                {   Ref(char *, bad_subscript, getstr(subscript_list->term));
-                    gcenable();
-	
-                    fail("es:subscript", "bad subscript: %s", bad_subscript);
-                    RefEnd(bad_subscript);
+            {   Ref(char *, high_value, getstr(subscript_list->term));
+                if ((high_index = parse_positive_subscript(high_value)) < 1)
+                {   gcenable();
+                    fail("es:subscript", "bad subscript: %s", high_value);
                 }
-				 
+
+                if (high_index < low_index)
+                {   gcenable();
+                    fail("es:subscript", "bad subscript: %s...%s", low_value, high_value);
+                }
+
                 if (high_index > list_length)
                     high_index = list_length;
-				 
+
                 subscript_list = subscript_list->next;
+
+                RefEnd(high_value);
             }
         }
-			
+
         else
             high_index = low_index;
+
+        RefEnd(low_value);
             
         if (low_index > list_length)
             continue;

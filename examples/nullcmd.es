@@ -46,7 +46,7 @@ fn exec cmd {
 
 
 # %here doesn't use %openfile, so we override it as well so that we can do neat
-# things like `> file << EOF`.
+# things like `> file <--< EOF`.
 
 let (h = $fn-%here)
 fn %here fd str cmd {

@@ -199,12 +199,12 @@ test 'heredocs and herestrings' {
 this is an heredoc
 '
 		) {
-			assert {~ `` '' {<<[5] EOF cat <[0=5]} $result} 'unquoted heredoc'
+			assert {~ `` '' {<--<[5] EOF cat <[0=5]} $result} 'unquoted heredoc'
 $abc heredoc$x
 $abc^n $x^here$x^doc
 EOF
 		}
-		assert {~ `` \n cat '	'} 'quoted heredoc' << ' '
+		assert {~ `` \n cat '	'} 'quoted heredoc' <--< ' '
 	
  
 		<<<[9] `` '' {cat $bigfile} \
@@ -215,18 +215,20 @@ EOF
 		rm -f $bigfile
 	}
 
-	assert {~ `{cat<<eof
+        assert {~ `{cat<--<eof
 $$
 eof
-	} '$'} 'quoting ''$'' in heredoc'
+        } '$'} 'quoting ''$'' in heredoc'
 
-	assert {~ `` \n {$es -c 'cat<<eof' >[2=1]} *'pending'*} 'incomplete heredoc 1'
-	assert {~ `` \n {$es -c 'cat<<eof'\n >[2=1]} *'incomplete'*} 'incomplete heredoc 2'
-	assert {~ `` \n {$es -c 'cat<<eof'\n\$ >[2=1]} *'incomplete'*} 'incomplete heredoc 3'
+        assert {~ `` \n {$es -c 'cat<<legacy\nlegacy' >[2=1]} *'here documents now use <--<'*} 'legacy heredoc operator is rejected'
 
-	assert {~ `` \n {$es -c 'cat<<()' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 1'
-	assert {~ `` \n {$es -c 'cat<<(eof eof)' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 2'
-	assert {~ `` \n {$es -c 'cat<<'''\n''''\n >[2=1]} *'contains a newline'*} 'bad heredoc marker 3'
+        assert {~ `` \n {$es -c 'cat<--<eof' >[2=1]} *'pending'*} 'incomplete heredoc 1'
+        assert {~ `` \n {$es -c 'cat<--<eof'\n >[2=1]} *'incomplete'*} 'incomplete heredoc 2'
+        assert {~ `` \n {$es -c 'cat<--<eof'\n\$ >[2=1]} *'incomplete'*} 'incomplete heredoc 3'
+
+	assert {~ `` \n {$es -c 'cat<--<()' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 1'
+	assert {~ `` \n {$es -c 'cat<--<(eof eof)' >[2=1]} *'not a single literal word'*} 'bad heredoc marker 2'
+	assert {~ `` \n {$es -c 'cat<--<'''\n''''\n >[2=1]} *'contains a newline'*} 'bad heredoc marker 3'
 }
 
 test 'tilde matching' {

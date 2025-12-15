@@ -324,6 +324,10 @@ fn-%pow                = $&pow
 fn-%abs                = $&abs
 fn-%min                = $&min
 fn-%max                = $&max
+fn-%toint              = $&toint
+fn-%tofloat            = $&tofloat
+fn-%isint              = $&isint
+fn-%isfloat            = $&isfloat
 fn-%greater            = $&greater
 fn-%less               = $&less
 fn-%greaterequal       = $&greaterequal
@@ -455,7 +459,7 @@ fn %one {
 #    Here documents and here strings are internally rewritten to the
 #    same form, the %here hook function.
 #
-#        cmd << tag input tag    %here 0 input  {cmd}
+#        cmd <--< tag input tag  %here 0 input  {cmd}
 #        cmd <<< string          %here 0 string {cmd}
 
 fn-%here    = $&here

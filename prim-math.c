@@ -3,10 +3,47 @@
 #include "es.h"
 #include "prim.h"
 
+#include <errno.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+static Boolean try_parse_long(const char *string, long *result) {
+    char *end;
+    long parsed;
+
+    errno = 0;
+    parsed = strtol(string, &end, 0);
+
+    if (*string == '\0' || end == string || *end != '\0' || errno == ERANGE)
+        return FALSE;
+
+    *result = parsed;
+    return TRUE;
+}
+
+static double require_double(const char *string, const char *primitive, const char *context) {
+    char *end;
+    double parsed;
+
+    errno = 0;
+    parsed = strtod(string, &end);
+
+    if (*string == '\0' || end == string || *end != '\0' || errno == ERANGE)
+        fail(primitive, "%s", context);
+
+    return parsed;
+}
+
+static long require_integer(const char *string, const char *primitive, const char *context) {
+    long parsed;
+
+    if (!try_parse_long(string, &parsed))
+        fail(primitive, "%s must be an integer: %s", context, string);
+
+    return parsed;
+}
 
 /*
  * Arithmetic Operations
@@ -15,12 +52,8 @@
 PRIM(addition)
 {   double result = 0.0;
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   char *endptr;
-        double operand = strtod(getstr(lp->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&addition", "arguments must be numbers");
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        double operand = require_double(getstr(lp->term), "$&addition", "arguments must be numbers");
 
         result += operand;
     }
@@ -28,22 +61,15 @@ PRIM(addition)
 }
 
 PRIM(subtraction)
-{   char *endptr;
-    double result;
+{   double result;
 
     if (list == NULL || list->next == NULL)
         fail("$&subtraction", "usage: $&subtraction number number [...]");
 
-    result = strtod(getstr(list->term), &endptr);
+    result = require_double(getstr(list->term), "$&subtraction", "arguments must be numbers");
 
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&subtraction", "arguments must be numbers");
-
-    for (list = list->next; list != NULL; list = list->next)
-    {   double operand = strtod(getstr(list->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&subtraction", "arguments must be numbers");
+    for (list = list->next; list != NULL; list = list->next) {
+        double operand = require_double(getstr(list->term), "$&subtraction", "arguments must be numbers");
 
         result -= operand;
     }
@@ -51,17 +77,13 @@ PRIM(subtraction)
 }
 
 PRIM(multiplication)
-{   char *endptr;
-    double result = 1.0;
+{   double result = 1.0;
 
     if (list == NULL)
         fail("$&multiplication", "usage: $&multiplication number [...]");
 
-    for (List *lp = list; lp != NULL; lp = lp->next)
-    {   double operand = strtod(getstr(lp->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&multiplication", "arguments must be numbers");
+    for (List *lp = list; lp != NULL; lp = lp->next) {
+        double operand = require_double(getstr(lp->term), "$&multiplication", "arguments must be numbers");
 
         result *= operand;
     }
@@ -69,22 +91,15 @@ PRIM(multiplication)
 }
 
 PRIM(division)
-{   char *endptr;
-    double result;
+{   double result;
 
     if (list == NULL || list->next == NULL)
         fail("$&division", "usage: $&division dividend divisor [...]");
 
-    result = strtod(getstr(list->term), &endptr);
+    result = require_double(getstr(list->term), "$&division", "arguments must be numbers");
 
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&division", "arguments must be numbers");
-
-    for (list = list->next; list != NULL; list = list->next)
-    {   double divisor = strtod(getstr(list->term), &endptr);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&division", "arguments must be numbers");
+    for (list = list->next; list != NULL; list = list->next) {
+        double divisor = require_double(getstr(list->term), "$&division", "arguments must be numbers");
 
         if (divisor == 0.0)
             fail("$&division", "division by zero");
@@ -95,23 +110,16 @@ PRIM(division)
 }
 
 PRIM(modulo)
-{   char *endptr;
-    double dividend;
+{   double dividend;
     double divisor;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&modulo", "usage: $&modulo dividend divisor");
 
-    dividend = strtod(getstr(list->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be numbers");
+    dividend = require_double(getstr(list->term), "$&modulo", "arguments must be numbers");
 
     list = list->next;
-    divisor = strtod(getstr(list->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&modulo", "arguments must be numbers");
+    divisor = require_double(getstr(list->term), "$&modulo", "arguments must be numbers");
 
     if (divisor == 0.0)
         fail("$&modulo", "division by zero");
@@ -120,23 +128,16 @@ PRIM(modulo)
 }
 
 PRIM(pow)
-{   char *endptr;
-    double base_value;
+{   double base_value;
     double exponent_value;
     double result;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&pow", "usage: $&pow base exponent");
 
-    base_value = strtod(getstr(list->term), &endptr);
+    base_value = require_double(getstr(list->term), "$&pow", "base must be a number");
 
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&pow", "base must be a number");
-
-    exponent_value = strtod(getstr(list->next->term), &endptr);
-
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&pow", "exponent must be a number");
+    exponent_value = require_double(getstr(list->next->term), "$&pow", "exponent must be a number");
 
     if (base_value == 0.0 && exponent_value < 0.0)
         fail("$&pow", "zero cannot be raised to a negative power");
@@ -147,38 +148,27 @@ PRIM(pow)
 }
 
 PRIM(abs)
-{   char *endptr;
-    double input_value;
+{   double input_value;
  
     if (list == NULL || list->next != NULL)
         fail("$&abs", "usage: $&abs number");
     
-    input_value = strtod(getstr(list->term), &endptr);
-    
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&abs", "argument must be a number");
+    input_value = require_double(getstr(list->term), "$&abs", "argument must be a number");
     
     return mklist(mkstr(str("%g", fabs(input_value))), NULL);
 }
 
 PRIM(min)
-{   char *endptr;
-    double minimum_value;
- 
+{   double minimum_value;
+
     if (list == NULL)
         fail("$&min", "usage: $&min number [number ...]");
-    
-    minimum_value = strtod(getstr(list->term), &endptr);
-    
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&min", "arguments must be numbers");
- 
-    for (list = list->next; list != NULL; list = list->next)
-    {   double current_value = strtod(getstr(list->term), &endptr);
-     
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&min", "arguments must be numbers");
-        
+
+    minimum_value = require_double(getstr(list->term), "$&min", "arguments must be numbers");
+
+    for (list = list->next; list != NULL; list = list->next) {
+        double current_value = require_double(getstr(list->term), "$&min", "arguments must be numbers");
+
         if (current_value < minimum_value)
             minimum_value = current_value;
     }
@@ -186,23 +176,16 @@ PRIM(min)
 }
 
 PRIM(max)
-{   char *endptr;
-    double maximum_value;
- 
+{   double maximum_value;
+
     if (list == NULL)
         fail("$&max", "usage: $&max number [number ...]");
-    
-    maximum_value = strtod(getstr(list->term), &endptr);
-    
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&max", "arguments must be numbers");
- 
-    for (list = list->next; list != NULL; list = list->next)
-    {   double current_value = strtod(getstr(list->term), &endptr);
-     
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&max", "arguments must be numbers");
-        
+
+    maximum_value = require_double(getstr(list->term), "$&max", "arguments must be numbers");
+
+    for (list = list->next; list != NULL; list = list->next) {
+        double current_value = require_double(getstr(list->term), "$&max", "arguments must be numbers");
+
         if (current_value > maximum_value)
             maximum_value = current_value;
     }
@@ -218,24 +201,16 @@ PRIM(count)
  */
 
 PRIM(bitwiseshiftleft)
-{   char *endptr_for_value;
-    char *endptr_for_shift;
-    long  input_value;
+{   long  input_value;
     long  shift_amount;
     const int max_shift_bits = sizeof(long) * 8 - 1;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&bitwiseshiftleft", "usage: $&bitwiseshiftleft value shift_amount");
 
-    input_value = strtol(getstr(list->term), &endptr_for_value, 0);
+    input_value = require_integer(getstr(list->term), "$&bitwiseshiftleft", "value argument");
 
-    if (endptr_for_value != NULL && *endptr_for_value != '\0')
-        fail("$&bitwiseshiftleft", "value argument must be an integer");
-
-    shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
-
-    if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
-        fail("$&bitwiseshiftleft", "shift_amount argument must be an integer");
+    shift_amount = require_integer(getstr(list->next->term), "$&bitwiseshiftleft", "shift_amount argument");
 
     if (shift_amount < 0)
         fail("$&bitwiseshiftleft", "shift_amount cannot be negative");
@@ -247,24 +222,16 @@ PRIM(bitwiseshiftleft)
 }
 
 PRIM(bitwiseshiftright)
-{   char *endptr_for_value;
-    char *endptr_for_shift;
-    long  input_value;
+{   long  input_value;
     long  shift_amount;
     const int max_shift_bits = sizeof(long) * 8 - 1;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&bitwiseshiftright", "usage: $&bitwiseshiftright value shift_amount");
 
-    input_value = strtol(getstr(list->term), &endptr_for_value, 0);
+    input_value = require_integer(getstr(list->term), "$&bitwiseshiftright", "value argument");
 
-    if (endptr_for_value != NULL && *endptr_for_value != '\0')
-        fail("$&bitwiseshiftright", "value argument must be an integer");
-
-    shift_amount = strtol(getstr(list->next->term), &endptr_for_shift, 0);
-
-    if (endptr_for_shift != NULL && *endptr_for_shift != '\0')
-        fail("$&bitwiseshiftright", "shift_amount argument must be an integer");
+    shift_amount = require_integer(getstr(list->next->term), "$&bitwiseshiftright", "shift_amount argument");
 
     if (shift_amount < 0)
         fail("$&bitwiseshiftright", "shift_amount cannot be negative");
@@ -275,70 +242,51 @@ PRIM(bitwiseshiftright)
     return mklist(mkstr(str("%ld", input_value >> shift_amount)), NULL);
 }
 
-PRIM(and)
-{   char *endptr;
-    long  result;
+PRIM(bitwiseand)
+{   long  result;
  
     if (list == NULL)
-        fail("$&and", "usage: $&and number [number ...]");
+        fail("$&bitwiseand", "usage: $&bitwiseand number [number ...]");
     
-    result = strtol(getstr(list->term), &endptr, 0);
-    
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&and", "arguments must be integers");
+    result = require_integer(getstr(list->term), "$&bitwiseand", "each argument");
  
     for (list = list->next; list != NULL; list = list->next)
-    {   long operand = strtol(getstr(list->term), &endptr, 0);
-     
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&and", "arguments must be integers");
-        
+    {   long operand = require_integer(getstr(list->term), "$&bitwiseand", "each argument");
+
         result &= operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(or)
-{   char *endptr;
-    long  result = 0;
+PRIM(bitwiseor)
+{   long  result = 0;
  
     for (List *lp = list; lp != NULL; lp = lp->next)
-    {   long operand = strtol(getstr(lp->term), &endptr, 0);
-     
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&or", "arguments must be integers");
-        
+    {   long operand = require_integer(getstr(lp->term), "$&bitwiseor", "each argument");
+
         result |= operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(xor)
-{   char *endptr;
-    long  result = 0;
+PRIM(bitwisexor)
+{   long  result = 0;
  
     for (List *lp = list; lp != NULL; lp = lp->next)
-    {   long operand = strtol(getstr(lp->term), &endptr, 0);
-     
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&xor", "arguments must be integers");
-        
+    {   long operand = require_integer(getstr(lp->term), "$&bitwisexor", "each argument");
+
         result ^= operand;
     }
     return mklist(mkstr(str("%ld", result)), NULL);
 }
 
-PRIM(not)
-{   char *endptr;
-    long  input_value;
+PRIM(bitwisenot)
+{   long  input_value;
  
     if (list == NULL || list->next != NULL)
-        fail("$&not", "usage: $&not number");
+        fail("$&bitwisenot", "usage: $&bitwisenot number");
     
-    input_value = strtol(getstr(list->term), &endptr, 0);
-    
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&not", "argument must be an integer");
+    input_value = require_integer(getstr(list->term), "$&bitwisenot", "argument");
     
     return mklist(mkstr(str("%ld", ~input_value)), NULL);
 }
@@ -348,111 +296,81 @@ PRIM(not)
  */
 
 PRIM(greater)
-{   char *endptr;
-    double first, second;
+{   double first, second;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&greater", "usage: $&greater number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&greater", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&greater", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&greater", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&greater", "arguments must be numbers");
 
     return first > second ? ltrue : lfalse;
 }
 
 PRIM(less)
-{   char *endptr;
-    double first, second;
+{   double first, second;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&less", "usage: $&less number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&less", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&less", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&less", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&less", "arguments must be numbers");
 
     return first < second ? ltrue : lfalse;
 }
 
 PRIM(greaterequal)
-{   char *endptr;
-    double first, second;
+{   double first, second;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&greaterequal", "usage: $&greaterequal number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&greaterequal", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&greaterequal", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&greaterequal", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&greaterequal", "arguments must be numbers");
 
     return first >= second ? ltrue : lfalse;
 }
 
 PRIM(lessequal)
-{   char *endptr;
-    double first, second;
+{   double first, second;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&lessequal", "usage: $&lessequal number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&lessequal", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&lessequal", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&lessequal", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&lessequal", "arguments must be numbers");
 
     return first <= second ? ltrue : lfalse;
 }
 
 PRIM(equal)
-{   char *endptr;
-    double first, second;
+{   double first, second;
     const double epsilon = 1e-15;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&equal", "usage: $&equal number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&equal", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&equal", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&equal", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&equal", "arguments must be numbers");
 
     return fabs(first - second) < epsilon ? ltrue : lfalse;
 }
 
 PRIM(notequal)
-{   char *endptr;
-    double first, second;
+{   double first, second;
     const double epsilon = 1e-15;
 
     if (list == NULL || list->next == NULL || list->next->next != NULL)
         fail("$&notequal", "usage: $&notequal number1 number2");
 
-    first = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&notequal", "arguments must be numbers");
+    first = require_double(getstr(list->term), "$&notequal", "arguments must be numbers");
 
-    second = strtod(getstr(list->next->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&notequal", "arguments must be numbers");
+    second = require_double(getstr(list->next->term), "$&notequal", "arguments must be numbers");
 
     return fabs(first - second) >= epsilon ? ltrue : lfalse;
 }
@@ -471,9 +389,7 @@ PRIM(toint)
     result = strtol(getstr(list->term), &endptr, 0);
     if (endptr != NULL && *endptr != '\0') {
         /* Try parsing as float first, then convert to int */
-        double d = strtod(getstr(list->term), &endptr);
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&toint", "argument must be a number");
+        double d = require_double(getstr(list->term), "$&toint", "argument must be a number");
         result = (long)d;
     }
 
@@ -481,30 +397,23 @@ PRIM(toint)
 }
 
 PRIM(tofloat)
-{   char *endptr;
-    double result;
+{   double result;
 
     if (list == NULL || list->next != NULL)
         fail("$&tofloat", "usage: $&tofloat number");
 
-    result = strtod(getstr(list->term), &endptr);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&tofloat", "argument must be a number");
+    result = require_double(getstr(list->term), "$&tofloat", "argument must be a number");
 
     return mklist(mkstr(str("%g", result)), NULL);
 }
 
 PRIM(isint)
-{   char *endptr;
-    long dummy;
+{   long value;
 
     if (list == NULL || list->next != NULL)
         fail("$&isint", "usage: $&isint value");
 
-    dummy = strtol(getstr(list->term), &endptr, 0);
-    (void)dummy; /* suppress unused variable warning */
-    
-    return (endptr != NULL && *endptr != '\0') ? lfalse : ltrue;
+    return try_parse_long(getstr(list->term), &value) ? ltrue : lfalse;
 }
 
 PRIM(isfloat)
@@ -515,11 +424,15 @@ PRIM(isfloat)
     if (list == NULL || list->next != NULL)
         fail("$&isfloat", "usage: $&isfloat value");
 
+    errno = 0;
     dummy = strtod(str_val, &endptr);
     (void)dummy; /* suppress unused variable warning */
-    
+
+    if (errno == ERANGE)
+        return lfalse;
+
     /* It's a float if it parses as a number AND contains a decimal point */
-    return (endptr != NULL && *endptr != '\0') ? lfalse : 
+    return (endptr != NULL && *endptr != '\0') ? lfalse :
            (strchr(str_val, '.') != NULL) ? ltrue : lfalse;
 }
 
@@ -528,14 +441,10 @@ PRIM(isfloat)
  */
 
 PRIM(intaddition)
-{   char *endptr;
-    long result = 0;
+{   long result = 0;
 
     for (List *lp = list; lp != NULL; lp = lp->next) {
-        long operand = strtol(getstr(lp->term), &endptr, 0);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&intaddition", "arguments must be integers");
+        long operand = require_integer(getstr(lp->term), "$&intaddition", "each argument");
 
         result += operand;
     }
@@ -543,21 +452,15 @@ PRIM(intaddition)
 }
 
 PRIM(intsubtraction)
-{   char *endptr;
-    long result;
+{   long result;
 
     if (list == NULL || list->next == NULL)
         fail("$&intsubtraction", "usage: $&intsubtraction number number [...]");
 
-    result = strtol(getstr(list->term), &endptr, 0);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&intsubtraction", "arguments must be integers");
+    result = require_integer(getstr(list->term), "$&intsubtraction", "each argument");
 
     for (list = list->next; list != NULL; list = list->next) {
-        long operand = strtol(getstr(list->term), &endptr, 0);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&intsubtraction", "arguments must be integers");
+        long operand = require_integer(getstr(list->term), "$&intsubtraction", "each argument");
 
         result -= operand;
     }
@@ -565,17 +468,13 @@ PRIM(intsubtraction)
 }
 
 PRIM(intmultiplication)
-{   char *endptr;
-    long result = 1;
+{   long result = 1;
 
     if (list == NULL)
         fail("$&intmultiplication", "usage: $&intmultiplication number [...]");
 
     for (List *lp = list; lp != NULL; lp = lp->next) {
-        long operand = strtol(getstr(lp->term), &endptr, 0);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&intmultiplication", "arguments must be integers");
+        long operand = require_integer(getstr(lp->term), "$&intmultiplication", "each argument");
 
         result *= operand;
     }
@@ -583,21 +482,15 @@ PRIM(intmultiplication)
 }
 
 PRIM(intdivision)
-{   char *endptr;
-    long result;
+{   long result;
 
     if (list == NULL || list->next == NULL)
         fail("$&intdivision", "usage: $&intdivision dividend divisor [...]");
 
-    result = strtol(getstr(list->term), &endptr, 0);
-    if (endptr != NULL && *endptr != '\0')
-        fail("$&intdivision", "arguments must be integers");
+    result = require_integer(getstr(list->term), "$&intdivision", "each argument");
 
     for (list = list->next; list != NULL; list = list->next) {
-        long divisor = strtol(getstr(list->term), &endptr, 0);
-
-        if (endptr != NULL && *endptr != '\0')
-            fail("$&intdivision", "arguments must be integers");
+        long divisor = require_integer(getstr(list->term), "$&intdivision", "each argument");
 
         if (divisor == 0)
             fail("$&intdivision", "division by zero");
@@ -639,10 +532,10 @@ extern Dict *initprims_math(Dict *primdict)
     /* Bitwise operations */
     X(bitwiseshiftleft);
     X(bitwiseshiftright);
-    X(and);
-    X(or);
-    X(xor);
-    X(not);
+    X(bitwiseand);
+    X(bitwiseor);
+    X(bitwisexor);
+    X(bitwisenot);
     
     /* Comparison operations */
     X(greater);

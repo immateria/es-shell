@@ -364,40 +364,42 @@ top:	while ((c = GETC()) == ' ' || c == '	') {
 	{
 		char *cmd;
 		int fd[2];
-        case '<':
-                fd[0] = 0;
-                if ((c = GETC()) == '>')
+	case '<':
+		fd[0] = 0;
+		if ((c = GETC()) == '>')
 			if ((c = GETC()) == '>') {
 				c = GETC();
 				cmd = "%open-append";
 			} else
 				cmd = "%open-write";
-		else if (c == '<')
-			if ((c = GETC()) == '<') {
+		else if (c == '<') {
+			int next = GETC();
+			if (next == '<') {
 				c = GETC();
 				cmd = "%here";
-			} else
-				cmd = "%heredoc";
-		else if (c == '=') {
+			} else {
+				scanerror(next, "here documents now use <--<");
+				return ERROR;
+			}
+		} else if (c == '-') {
+			int dash = GETC();
+			if (dash == '-') {
+				int lt = GETC();
+				if (lt == '<') {
+					c = GETC();
+					cmd = "%heredoc";
+					goto redirection;
+				}
+				UNGETC(lt);
+			}
+			UNGETC(dash);
+			cmd = "%open";
+		} else if (c == '=') {
 			w = NW;
 			return CALL;
 		} else
 			cmd = "%open";
 		goto redirection;
-        case '>':
-                fd[0] = 1;
-                if ((c = GETC()) == '>')
-                        if ((c = GETC()) == '<') {
-                                c = GETC();
-                                cmd = "%open-append";
-                        } else
-                                cmd = "%append";
-                else if (c == '<') {
-                        c = GETC();
-                        cmd = "%open-create";
-                } else
-                        cmd = "%create";
-                goto redirection;
 	redirection:
 		w = NW;
 		if (!getfds(fd, c, fd[0], DEFAULT))

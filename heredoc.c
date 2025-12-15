@@ -50,7 +50,9 @@ extern Tree *snarfheredoc(const char *eof, Boolean quoted) {
 		print_prompt2();
 		for (s = (unsigned char *) eof; (c = GETC()) == *s; s++)
 			;
-		if (*s == '\0' && (c == '\n' || c == EOF)) {
+                if (*s == '\0' && (c == '\n' || c == EOF || (c >= 0 && dnw[c]))) {
+                        if (c != '\n' && c != EOF)
+                                UNGETC(c);
 			if (buf->current == 0 && tree != NULL)
 				freebuffer(buf);
 			else

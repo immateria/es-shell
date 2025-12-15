@@ -42,7 +42,7 @@ if {~ $#PAGER 0} {
 }
 
 fn instructions {
-  cat << EOF
+  cat <--< EOF
 
                   Instructions for the Adventure shell
 

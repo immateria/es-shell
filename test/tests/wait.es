@@ -31,10 +31,17 @@ test 'wait is precise' {
 }
 
 test 'setpgid' {
-	let (pid = <={$&background {./testrun s}}) {
-		assert {ps -o pid | grep $pid > /dev/null} 'background process appears in ps'
-		kill $pid
-		wait $pid >[2] /dev/null
-		assert {!{ps -o pid | grep $pid}}
-	}
+        let (pid = <={$&background {./testrun s}}) {
+                assert {ps -o pid | grep $pid > /dev/null} 'background process appears in ps'
+                kill $pid
+                wait $pid >[2] /dev/null
+                assert {!{ps -o pid | grep $pid}}
+        }
+}
+
+test 'rejects non-numeric pid' {
+        let (exception = ()) {
+                catch @ e {exception = $e} {wait pid42 >[2] /dev/null}
+                assert {~ $exception *'wait: pid42: bad pid'*}
+        }
 }
