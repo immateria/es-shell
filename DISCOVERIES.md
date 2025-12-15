@@ -1161,3 +1161,93 @@ Successfully fulfilled user requirements: "make sure all of the operators are ea
 
 **Build Status Note:**
 Implementation complete and tested. Help system implemented but requires rebuild for full functionality. All mathematical enhancements verified working. Source code modifications preserve existing functionality while adding requested features.
+
+### [2025-12-12] Readline – Username completion compatibility
+
+**Discovery:** Modern readline requires `rl_username_completion_function`
+
+**Details:** Added an explicit prototype for `rl_username_completion_function` and updated the built-in completion logic to call the new symbol when expanding tilde-prefixed usernames. This resolves build failures against recent readline releases where the legacy `username_completion_function` prototype is hidden.【F:input.c†L30-L34】【F:input.c†L544-L565】
+
+### [2025-12-12] Build System – Math library linkage
+
+**Discovery:** Math primitives needed explicit `-lm`
+
+**Details:** Linking now pulls in libm to satisfy `fmod` and `pow` from the arithmetic primitives. The Makefile template includes `-lm`, ensuring both `es` and `esdump` link successfully on platforms that keep math functions in a separate library.【F:Makefile.in†L48-L59】【F:Makefile†L45-L55】
+
+### [2025-12-12] Parser – Function definitions no longer treated as variable lookups
+
+**Discovery:** Removed aggressive word-to-variable rewriting
+
+**Details:** The grammar no longer wraps every parsed word in `nVar`, which previously caused `fn` definitions like `fn var { ... }` to expand to empty names and abort esdump with "null variable name." Word parsing now preserves literal names, while infix normalization still converts arithmetic operands as needed.【F:parse.y†L101-L120】
+
+### [2025-12-12] Formatting – `%g` support for numeric primitives
+
+**Discovery:** Added floating-point formatting hook
+
+**Details:** Introduced a `%g` formatter using `snprintf` so `str("%g", ...)` in math primitives no longer triggers `printfmt` panics. The formatting table now recognizes `%g`, allowing arithmetic primitives to emit floating-point results safely and keeping the test suite green.【F:print.c†L3-L7】【F:print.c†L154-L169】【F:print.c†L186-L201】
+
+### [2025-12-12] Build & Runtime – Full rebuild and smoke test
+
+**Discovery:** Verified `build.sh` end-to-end build and runtime
+
+**Details:** Ran `./build.sh --output-dir bin` on Linux, which regenerated `configure`, configured the project, rebuilt from a clean tree, and executed the entire `make test` suite—all passing. The script placed the resulting binary at `bin/es-shell`, and a direct invocation `./bin/es-shell -c 'echo build_run_ok'` produced the expected output, confirming the binary runs after the latest changes.【bf3d48†L1-L53】【178c26†L1-L3】
+
+### [2025-12-12] Formatting – Safe initialization before `printfmt`
+
+**Discovery:** Guard `printfmt` against uninitialized conversion tables
+
+**Details:** `printfmt` now checks whether the conversion table pointer itself is `NULL` before dereferencing it, ensuring format initialization happens even if no prior `fmtinstall` call occurred. This removes a potential null dereference during early print calls while preserving the existing table setup path.【F:print.c†L186-L257】
+
+### [2025-12-12] Process Control – `apids` reports background jobs in pid order
+
+**Discovery:** Sorted `%apids` output numerically
+
+**Details:** The `$&apids` primitive now collects background process IDs, sorts them with a numeric comparator, and constructs the result list from the ascending array. This removes the previous reliance on insertion order and delivers `%apids` results that are stable and monotonic regardless of background creation sequence.【F:proc.c†L68-L94】【F:proc.c†L160-L186】
+
+### [2025-12-13] Process Control – `wait` rejects non-numeric pids
+
+**Discovery:** Validates `$&wait` arguments are numeric process IDs
+
+**Details:** `$&wait` now parses its optional PID argument with `strtol`, rejecting empty strings, mixed text, and oversized values instead of silently interpreting them as zero. Invalid input raises the existing “bad pid” error with the original token preserved, and a new regression test covers the non-numeric case.【F:proc.c†L96-L123】【F:test/tests/wait.es†L44-L53】
+
+### [2025-12-13] Subscripts – reject malformed indices
+
+**Discovery:** Validate list subscripts before slicing
+
+**Details:** Subscript parsing now treats any non-numeric or overflowed index as a “bad subscript” error instead of truncating trailing text to zero. Both single-value and range selectors call a helper that checks for empty strings, extra characters, or values beyond `INT_MAX`, and new regression tests confirm `$foo(2abc)` and `$foo(1...3abc)` raise the expected errors.【F:glom.c†L103-L164】【F:test/tests/subscript.es†L1-L16】
+
+### [2025-12-13] Subscripts – disallow descending ranges
+
+**Discovery:** Prevent silently empty slice selection when range upper bounds precede the start index
+
+**Details:** Subscript ranges such as `$foo(3...2)` now raise a “bad subscript” error instead of producing no output. The glom logic validates that the parsed high index is at least the low index before applying bounds clamping, and a regression test asserts the descending case errors with the full `low...high` token preserved.【F:glom.c†L137-L166】【F:test/tests/subscript.es†L18-L25】
+
+### [2025-12-13] Math – enforce strict integer parsing
+
+**Discovery:** Bitwise and integer-only math primitives validate integer tokens
+
+**Details:** Added a shared `try_parse_long` helper that rejects empty strings, trailing characters, and `strtol` overflows. Bitwise shift, and/or/xor/not, and integer arithmetic primitives now fail with a message that includes the offending token, and `%isint` uses the same strict parser so empty or alphabetic inputs are no longer treated as integers. Regression tests cover invalid bitwise operands and `isint` behavior.【F:prim-math.c†L3-L112】【F:prim-math.c†L200-L361】【F:prim-math.c†L447-L606】【F:test/tests/math.es†L30-L49】
+
+### [2025-12-13] Math – reject overflowing float arguments
+
+**Discovery:** Treat floating-point overflow as invalid input
+
+**Details:** Introduced a `require_double` helper that uses `strtod` with `ERANGE` detection and applies it across arithmetic, comparison, and conversion primitives so tokens that overflow `double` now raise the existing numeric error instead of turning into infinities. `%isfloat` treats overflowing inputs as false, new regression tests exercise the `1e309` overflow paths, and an interactive `%addition 1e309` run now emits “arguments must be numbers” instead of returning `inf`.【F:prim-math.c†L6-L193】【F:prim-math.c†L330-L437】【F:test/tests/math.es†L51-L63】【fc9fb1†L1-L3】
+
+### [2025-12-13] Syntax – regression suite coverage and heredoc newline quirk
+
+**Discovery:** Syntax sugar, precedence, and lexer cases all pass, but heredoc sugar expects a trailing newline
+
+**Details:** Running `./build.sh --output-dir bin` executes `./test/test.es ./test/tests/*`, and the syntax suite confirms the parser rewrites control-flow, redirection, heredoc, match, and precedence sugar correctly alongside lexical and tokenizer checks; every syntax case reported “passed.”【F:test/tests/syntax.es†L13-L67】【c33a41†L46-L52】 Direct evaluation shows heredoc sugar emits the expected `%here` form when the closing tag ends with a newline, but parsing without the final newline raises “incomplete here document,” indicating the sugar requires that trailing line break.【1cf0ec†L1-L5】【ffcf93†L1-L4】
+
+### [2025-12-13] Syntax – heredoc sugar tolerates missing trailing newline
+
+**Discovery:** Heredoc sugar now accepts EOF markers without a following newline
+
+**Details:** `snarfheredoc` treats the heredoc terminator as complete when the marker is followed by any non-word delimiter (such as `}`) instead of insisting on a newline, ungetting the delimiter so subsequent parsing proceeds normally. This prevents “incomplete here document” errors when the closing tag appears immediately before other syntax. The syntax regression suite now includes a heredoc sugar example that omits the final newline yet still rewrites to the same `%here` form.【F:heredoc.c†L55-L70】【F:test/tests/syntax.es†L9-L17】
+
+### [2025-12-14] Syntax – heredoc operator renamed to `<--<`
+
+**Discovery:** Here documents now use the `<--<` redirection operator instead of `<<`
+
+**Details:** The lexer recognizes `<--<` as the heredoc operator, queues heredocs as before, and emits a clear scan-time error when the legacy `<<` form appears. The man page, examples, and heredoc sugar regression were updated to use the new spelling, and a regression test asserts the old operator reports the explanatory error.【F:token.c†L351-L383】【F:doc/es.1†L1068-L1084】【F:examples/adventure.es†L43-L47】【F:test/tests/trip.es†L216-L229】【F:test/tests/syntax.es†L67-L75】

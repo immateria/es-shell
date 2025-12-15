@@ -65,16 +65,15 @@ test 'readfrom/writeto sugar' {
 }
 
 test 'heredoc sugar' {
-	let (
-		# NOTE: is it a bug that this only works with the closing newline?
-		have = 'cmd << tag
+        let (
+                # heredoc sugar should not require a trailing newline after the eof marker
+                have = 'cmd <--< tag
 input
-tag
-'
-		want = '%here 0 ''input''^\n {cmd}'
-	) {
-		assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
-	}
+tag'
+                want = '%here 0 ''input''^\n {cmd}'
+        ) {
+                assert {~ `` \n {eval echo '{'$have'}'} '{'$want'}'}
+        }
 }
 
 test 'match sugar' {

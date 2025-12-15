@@ -29,6 +29,8 @@ Boolean resetterminal = FALSE;
 
 #if HAVE_READLINE
 #include <readline/readline.h>
+/* Ensure prototype is available even when compat declarations are disabled */
+extern char *rl_username_completion_function(const char *, int);
 #endif
 
 
@@ -557,8 +559,8 @@ char **builtin_completion(const char *text, int UNUSED start, int UNUSED end) {
 	}
 
 	/* ~foo => username.  ~foo/bar already gets completed as filename. */
-	if (!matches && *text == '~' && !strchr(text, '/'))
-		matches = rl_completion_matches(text, username_completion_function);
+        if (!matches && *text == '~' && !strchr(text, '/'))
+                matches = rl_completion_matches(text, rl_username_completion_function);
 
 	return matches;
 }

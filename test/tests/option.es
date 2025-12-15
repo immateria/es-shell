@@ -26,7 +26,7 @@ test 'es -e' {
 			'let (x = false) true'			true
 			'local (x = false) true'		true
 		)) {
-			cat > $temp << EOF
+			cat > $temp <--< EOF
 echo -n one
 $command
 echo two

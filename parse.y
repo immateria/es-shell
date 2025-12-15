@@ -5,16 +5,6 @@
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
-
-static Tree *arithword(Tree *t) {
-       if (t != NULL && t->kind == nWord) {
-               char *end;
-               strtol(t->u[0].s, &end, 10);
-               if (*end != '\0')
-                       return mk(nVar, t);
-       }
-       return t;
-}
 %}
 
 %token <str>	WORD QWORD
@@ -117,7 +107,7 @@ first	: comword			{ $$ = $1; }
 sword	: comword			{ $$ = $1; }
 	| keyword			{ $$ = mk(nWord, $1); }
 
-word    : sword                         { $$ = arithword($1); }
+word    : sword                         { $$ = $1; }
         | word '^' sword                { $$ = mk(nConcat, $1, $3); }
 
 comword : param				{ $$ = $1; }

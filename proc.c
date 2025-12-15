@@ -2,6 +2,8 @@
 
 #include "es.h"
 
+#include <limits.h>
+
 Boolean hasforked = FALSE;
 
 typedef struct Proc Proc;
@@ -118,24 +120,30 @@ extern Noreturn esexit(int code) {
 
 /* reap -- mark a process as dead and return it */
 static Proc *reap(int pid) {
-	Proc *proc;
-	for (proc = proclist; proc != NULL; proc = proc->next)
-		if (proc->pid == pid)
-			break;
-	assert(proc != NULL);
+        Proc *proc;
+        for (proc = proclist; proc != NULL; proc = proc->next)
+                if (proc->pid == pid)
+                        break;
+        assert(proc != NULL);
 	if (proc->next != NULL)
 		proc->next->prev = proc->prev;
 	if (proc->prev != NULL)
 		proc->prev->next = proc->next;
 	else
 		proclist = proc->next;
-	return proc;
+        return proc;
+}
+
+static int compare_pid(const void *a, const void *b) {
+        int left = *(const int *) a;
+        int right = *(const int *) b;
+        return (left > right) - (left < right);
 }
 
 /* ewait -- wait for a specific process to die, or any process if pid == -1 */
 extern int ewait(int pidarg, Boolean interruptible) {
-	int deadpid, status;
-	Proc *proc;
+        int deadpid, status;
+        Proc *proc;
 	while ((deadpid = waitpid(pidarg, &status, 0)) == -1) {
 		if (errno == ECHILD && pidarg > 0)
 			fail("es:ewait", "wait: %d is not a child of this shell", pidarg);
@@ -157,32 +165,54 @@ extern int ewait(int pidarg, Boolean interruptible) {
 #include "prim.h"
 
 PRIM(apids) {
-	Proc *p;
-	Ref(List *, lp, NULL);
-	for (p = proclist; p != NULL; p = p->next)
-		if (p->background) {
-			Term *t = mkstr(str("%d", p->pid));
-			lp = mklist(t, lp);
-		}
-	/* TODO: sort the return value, but by number? */
-	RefReturn(lp);
+        Proc *p;
+        Ref(List *, lp, NULL);
+        size_t count = 0;
+
+        for (p = proclist; p != NULL; p = p->next)
+                if (p->background)
+                        count++;
+
+        if (count != 0) {
+                size_t i = 0;
+                int *pids = ealloc(count * sizeof (int));
+
+                for (p = proclist; p != NULL; p = p->next)
+                        if (p->background)
+                                pids[i++] = p->pid;
+
+                qsort(pids, count, sizeof (int), compare_pid);
+
+                for (i = count; i-- > 0; ) {
+                        Term *t = mkstr(str("%d", pids[i]));
+                        lp = mklist(t, lp);
+                }
+
+                efree(pids);
+        }
+        RefReturn(lp);
 }
 
 PRIM(wait) {
-	int pid;
-	if (list == NULL)
-		pid = -1;
-	else if (list->next == NULL) {
-		pid = atoi(getstr(list->term));
-		if (pid <= 0) {
-			fail("$&wait", "wait: %d: bad pid", pid);
-			NOTREACHED;
-		}
-	} else {
-		fail("$&wait", "usage: wait [pid]");
-		NOTREACHED;
-	}
-	return mklist(mkstr(mkstatus(ewait(pid, TRUE))), NULL);
+        int pid;
+        if (list == NULL)
+                pid = -1;
+        else if (list->next == NULL) {
+                char *strpid = getstr(list->term);
+                char *end;
+                long parsed = strtol(strpid, &end, 10);
+
+                if (*strpid == '\0' || *end != '\0' || parsed <= 0 || parsed > INT_MAX) {
+                        fail("$&wait", "wait: %s: bad pid", strpid);
+                        NOTREACHED;
+                }
+
+                pid = (int) parsed;
+        } else {
+                fail("$&wait", "usage: wait [pid]");
+                NOTREACHED;
+        }
+        return mklist(mkstr(mkstatus(ewait(pid, TRUE))), NULL);
 }
 
 extern Dict *initprims_proc(Dict *primdict) {

@@ -1068,7 +1068,7 @@ these operators use file descriptor 1 by default.
 .IR sh (1)
 with the use of
 .Ds
-.Ic command " << \(aq" eof-marker "\(aq"
+.Ic command " <--< \(aq" eof-marker "\(aq"
 .De
 .PP
 If the end-of-file marker is quoted,
@@ -1845,7 +1845,7 @@ fn \fIname\fP \fIargs\fP { \fIcmd\fP }	fn-\(ha\fIname\fP = @ \fIargs\fP {\fIcmd\
 \fIcmd\fP >>< \fIfile\fP	%open-append 1 \fIfile\fP {\fIcmd\fP}
 \fIcmd\fP >[\fIn\fP=]	%close \fIn\fP {\fIcmd\fP}
 \fIcmd\fP >[\fIm\fP=\fIn\fP]	%dup \fIm\fP \fIn\fP {\fIcmd\fP}
-\fIcmd\fP << tag \fIinput\fP tag	%here 0 \fIinput\fP {\fIcmd\fP}
+\fIcmd\fP <--< tag \fIinput\fP tag	%here 0 \fIinput\fP {\fIcmd\fP}
 \fIcmd\fP <<< \fIstring\fP	%here 0 \fIstring\fP {\fIcmd\fP}
 \fIcmd1\fP | \fIcmd2\fP	%pipe {\fIcmd1\fP} 1 0 {\fIcmd2\fP}
 \fIcmd1\fP |[\fIm\fP=\fIn\fP] \fIcmd2\fP	%pipe {\fIcmd1\fP} \fIm\fP \fIn\fP {\fIcmd2\fP}
